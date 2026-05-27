@@ -1,5 +1,5 @@
 .PHONY: up down restart build logs logs-fts logs-ui status \
-        add-user list-packages serve-packages shell-fts shell-ui
+        add-user list-packages serve-packages shell
 
 ENV_FILE  := .env
 DATA_DIR  := $(shell grep '^DATA_DIR=' $(ENV_FILE) 2>/dev/null | cut -d= -f2 || echo /opt/fts)
@@ -53,15 +53,20 @@ serve-packages:
 logs:
 	docker compose --env-file $(ENV_FILE) logs -f
 
+## Stream logs for FTS core only (filters by supervisor process label)
 logs-fts:
-	docker compose --env-file $(ENV_FILE) logs -f freetakserver
+	docker exec freetakserver supervisorctl tail -f fts
 
+## Stream logs for FTS UI only (filters by supervisor process label)
 logs-ui:
-	docker compose --env-file $(ENV_FILE) logs -f freetakserver-ui
+	docker exec freetakserver supervisorctl tail -f fts-ui
 
 status:
-	@echo "=== Containers ==="
+	@echo "=== Container ==="
 	@docker compose --env-file $(ENV_FILE) ps
+	@echo ""
+	@echo "=== Supervisor processes ==="
+	@docker exec freetakserver supervisorctl status 2>/dev/null || true
 	@echo ""
 	@echo "=== Listening ports ==="
 	@ss -tlnp 2>/dev/null \
@@ -71,10 +76,7 @@ status:
 	@echo "=== Tailscale ==="
 	@tailscale ip -4 2>/dev/null | xargs -I{} echo "  {}" || echo "  (tailscale not found)"
 
-# ── Debug shells ──────────────────────────────────────────────────────────────
+# ── Debug shell ───────────────────────────────────────────────────────────────
 
-shell-fts:
+shell:
 	docker exec -it freetakserver /bin/bash
-
-shell-ui:
-	docker exec -it freetakserver-ui /bin/bash
