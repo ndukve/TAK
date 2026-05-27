@@ -293,9 +293,17 @@ chmod -R 777 "$DATA_DIR" 2>/dev/null || true
 # .env so the Web UI can authenticate against the REST API on login.
 _raw_api_key=$(grep '^FTS_API_KEY=' "$ENV_FILE" | cut -d= -f2)
 if [ -n "$_raw_api_key" ]; then
-    docker exec -e _K="$_raw_api_key" freetakserver python3 -c \
-        "import sqlite3,os; c=sqlite3.connect('/opt/fts/FTSDataBase.db'); c.execute(\"UPDATE SystemUser SET token='\"+os.environ['_K']+\"' WHERE name='admin'\"); c.commit()" \
-        2>/dev/null && ok "Web UI API token synced" || warn "Could not sync Web UI token (retry: docker compose restart)"
+    cat > /tmp/sync_token.py << 'PYEOF'
+import sqlite3, os
+key = os.environ['_K']
+con = sqlite3.connect('/opt/fts/FTSDataBase.db')
+con.execute('UPDATE SystemUser SET token=? WHERE name=?', (key, 'admin'))
+con.commit()
+PYEOF
+    docker cp /tmp/sync_token.py freetakserver:/tmp/sync_token.py
+    docker exec -e _K="$_raw_api_key" freetakserver python3 /tmp/sync_token.py \
+        && ok "Web UI API token synced" \
+        || warn "Could not sync Web UI token — run: ./update.sh"
 fi
 
 # ── Generate initial user packages ────────────────────────────────────────────

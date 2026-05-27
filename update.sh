@@ -28,5 +28,21 @@ info "Restarting container..."
 docker compose --env-file "$ENV_FILE" up -d
 ok "Container restarted"
 
+info "Syncing Web UI API token..."
+_raw_api_key=$(grep '^FTS_API_KEY=' "$ENV_FILE" | cut -d= -f2)
+if [ -n "$_raw_api_key" ]; then
+    cat > /tmp/sync_token.py << 'PYEOF'
+import sqlite3, os
+key = os.environ['_K']
+con = sqlite3.connect('/opt/fts/FTSDataBase.db')
+con.execute('UPDATE SystemUser SET token=? WHERE name=?', (key, 'admin'))
+con.commit()
+PYEOF
+    docker cp /tmp/sync_token.py freetakserver:/tmp/sync_token.py
+    docker exec -e _K="$_raw_api_key" freetakserver python3 /tmp/sync_token.py \
+        && ok "Web UI API token synced" \
+        || warn "Could not sync Web UI token"
+fi
+
 echo ""
 echo -e "  ${BOLD}Done.${NC} View logs: docker logs freetakserver -f"
