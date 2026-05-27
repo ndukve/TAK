@@ -127,12 +127,23 @@ docker compose restart
 # Stop
 docker compose down
 
-# Rebuild after config changes
-docker compose build && docker compose up -d
-
 # Add new user
 ./generate_user.sh <username>
+
+# Rebuild after config changes
+docker compose --env-file .env build --quiet && docker compose --env-file .env up -d
 ```
+
+### Updating
+
+Pull the latest config from git and rebuild in one step:
+
+```bash
+./update.sh
+# or: make update
+```
+
+This pulls from GitHub, rebuilds the image, and restarts the container. Your `.env` and data in `/opt/fts` are never touched.
 
 ---
 
@@ -143,7 +154,7 @@ docker compose build && docker compose up -d
 - To change the IP, update `.env` and run `docker compose up -d`
 - Certificate password is set in `.env` (default: `atakatak`)
 
-## iTAK / iOS Known Issues
+## iTAK / iOS known issues
 
 **Low Power Mode drops the connection**
 iOS Low Power Mode aggressively suspends background network activity. With it enabled, iTAK will lose its server connection and require a manual reconnect. Turn off Low Power Mode when using iTAK.
