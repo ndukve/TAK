@@ -23,7 +23,7 @@ services:
       # ── External address (Tailscale IP — set in .env) ─────────────────
       FTS_DP_ADDRESS:            '${FTS_IP}'
       FTS_USER_ADDRESS:          '${FTS_IP}'
-      FTS_API_ADDRESS:           '${FTS_IP}'
+      FTS_API_ADDRESS:           '0.0.0.0'
 
       # ── Internal ZMQ routing ─────────────────────────────────────────
       FTS_ROUTING_PROXY_SUBSCRIBE_PORT:          19030
