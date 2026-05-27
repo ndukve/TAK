@@ -165,7 +165,7 @@ echo "  Cert validity:     ${USER_CERT_VALIDITY_DAYS} days"
 [ -n "$INITIAL_USERS" ] && echo "  Initial users:     $INITIAL_USERS" \
                          || echo "  Initial users:     (none — add later)"
 echo "  Data dir:          $DATA_DIR"
-echo "  Ports:             CoT=$COT_PORT  SSL=$SSL_COT_PORT  API=$API_PORT  UI=5000"
+echo "  Ports:             CoT=$COT_PORT  SSL=$SSL_COT_PORT  API=$API_PORT  UI=8090"
 echo ""
 read -rp "$(echo -e "  ${BOLD}Proceed with installation?${NC} [Y/n]: ")" _CONFIRM
 [[ "${_CONFIRM:-Y}" =~ ^[Yy] ]] || { echo "Aborted."; exit 0; }
@@ -236,7 +236,7 @@ DATA_DIR="${DATA_DIR}"
 COT_PORT=${COT_PORT}
 SSL_COT_PORT=${SSL_COT_PORT}
 API_PORT=${API_PORT}
-UI_PORT=5000
+UI_PORT=8090
 
 FTS_CONNECTION_MESSAGE="Connected to FreeTAKServer"
 FTS_LOG_LEVEL="info"
@@ -297,7 +297,7 @@ echo -e "  Tailscale IP : ${BOLD}$TS_IP${NC}"
 echo "  CoT  (TCP)   : $TS_IP:$COT_PORT"
 echo "  CoT  (SSL)   : $TS_IP:$SSL_COT_PORT"
 echo "  REST API     : http://$TS_IP:$API_PORT"
-echo "  Web UI       : http://$TS_IP:5000"
+echo "  Web UI       : http://$TS_IP:8090"
 echo ""
 if [ -n "$INITIAL_USERS" ] && [ -f "$DATA_DIR/certs/ca.pem" ]; then
     echo "  Distribute packages to devices:"
