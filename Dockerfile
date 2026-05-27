@@ -32,12 +32,19 @@ EOF
 RUN apt-get update && apt-get install -y --no-install-recommends supervisor \
     && rm -rf /var/lib/apt/lists/*
 
-# Copy FreeTAKServer-UI Python packages from Stage 1
-COPY --from=ui-source --chown=freetak:freetak /home/freetak/.local /home/freetak/.local
+# Copy UI site-packages into an isolated staging area (NOT into freetak's .local —
+# the UI uses SQLAlchemy 1.3.x while FTS requires 2.x; mixing them breaks both)
+COPY --from=ui-source /home/freetak/.local/lib/python3.11/site-packages /tmp/ui-pkgs
 
-# Write ui-run.sh — resolves the user site path at runtime so it works
-# regardless of exact Python minor version in the image
-RUN printf '#!/bin/sh\nexec python3 "$(python3 -c '"'"'import site; print(site.getusersitepackages())'"'"')/FreeTAKServer-UI/run.py"\n' \
+# Build an isolated venv for the UI so its deps never touch FTS's deps
+RUN python3 -m venv /home/freetak/ui-venv \
+    && cp -a /tmp/ui-pkgs/. /home/freetak/ui-venv/lib/python3.11/site-packages/ \
+    && rm -rf /tmp/ui-pkgs \
+    && chown -R freetak:freetak /home/freetak/ui-venv
+
+# Write ui-run.sh using the venv's Python directly — avoids HOME/user-site issues
+# when supervisord switches from root to freetak
+RUN printf '#!/bin/sh\nVENV_PY=/home/freetak/ui-venv/bin/python3\nSITE=$($VENV_PY -c "import site; print(site.getsitepackages()[0])")\nexec $VENV_PY "${SITE}/FreeTAKServer-UI/run.py"\n' \
     > /home/freetak/ui-run.sh \
     && chmod +x /home/freetak/ui-run.sh \
     && chown freetak:freetak /home/freetak/ui-run.sh

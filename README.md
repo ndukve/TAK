@@ -85,20 +85,12 @@ This generates `/opt/fts/certs/clientPackages/myusername.zip`.
 
 Serve it:
 ```bash
-cd /opt/fts/certs/clientPackages
-python3 -c "
-import http.server
-class H(http.server.SimpleHTTPRequestHandler):
-    def guess_type(self, p):
-        if p.endswith('.p12'): return 'application/x-pkcs12'
-        return super().guess_type(p)
-http.server.HTTPServer(('0.0.0.0', 8888), H).serve_forever()
-"
+make serve-packages
 ```
 
-On iPhone, open Safari and go to:
+On your device, open Safari/browser and go to:
 ```
-http://192.168.10.102:8888/myusername.zip
+http://<TAILSCALE_IP>:8888/myusername.zip
 ```
 
 In iTAK: **Settings → Network → Servers → + → Upload Server Package**
