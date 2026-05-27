@@ -5,8 +5,9 @@ A fully reproducible FTS deployment with Tailscale, Docker, and iTAK support.
 ## Prerequisites
 
 - Proxmox host
-- Tailscale account with an auth key
-- iPhone with iTAK and Tailscale installed
+- A Tailscale tailnet already created at [login.tailscale.com](https://login.tailscale.com) — devices can only join an existing tailnet
+- Tailscale auth key
+- Android/iOS/Windows device with a TAK client (ATAK/iTAK/WinTAK) and Tailscale installed
 
 ---
 
