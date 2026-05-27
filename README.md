@@ -19,22 +19,22 @@ pveam update
 pveam download local ubuntu-22.04-standard_22.04-1_amd64.tar.zst
 
 # Create container (adjust VMID, IP, gateway as needed)
-pct create 102 local:vztmpl/ubuntu-22.04-standard_22.04-1_amd64.tar.zst \
-  --hostname freetakserver \
+pct create <VMID> local:vztmpl/ubuntu-22.04-standard_22.04-1_amd64.tar.zst \
+  --hostname <HOSTNAME> \
   --cores 2 \
   --memory 2048 \
   --swap 512 \
   --rootfs local-lvm:10 \
-  --net0 name=eth0,bridge=vmbr0,ip=192.168.10.102/24,gw=192.168.10.1 \
-  --nameserver 1.1.1.1 \
+  --net0 name=eth0,bridge=vmbr0,ip=<CT_IP>/24,gw=<GATEWAY_IP> \
+  --nameserver <DNS_IP> \
   --unprivileged 1 \
   --features nesting=1 \
   --start 1
 
 # Add TUN device for Tailscale
-echo "lxc.cgroup2.devices.allow: c 10:200 rwm" >> /etc/pve/lxc/102.conf
-echo "lxc.mount.entry: /dev/net/tun dev/net/tun none bind,create=file" >> /etc/pve/lxc/102.conf
-pct reboot 102
+echo "lxc.cgroup2.devices.allow: c 10:200 rwm" >> /etc/pve/lxc/<VMID>.conf
+echo "lxc.mount.entry: /dev/net/tun dev/net/tun none bind,create=file" >> /etc/pve/lxc/<VMID>.conf
+pct reboot <VMID>
 ```
 
 ---
@@ -42,7 +42,7 @@ pct reboot 102
 ## Step 2 — Enter Container and Install Tailscale
 
 ```bash
-pct enter 102
+pct enter <VMID>
 
 # Fix locale
 apt update && apt upgrade -y
