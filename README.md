@@ -135,3 +135,11 @@ docker compose build && docker compose up -d
 - Data persists in `/opt/fts` even if container is recreated
 - To change the IP, update `.env` and run `docker compose up -d`
 - Certificate password is set in `.env` (default: `atakatak`)
+
+## iTAK / iOS Known Issues
+
+**Low Power Mode drops the connection**
+iOS Low Power Mode aggressively suspends background network activity. With it enabled, iTAK will lose its server connection and require a manual reconnect. Turn off Low Power Mode when using iTAK.
+
+**Connection drops when iTAK is backgrounded**
+iOS suspends network sockets when apps go to the background. If iTAK is not in the foreground, the connection will eventually drop regardless of Low Power Mode. To reconnect: Settings → Network → Servers → tap the server → reconnect.
