@@ -152,14 +152,14 @@ if [ "$NEED_TS_AUTH" = true ]; then
     ok "Tailscale connected: $TS_IP"
 fi
 
-# ── Fix locale (prevents Ansible/Python locale errors) ───────────────────────
-if ! locale 2>/dev/null | grep -q "LANG=en_US.UTF-8"; then
-    info "Fixing locale..."
-    apt-get install -y locales > /dev/null 2>&1 || true
-    locale-gen en_US.UTF-8 > /dev/null 2>&1 || true
-    update-locale LANG=en_US.UTF-8 > /dev/null 2>&1 || true
-fi
+# ── Fix locale (prevents Python/apt locale errors on minimal LXC images) ──────
+info "Configuring locale..."
+apt-get install -y locales > /dev/null 2>&1
+echo "en_US.UTF-8 UTF-8" > /etc/locale.gen
+locale-gen > /dev/null 2>&1
+update-locale LANG=en_US.UTF-8 LC_ALL=en_US.UTF-8
 export LANG=en_US.UTF-8 LC_ALL=en_US.UTF-8
+ok "Locale set to en_US.UTF-8"
 
 # ── Install Docker ────────────────────────────────────────────────────────────
 if ! command -v docker &>/dev/null; then
