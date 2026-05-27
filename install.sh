@@ -23,11 +23,11 @@ ask() {
     local _var="$1" _q="$2" _default="${3:-}"
     local _ans
     if [ -n "$_default" ]; then
-        read -rp "$(echo -e "  ${BOLD}${_q}${NC} [${_default}]: ")" _ans
+        read -rp "$(echo -e "  ${BOLD}${_q}${NC}\n  ${CYAN}Default:${NC} ${_default}\n  → ")" _ans
         printf -v "$_var" '%s' "${_ans:-$_default}"
     else
         while true; do
-            read -rp "$(echo -e "  ${BOLD}${_q}${NC}: ")" _ans
+            read -rp "$(echo -e "  ${BOLD}${_q}${NC}\n  → ")" _ans
             [ -n "$_ans" ] && break
             echo "    (required)"
         done
@@ -39,11 +39,11 @@ ask_secret() {
     local _var="$1" _q="$2" _default="${3:-}"
     local _ans
     if [ -n "$_default" ]; then
-        read -rsp "$(echo -e "  ${BOLD}${_q}${NC} [${_default}]: ")" _ans; echo
+        read -rsp "$(echo -e "  ${BOLD}${_q}${NC}\n  ${CYAN}Default:${NC} ${_default}\n  → ")" _ans; echo
         printf -v "$_var" '%s' "${_ans:-$_default}"
     else
         while true; do
-            read -rsp "$(echo -e "  ${BOLD}${_q}${NC}: ")" _ans; echo
+            read -rsp "$(echo -e "  ${BOLD}${_q}${NC}\n  → ")" _ans; echo
             [ -n "$_ans" ] && break
             echo "    (required)"
         done
