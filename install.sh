@@ -146,7 +146,7 @@ if [ "$NEED_TS_AUTH" = true ]; then
         ok "Tailscale installed"
     fi
     info "Connecting to Tailscale..."
-    tailscale up --authkey="$TS_AUTHKEY" --hostname="$TS_HOSTNAME" \
+    tailscale up --authkey="$TS_AUTHKEY" --hostname="$TS_HOSTNAME" --accept-routes \
         || err "Tailscale connection failed. Check your auth key."
     TS_IP=$(tailscale ip -4) || err "Could not get Tailscale IP after connecting."
     ok "Tailscale connected: $TS_IP"

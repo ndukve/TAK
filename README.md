@@ -34,7 +34,7 @@ pct create 102 local:vztmpl/ubuntu-22.04-standard_22.04-1_amd64.tar.zst \
 # Add TUN device for Tailscale
 echo "lxc.cgroup2.devices.allow: c 10:200 rwm" >> /etc/pve/lxc/102.conf
 echo "lxc.mount.entry: /dev/net/tun dev/net/tun none bind,create=file" >> /etc/pve/lxc/102.conf
-pct restart 102
+pct reboot 102
 ```
 
 ---
@@ -53,7 +53,7 @@ curl -fsSL https://tailscale.com/install.sh | sh
 systemctl enable --now tailscaled
 
 # Connect to tailnet (use invite link on mobile, auth key on server)
-tailscale up --authkey=<YOUR_AUTH_KEY> --hostname=freetakserver
+tailscale up --authkey=<YOUR_AUTH_KEY> --hostname=freetakserver --accept-routes
 
 # Verify
 tailscale ip -4
@@ -64,16 +64,12 @@ tailscale ip -4
 ## Step 3 — Deploy FTS
 
 ```bash
-# Copy this entire fts-production folder to the container
-# Then run:
+apt install -y git
 
-cd /opt/fts-production
-chmod +x install.sh generate_user.sh
+git clone https://github.com/ndukve/TAK.git /opt/TAK
+cd /opt/TAK
 
-# Edit .env first if needed (IP auto-detected from Tailscale)
-nano .env
-
-# Run installer
+# Run installer — asks all required questions interactively
 ./install.sh
 ```
 
