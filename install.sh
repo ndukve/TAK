@@ -185,6 +185,17 @@ if [ "$NEED_TS_AUTH" = true ]; then
     stop_timer; ok "Tailscale connected: $TS_IP ($_elapsed)"
 fi
 
+# ── Fix DNS (minimal LXC images sometimes have no working nameserver) ─────────
+if ! getent hosts debian.org > /dev/null 2>&1; then
+    warn "DNS not resolving — adding fallback nameserver 1.1.1.1"
+    echo "nameserver 1.1.1.1" >> /etc/resolv.conf
+    if getent hosts debian.org > /dev/null 2>&1; then
+        ok "DNS fallback working"
+    else
+        err "DNS still not working after adding 1.1.1.1. Fix /etc/resolv.conf and retry."
+    fi
+fi
+
 # ── Fix locale (prevents Python/apt locale errors on minimal LXC images) ──────
 start_timer "Configuring locale..."
 apt-get install -y locales > /dev/null 2>&1
