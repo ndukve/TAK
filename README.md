@@ -75,7 +75,7 @@ cd /opt/TAK
 
 ---
 
-## Step 4 — Generate User Package for iTAK
+## Step 4 — Generate User Package
 
 ```bash
 ./generate_user.sh myusername
@@ -83,17 +83,24 @@ cd /opt/TAK
 
 This generates `/opt/fts/certs/clientPackages/myusername.zip`.
 
-Serve it:
-```bash
-make serve-packages
-```
+The package download server runs automatically. On your device, open a browser and go to:
 
-On your device, open Safari/browser and go to:
 ```
 http://<TAILSCALE_IP>:8888/myusername.zip
 ```
 
-In iTAK: **Settings → Network → Servers → + → Upload Server Package**
+Then import it in your TAK client:
+
+**iTAK (iOS)**
+Settings → Network → Servers → **+** → Upload Server Package → select the `.zip`
+
+**ATAK (Android)**
+Hamburger menu → Settings → Network Preferences → TAK Servers → **+** → Import from file → select the `.zip`
+
+**WinTAK (Windows)**
+Settings → Network Preferences → Server Connections → **+** → Import → select the `.zip`
+
+When prompted for a certificate password, enter the password you set during install (default: `atakatak`).
 
 ---
 
