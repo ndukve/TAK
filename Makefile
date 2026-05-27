@@ -1,4 +1,4 @@
-.PHONY: up down restart build logs logs-fts logs-ui status \
+.PHONY: up down restart build update logs logs-fts logs-ui status \
         add-user list-packages serve-packages shell
 
 ENV_FILE  := .env
@@ -9,6 +9,10 @@ PKG_DIR   := $(DATA_DIR)/certs/clientPackages
 
 build:
 	docker compose --env-file $(ENV_FILE) build
+
+## Pull latest config from git and rebuild the container.
+update:
+	@chmod +x ./update.sh && ./update.sh
 
 up:
 	@[ -f $(ENV_FILE) ] || { echo "Run './install.sh' first"; exit 1; }

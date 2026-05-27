@@ -53,7 +53,10 @@ RUN printf '#!/bin/sh\nVENV_PY=/home/freetak/ui-venv/bin/python3\nSITE=$($VENV_P
 # (the bind-mounted host dir must be 777 too; done by install.sh)
 RUN mkdir -p /opt/fts && chmod -R 777 /opt/fts
 
-# Supervisord config — manages fts and fts-ui as separate processes
+# Package download server script
+COPY scripts/serve_packages.py /home/freetak/scripts/serve_packages.py
+
+# Supervisord config — manages fts, fts-ui, and pkg-server
 COPY supervisord.conf /etc/supervisor/conf.d/fts-all.conf
 
 # supervisord must run as root so it can setuid to freetak for child processes

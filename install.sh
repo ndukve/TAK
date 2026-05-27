@@ -311,9 +311,10 @@ echo "  REST API     : http://$TS_IP:$API_PORT"
 echo "  Web UI       : http://$TS_IP:8090"
 echo ""
 if [ -n "$INITIAL_USERS" ] && [ -f "$DATA_DIR/certs/ca.pem" ]; then
-    echo "  Distribute packages to devices:"
-    echo -e "    ${BOLD}make serve-packages${NC}  (starts HTTP server on port 8888)"
-    echo "    Then on device: http://$TS_IP:8888/<username>.zip"
+    echo "  Download packages on device:"
+    for u in $INITIAL_USERS; do
+        echo "    http://$TS_IP:8888/${u}.zip"
+    done
     echo ""
 fi
 echo "  Add users    : ./generate_user.sh <username>"
