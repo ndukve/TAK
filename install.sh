@@ -77,8 +77,8 @@ start_timer() {
 
 stop_timer() {
     [ -n "$_timer_pid" ] && {
-        kill "$_timer_pid" 2>/dev/null
-        wait "$_timer_pid" 2>/dev/null
+        kill "$_timer_pid" 2>/dev/null || true
+        wait "$_timer_pid" 2>/dev/null || true
         _timer_pid=""
     }
     printf "\r\033[K"
@@ -202,7 +202,7 @@ apt-get install -y locales > /dev/null 2>&1
 echo "en_US.UTF-8 UTF-8" > /etc/locale.gen
 locale-gen > /dev/null 2>&1
 update-locale LANG=en_US.UTF-8 LC_ALL=en_US.UTF-8 2>/dev/null || true
-export LANG=en_US.UTF-8 LC_ALL=en_US.UTF-8
+export LANG=en_US.UTF-8 LC_ALL=en_US.UTF-8 2>/dev/null || true
 stop_timer; ok "Locale set to en_US.UTF-8 ($_elapsed)"
 
 # ── Install Docker ────────────────────────────────────────────────────────────
