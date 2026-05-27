@@ -190,7 +190,7 @@ start_timer "Configuring locale..."
 apt-get install -y locales > /dev/null 2>&1
 echo "en_US.UTF-8 UTF-8" > /etc/locale.gen
 locale-gen > /dev/null 2>&1
-update-locale LANG=en_US.UTF-8 LC_ALL=en_US.UTF-8
+update-locale LANG=en_US.UTF-8 LC_ALL=en_US.UTF-8 2>/dev/null || true
 export LANG=en_US.UTF-8 LC_ALL=en_US.UTF-8
 stop_timer; ok "Locale set to en_US.UTF-8 ($_elapsed)"
 
@@ -236,8 +236,6 @@ DATA_DIR="${DATA_DIR}"
 COT_PORT=${COT_PORT}
 SSL_COT_PORT=${SSL_COT_PORT}
 API_PORT=${API_PORT}
-WEB_PORT=${WEB_PORT}
-SSL_WEB_PORT=8443
 UI_PORT=5000
 
 FTS_CONNECTION_MESSAGE="Connected to FreeTAKServer"
