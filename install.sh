@@ -288,6 +288,16 @@ if [ -f "$DATA_DIR/certs/ca.pem" ]; then stop_timer; ok "Certificates ready ($_e
 # Ensure permissions after cert generation
 chmod -R 777 "$DATA_DIR" 2>/dev/null || true
 
+# ── Sync Web UI API token into FTS database ───────────────────────────────────
+# FTS stores the API token in SystemUser.token; it must match FTS_API_KEY from
+# .env so the Web UI can authenticate against the REST API on login.
+_raw_api_key=$(grep '^FTS_API_KEY=' "$ENV_FILE" | cut -d= -f2)
+if [ -n "$_raw_api_key" ]; then
+    docker exec -e _K="$_raw_api_key" freetakserver python3 -c \
+        "import sqlite3,os; c=sqlite3.connect('/opt/fts/FTSDataBase.db'); c.execute(\"UPDATE SystemUser SET token='\"+os.environ['_K']+\"' WHERE name='admin'\"); c.commit()" \
+        2>/dev/null && ok "Web UI API token synced" || warn "Could not sync Web UI token (retry: docker compose restart)"
+fi
+
 # ── Generate initial user packages ────────────────────────────────────────────
 if [ -n "$INITIAL_USERS" ] && [ -f "$DATA_DIR/certs/ca.pem" ]; then
     info "Generating TAK packages for: $INITIAL_USERS"
