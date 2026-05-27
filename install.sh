@@ -53,6 +53,40 @@ ask_secret() {
 
 gen_secret() { python3 -c "import secrets; print(secrets.token_urlsafe(32))"; }
 
+# ── Timer helpers ─────────────────────────────────────────────────────────────
+_timer_pid=""; _timer_start=0; _elapsed="0s"
+trap '[ -n "$_timer_pid" ] && kill "$_timer_pid" 2>/dev/null' EXIT
+
+start_timer() {
+    local label="$1" cols start
+    cols=$(tput cols 2>/dev/null || echo 80)
+    start=$(date +%s)
+    _timer_start=$start
+    (
+        while true; do
+            local elapsed mm ss
+            elapsed=$(( $(date +%s) - start ))
+            mm=$(( elapsed / 60 )); ss=$(( elapsed % 60 ))
+            printf "\r  \033[36m[*]\033[0m %-$(( cols - 14 ))s \033[1m%02d:%02d\033[0m" \
+                "$label" "$mm" "$ss"
+            sleep 1
+        done
+    ) &
+    _timer_pid=$!
+}
+
+stop_timer() {
+    [ -n "$_timer_pid" ] && {
+        kill "$_timer_pid" 2>/dev/null
+        wait "$_timer_pid" 2>/dev/null
+        _timer_pid=""
+    }
+    printf "\r\033[K"
+    local elapsed=$(( $(date +%s) - _timer_start ))
+    local mm=$(( elapsed / 60 )) ss=$(( elapsed % 60 ))
+    [ "$mm" -gt 0 ] && _elapsed="${mm}m ${ss}s" || _elapsed="${ss}s"
+}
+
 sysctl_set() {
     local key="$1" val="$2"
     if grep -qE "^${key}=" /etc/sysctl.conf 2>/dev/null; then
@@ -119,7 +153,6 @@ ask DATA_DIR          "Host data directory (certs, DB, packages)" "/opt/fts"
 ask COT_PORT          "CoT TCP port"  "8087"
 ask SSL_COT_PORT      "CoT SSL port"  "8089"
 ask API_PORT          "REST API port" "19023"
-ask WEB_PORT          "Web UI port"   "8080"
 
 # ── Confirm ───────────────────────────────────────────────────────────────────
 echo ""
@@ -132,7 +165,7 @@ echo "  Cert validity:     ${USER_CERT_VALIDITY_DAYS} days"
 [ -n "$INITIAL_USERS" ] && echo "  Initial users:     $INITIAL_USERS" \
                          || echo "  Initial users:     (none — add later)"
 echo "  Data dir:          $DATA_DIR"
-echo "  Ports:             CoT=$COT_PORT  SSL=$SSL_COT_PORT  API=$API_PORT  Web=$WEB_PORT"
+echo "  Ports:             CoT=$COT_PORT  SSL=$SSL_COT_PORT  API=$API_PORT  UI=5000"
 echo ""
 read -rp "$(echo -e "  ${BOLD}Proceed with installation?${NC} [Y/n]: ")" _CONFIRM
 [[ "${_CONFIRM:-Y}" =~ ^[Yy] ]] || { echo "Aborted."; exit 0; }
@@ -140,33 +173,33 @@ read -rp "$(echo -e "  ${BOLD}Proceed with installation?${NC} [Y/n]: ")" _CONFIR
 # ── Install Tailscale (if needed) ─────────────────────────────────────────────
 if [ "$NEED_TS_AUTH" = true ]; then
     if ! command -v tailscale &>/dev/null; then
-        info "Installing Tailscale..."
+        start_timer "Installing Tailscale..."
         curl -fsSL https://tailscale.com/install.sh | sh > /dev/null 2>&1
         systemctl enable --now tailscaled > /dev/null 2>&1 || true
-        ok "Tailscale installed"
+        stop_timer; ok "Tailscale installed ($_elapsed)"
     fi
-    info "Connecting to Tailscale..."
+    start_timer "Connecting to Tailscale..."
     tailscale up --authkey="$TS_AUTHKEY" --hostname="$TS_HOSTNAME" --accept-routes \
-        || err "Tailscale connection failed. Check your auth key."
+        || { stop_timer; err "Tailscale connection failed. Check your auth key."; }
     TS_IP=$(tailscale ip -4) || err "Could not get Tailscale IP after connecting."
-    ok "Tailscale connected: $TS_IP"
+    stop_timer; ok "Tailscale connected: $TS_IP ($_elapsed)"
 fi
 
 # ── Fix locale (prevents Python/apt locale errors on minimal LXC images) ──────
-info "Configuring locale..."
+start_timer "Configuring locale..."
 apt-get install -y locales > /dev/null 2>&1
 echo "en_US.UTF-8 UTF-8" > /etc/locale.gen
 locale-gen > /dev/null 2>&1
 update-locale LANG=en_US.UTF-8 LC_ALL=en_US.UTF-8
 export LANG=en_US.UTF-8 LC_ALL=en_US.UTF-8
-ok "Locale set to en_US.UTF-8"
+stop_timer; ok "Locale set to en_US.UTF-8 ($_elapsed)"
 
 # ── Install Docker ────────────────────────────────────────────────────────────
 if ! command -v docker &>/dev/null; then
-    info "Installing Docker..."
+    start_timer "Installing Docker..."
     curl -fsSL https://get.docker.com | sh > /dev/null 2>&1
     systemctl enable --now docker > /dev/null 2>&1
-    ok "Docker installed"
+    stop_timer; ok "Docker installed ($_elapsed)"
 else
     ok "Docker $(docker --version | awk '{print $3}' | tr -d ,) already installed"
 fi
@@ -220,27 +253,28 @@ ok ".env written"
 # ── Build & start ─────────────────────────────────────────────────────────────
 cd "$SCRIPT_DIR"
 
-info "Building FTS Docker image (baking stability patches)..."
+start_timer "Building FTS Docker image..."
 docker compose --env-file "$ENV_FILE" build --quiet
-ok "Image built"
+stop_timer; ok "Image built ($_elapsed)"
 
-info "Starting containers..."
+start_timer "Starting containers..."
 docker compose --env-file "$ENV_FILE" up -d
-ok "Containers started"
+stop_timer; ok "Containers started ($_elapsed)"
 
 # ── Wait for FTS to generate its CA certificates ──────────────────────────────
-info "Waiting for FTS to generate CA certificate..."
-MAX_WAIT=120; elapsed=0
+start_timer "Waiting for FTS to generate CA certificate..."
+MAX_WAIT=180; _cert_wait=0
 until [ -f "$DATA_DIR/certs/ca.pem" ] && [ -f "$DATA_DIR/certs/server.p12" ]; do
-    if [ $elapsed -ge $MAX_WAIT ]; then
+    if [ $_cert_wait -ge $MAX_WAIT ]; then
+        stop_timer
         warn "Timed out after ${MAX_WAIT}s — FTS may still be starting."
         warn "Check logs: docker logs freetakserver"
         warn "Then add users: ./generate_user.sh <username>"
         break
     fi
-    sleep 3; elapsed=$((elapsed + 3))
+    sleep 3; _cert_wait=$((_cert_wait + 3))
 done
-[ -f "$DATA_DIR/certs/ca.pem" ] && ok "Certificates ready (${elapsed}s)" || true
+if [ -f "$DATA_DIR/certs/ca.pem" ]; then stop_timer; ok "Certificates ready ($_elapsed)"; fi
 
 # Ensure permissions after cert generation
 chmod -R 777 "$DATA_DIR" 2>/dev/null || true
@@ -265,7 +299,7 @@ echo -e "  Tailscale IP : ${BOLD}$TS_IP${NC}"
 echo "  CoT  (TCP)   : $TS_IP:$COT_PORT"
 echo "  CoT  (SSL)   : $TS_IP:$SSL_COT_PORT"
 echo "  REST API     : http://$TS_IP:$API_PORT"
-echo "  Web UI       : http://$TS_IP:$WEB_PORT"
+echo "  Web UI       : http://$TS_IP:5000"
 echo ""
 if [ -n "$INITIAL_USERS" ] && [ -f "$DATA_DIR/certs/ca.pem" ]; then
     echo "  Distribute packages to devices:"

@@ -112,8 +112,7 @@ In iTAK: **Settings → Network → Servers → + → Upload Server Package**
 | 8087  | TCP      | CoT (TAK clients)|
 | 8089  | TCP/SSL  | SSL CoT          |
 | 19023 | TCP      | REST API         |
-| 8080  | HTTP     | Web UI           |
-| 8443  | HTTPS    | SSL Web UI       |
+| 5000  | HTTP     | Web UI (FreeTAKServer-UI) |
 
 ---
 
