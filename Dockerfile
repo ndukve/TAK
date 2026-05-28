@@ -8,7 +8,7 @@
 FROM ghcr.io/freetakteam/ui:latest AS ui-source
 
 # Stage 2: build on patched FTS base
-FROM ghcr.io/freetakteam/freetakserver:v2.2.1
+FROM ghcr.io/freetakteam/freetakserver:latest
 
 USER root
 
@@ -26,6 +26,48 @@ c = c.replace('self.MAX_RECEPTION_ITERATIONS = 4',       'self.MAX_RECEPTION_ITE
 with open(f, 'w') as fh:
     fh.write(c)
 print('Patched ReceiveConnectionsConstants.py')
+EOF
+
+# Patch 3: Wrap put_mission in try/except — unhandled exceptions crash the FTS process
+RUN python3 - <<'EOF'
+import re
+
+def patch_put_mission(path):
+    try:
+        with open(path) as f:
+            src = f.read()
+    except FileNotFoundError:
+        print(f'Skipping (not found): {path}')
+        return
+    if 'put_mission_patched' in src:
+        print(f'Already patched: {path}')
+        return
+    lines = src.splitlines(keepends=True)
+    out = []
+    i = 0
+    while i < len(lines):
+        m = re.match(r'^(\s*)def put_mission\(', lines[i])
+        if m:
+            fn_ind = m.group(1)
+            body_ind = fn_ind + '    '
+            out.append(lines[i]); i += 1
+            body = []
+            while i < len(lines) and (not lines[i].strip() or lines[i].startswith(body_ind)):
+                body.append(lines[i]); i += 1
+            out.append(body_ind + 'try:  # put_mission_patched\n')
+            for bl in body:
+                out.append('    ' + bl if bl.strip() else bl)
+            out.append(body_ind + 'except Exception as _e:\n')
+            out.append(body_ind + '    import traceback; traceback.print_exc()\n')
+            out.append(body_ind + '    return str(_e), 500\n')
+        else:
+            out.append(lines[i]); i += 1
+    with open(path, 'w') as f:
+        f.writelines(out)
+    print(f'Patched: {path}')
+
+for svc in ['http_tak_api_service', 'https_tak_api_service']:
+    patch_put_mission(f'/home/freetak/FreeTAKServer/services/{svc}/blueprints/mission_blueprint.py')
 EOF
 
 # Install supervisor to run FTS + UI as separate processes in one container
