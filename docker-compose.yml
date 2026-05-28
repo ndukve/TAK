@@ -12,6 +12,7 @@ services:
       - "${API_PORT:-19023}:19023"
       - "${UI_PORT:-8090}:5000"
       - "8888:8888"
+      - "8080:8080"
     volumes:
       - ${DATA_DIR:-/opt/fts}:/opt/fts/
     environment:

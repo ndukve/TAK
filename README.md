@@ -110,6 +110,7 @@ When prompted for a certificate password, enter the password you set during inst
 |-------|----------|------------------|
 | 8087  | TCP      | CoT (TAK clients)|
 | 8089  | TCP/SSL  | SSL CoT          |
+| 8080  | HTTP     | Marti sync API (file/data package sharing) |
 | 19023 | TCP      | REST API         |
 | 8090  | HTTP     | Web UI (FreeTAKServer-UI) |
 
