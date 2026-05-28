@@ -102,6 +102,31 @@ for svc in ['http_tak_api_service', 'https_tak_api_service']:
     patch_put_mission(f'/home/freetak/FreeTAKServer/services/{svc}/blueprints/mission_blueprint.py')
 PYEOF
 
+# Patch 5: Fix enterprise sync upload — iTAK sends 'uid' not 'hash' in the URL,
+# so objectuid was always None and metadata.hash was null in the response,
+# causing iTAK to retry 3× and show "unknown error" despite data being stored.
+RUN python3 - <<'EOF'
+paths = [
+    '/home/freetak/FreeTAKServer/services/http_tak_api_service/blueprints/enterprise_sync_blueprint.py',
+    '/home/freetak/FreeTAKServer/services/https_tak_api_service/blueprints/enterprise_sync_blueprint.py',
+]
+for path in paths:
+    try:
+        with open(path) as f: src = f.read()
+        src = src.replace(
+            '"objectuid": request.args.get(\'hash\'), "tool"',
+            '"objectuid": request.args.get(\'hash\') or request.args.get(\'uid\'), "tool"'
+        )
+        src = src.replace(
+            '"Hash": metadata.hash,',
+            '"Hash": metadata.hash or __import__("hashlib").sha256(data).hexdigest(),'
+        )
+        with open(path, 'w') as f: f.write(src)
+        print(f'Patched: {path}')
+    except Exception as e:
+        print(f'Error: {path}: {e}')
+EOF
+
 # Install supervisor to run FTS + UI as separate processes in one container
 RUN apt-get update && apt-get install -y --no-install-recommends supervisor \
     && rm -rf /var/lib/apt/lists/*
