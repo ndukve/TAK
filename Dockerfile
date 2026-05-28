@@ -8,7 +8,7 @@
 FROM ghcr.io/freetakteam/ui:latest AS ui-source
 
 # Stage 2: build on patched FTS base
-FROM ghcr.io/freetakteam/freetakserver:latest
+FROM ghcr.io/freetakteam/freetakserver:v2.2.1
 
 USER root
 
