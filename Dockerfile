@@ -49,11 +49,15 @@ for dirpath, _, filenames in os.walk('/home/freetak/FreeTAKServer'):
         if not classes or expected in classes:
             continue
         facade_cls = next((c for c in classes if c.endswith('Facade')), classes[0])
+        # Subclass wrapper: digitalpy passes 4 constructor args but FTS facades take none
+        wrapper = (f'\nclass {expected}({facade_cls}):\n'
+                   f'    def __init__(self, *args, **kwargs):\n'
+                   f'        {facade_cls}.__init__(self)\n')
         with open(fpath, 'a') as f:
-            f.write(f'\n{expected} = {facade_cls}\n')
-        print(f'  {os.path.basename(dirpath)}: {facade_cls} -> {expected}')
+            f.write(wrapper)
+        print(f'  {os.path.basename(dirpath)}: created {expected}({facade_cls}) wrapper')
         count += 1
-print(f'Added {count} facade aliases')
+print(f'Added {count} facade wrappers')
 EOF
 
 # Patch 4: Wrap put_mission in try/except — unhandled exceptions crash the FTS process
