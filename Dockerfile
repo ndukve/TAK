@@ -117,9 +117,10 @@ for path in paths:
             '"objectuid": request.args.get(\'hash\'), "tool"',
             '"objectuid": request.args.get(\'hash\') or request.args.get(\'uid\'), "tool"'
         )
+        # Always return SHA-256 of content — metadata.hash is a UUID, not a hash
         src = src.replace(
             '"Hash": metadata.hash,',
-            '"Hash": metadata.hash or __import__("hashlib").sha256(data).hexdigest(),'
+            '"Hash": __import__("hashlib").sha256(data).hexdigest(),'
         )
         with open(path, 'w') as f: f.write(src)
         print(f'Patched: {path}')
