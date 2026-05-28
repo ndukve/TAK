@@ -154,21 +154,18 @@ This pulls from GitHub, rebuilds the image, and restarts the container. Your `.e
 - To change the IP, update `.env` and run `docker compose up -d`
 - Certificate password is set in `.env` (default: `atakatak`)
 
-## iTAK / iOS known issues
+## TAK Client Known Issues
 
-**Low Power Mode drops the connection**
-iOS Low Power Mode aggressively suspends background network activity. With it enabled, iTAK will lose its server connection and require a manual reconnect. Turn off Low Power Mode when using iTAK.
+**Battery saving drops the connection (iOS and Android)**
+Any battery saving mode — iOS Low Power Mode or Android Battery Saver — aggressively suspends background network activity and will drop the TAK connection. Turn these off when using iTAK or ATAK.
 
-**Connection drops when iTAK is backgrounded**
-iOS suspends network sockets when apps go to the background. If iTAK is not in the foreground, the connection will eventually drop regardless of Low Power Mode. To reconnect: Settings → Network → Servers → tap the server → reconnect.
-
-## ATAK / Android known issues
-
-**Battery Saver and adaptive battery drop the connection**
-Android Battery Saver and adaptive battery optimization kill background network activity, dropping the ATAK connection. Turn off Battery Saver when using ATAK.
-
-To prevent Android from killing ATAK or Tailscale in the background, set both apps to unrestricted battery usage:
+On Android, also set both ATAK and Tailscale to unrestricted battery usage (manufacturers like Xiaomi/Poco, Samsung, and OnePlus add their own battery management on top of Android's):
 - Settings → Apps → ATAK → Battery → **Unrestricted**
 - Settings → Apps → Tailscale → Battery → **Unrestricted**
 
-Tailscale in particular must be unrestricted — if Android suspends the Tailscale VPN, the entire connection to the server drops regardless of ATAK's state.
+Tailscale in particular must be unrestricted — if the VPN is suspended, the connection to the server drops entirely regardless of what ATAK does.
+
+**Connection drops when the app is backgrounded**
+Both iOS and Android suspend network sockets when apps go to the background. Keep iTAK/ATAK in the foreground during active use. To reconnect manually:
+- **iTAK**: Settings → Network → Servers → tap the server → reconnect
+- **ATAK**: Settings → Network Preferences → TAK Servers → tap the server → reconnect
