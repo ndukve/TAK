@@ -161,3 +161,14 @@ iOS Low Power Mode aggressively suspends background network activity. With it en
 
 **Connection drops when iTAK is backgrounded**
 iOS suspends network sockets when apps go to the background. If iTAK is not in the foreground, the connection will eventually drop regardless of Low Power Mode. To reconnect: Settings → Network → Servers → tap the server → reconnect.
+
+## ATAK / Android known issues
+
+**Battery Saver and adaptive battery drop the connection**
+Android Battery Saver and adaptive battery optimization kill background network activity, dropping the ATAK connection. Turn off Battery Saver when using ATAK.
+
+To prevent Android from killing ATAK or Tailscale in the background, set both apps to unrestricted battery usage:
+- Settings → Apps → ATAK → Battery → **Unrestricted**
+- Settings → Apps → Tailscale → Battery → **Unrestricted**
+
+Tailscale in particular must be unrestricted — if Android suspends the Tailscale VPN, the entire connection to the server drops regardless of ATAK's state.
