@@ -47,8 +47,8 @@ services:
 
       # ── Performance ──────────────────────────────────────────────────
       FTS_OPTIMIZE_API:          "True"
-      FTS_DATA_RECEPTION_BUFFER: 1024
-      FTS_MAX_RECEPTION_TIME:    4
+      FTS_DATA_RECEPTION_BUFFER: 65535
+      FTS_MAX_RECEPTION_TIME:    60
       FTS_NUM_ROUTING_WORKERS:   3
       FTS_COT_TO_DB:             "True"
       FTS_MAINLOOP_DELAY:        100
