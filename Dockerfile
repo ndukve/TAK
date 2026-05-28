@@ -28,8 +28,36 @@ with open(f, 'w') as fh:
 print('Patched ReceiveConnectionsConstants.py')
 EOF
 
-# Patch 3: Wrap put_mission in try/except — unhandled exceptions crash the FTS process
+# Patch 3: Add facade class aliases so digitalpy can register FTS components
+# digitalpy expects PascalCase(dir_name) but FTS classes are named e.g. FTSCoreFacade
 RUN python3 - <<'EOF'
+import re, os
+
+def to_pascal(s):
+    return ''.join(w.capitalize() for w in s.replace('-','_').split('_'))
+
+count = 0
+for dirpath, _, filenames in os.walk('/home/freetak/FreeTAKServer'):
+    for fname in filenames:
+        if not fname.endswith('_facade.py'):
+            continue
+        fpath = os.path.join(dirpath, fname)
+        expected = to_pascal(os.path.basename(dirpath))
+        with open(fpath) as f:
+            content = f.read()
+        classes = re.findall(r'^class (\w+)', content, re.MULTILINE)
+        if not classes or expected in classes:
+            continue
+        facade_cls = next((c for c in classes if c.endswith('Facade')), classes[0])
+        with open(fpath, 'a') as f:
+            f.write(f'\n{expected} = {facade_cls}\n')
+        print(f'  {os.path.basename(dirpath)}: {facade_cls} -> {expected}')
+        count += 1
+print(f'Added {count} facade aliases')
+EOF
+
+# Patch 4: Wrap put_mission in try/except — unhandled exceptions crash the FTS process
+RUN python3 - <<'PYEOF'
 import re
 
 def patch_put_mission(path):
@@ -68,7 +96,7 @@ def patch_put_mission(path):
 
 for svc in ['http_tak_api_service', 'https_tak_api_service']:
     patch_put_mission(f'/home/freetak/FreeTAKServer/services/{svc}/blueprints/mission_blueprint.py')
-EOF
+PYEOF
 
 # Install supervisor to run FTS + UI as separate processes in one container
 RUN apt-get update && apt-get install -y --no-install-recommends supervisor \
