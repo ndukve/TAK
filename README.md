@@ -1,13 +1,12 @@
-# FreeTAKServer Production Setup
+# TAK Server Production Setup
 
-A fully reproducible FTS deployment with Tailscale, Docker, and iTAK support.
+A fully reproducible official Java TAK Server deployment with NetBird, Docker, and ATAK/iTAK/WinTAK support.
 
 ## Prerequisites
 
 - Proxmox host
-- A Tailscale tailnet already created at [login.tailscale.com](https://login.tailscale.com) — devices can only join an existing tailnet
-- Tailscale auth key
-- Android/iOS/Windows device with a TAK client (ATAK/iTAK/WinTAK) and Tailscale installed
+- NetBird account at [app.netbird.io](https://app.netbird.io) (optional — you can also use a plain IP)
+- Android/iOS/Windows device with a TAK client (ATAK/iTAK/WinTAK)
 
 ---
 
@@ -20,51 +19,27 @@ pveam download local ubuntu-22.04-standard_22.04-1_amd64.tar.zst
 
 # Create container (adjust VMID, IP, gateway as needed)
 pct create <VMID> local:vztmpl/ubuntu-22.04-standard_22.04-1_amd64.tar.zst \
-  --hostname <HOSTNAME> \
-  --cores 2 \
-  --memory 2048 \
-  --swap 512 \
-  --rootfs local-lvm:10 \
+  --hostname takserver \
+  --cores 4 \
+  --memory 6144 \
+  --swap 1024 \
+  --rootfs local-lvm:20 \
   --net0 name=eth0,bridge=vmbr0,ip=<CT_IP>/24,gw=<GATEWAY_IP> \
   --nameserver <DNS_IP> \
   --unprivileged 1 \
   --features nesting=1 \
   --start 1
-
-# Add TUN device for Tailscale
-echo "lxc.cgroup2.devices.allow: c 10:200 rwm" >> /etc/pve/lxc/<VMID>.conf
-echo "lxc.mount.entry: /dev/net/tun dev/net/tun none bind,create=file" >> /etc/pve/lxc/<VMID>.conf
-pct reboot <VMID>
 ```
 
 ---
 
-## Step 2 — Enter Container and Install Tailscale
+## Step 2 — Enter Container and Deploy
 
 ```bash
 pct enter <VMID>
 
-# Fix locale
 apt update && apt upgrade -y
-apt install -y curl
-
-# Install Tailscale
-curl -fsSL https://tailscale.com/install.sh | sh
-systemctl enable --now tailscaled
-
-# Connect to tailnet (use invite link on mobile, auth key on server)
-tailscale up --authkey=<YOUR_AUTH_KEY> --hostname=freetakserver --accept-routes
-
-# Verify
-tailscale ip -4
-```
-
----
-
-## Step 3 — Deploy FTS
-
-```bash
-apt install -y git
+apt install -y git curl
 
 git clone https://github.com/ndukve/TAK.git /opt/TAK
 cd /opt/TAK
@@ -73,23 +48,29 @@ cd /opt/TAK
 ./install.sh
 ```
 
+The installer will:
+
+1. Detect NetBird (`wt0` interface) or offer to install it / accept a manual IP
+2. Prompt for certificate metadata (country, state, city, org)
+3. Auto-generate all secrets (Postgres passwords, cert passwords)
+4. Build the Docker image and start all 7 services
+5. `firstrun.sh` runs automatically inside the initialization container — generates certs and initialises the database schema (~2 min)
+
 ---
 
-## Step 4 — Generate User Package
+## Step 3 — Generate User Package
 
 ```bash
 ./generate_user.sh myusername
 ```
 
-This generates `/opt/fts/certs/clientPackages/myusername.zip`.
-
-The package download server runs automatically. On your device, open a browser and go to:
+Then on your device, open a browser and download the package:
 
 ```
-http://<TAILSCALE_IP>:8888/myusername.zip
+http://<SERVER_ADDRESS>:8888/myusername.zip
 ```
 
-Then import it in your TAK client:
+Import it in your TAK client:
 
 **iTAK (iOS)**
 Settings → Network → Servers → **+** → Upload Server Package → select the `.zip`
@@ -100,40 +81,45 @@ Hamburger menu → Settings → Network Preferences → TAK Servers → **+** �
 **WinTAK (Windows)**
 Settings → Network Preferences → Server Connections → **+** → Import → select the `.zip`
 
-When prompted for a certificate password, enter the password you set during install (default: `atakatak`).
-
 ---
 
 ## Ports
 
-| Port  | Protocol | Purpose          |
-|-------|----------|------------------|
-| 8087  | TCP      | CoT (TAK clients)|
-| 8089  | TCP/SSL  | SSL CoT          |
-| 8080  | HTTP     | Marti sync API (file/data package sharing)  |
-| 8443  | HTTPS    | Marti sync API (iOS prefers HTTPS)          |
-| 19023 | TCP      | REST API         |
-| 8090  | HTTP     | Web UI (FreeTAKServer-UI) |
+| Port | Protocol | Purpose                              |
+|------|----------|--------------------------------------|
+| 8089 | TCP/SSL  | CoT (TAK clients — primary)          |
+| 8443 | HTTPS    | Marti API (iOS prefers HTTPS)        |
+| 8888 | HTTP     | Client package download server       |
 
 ---
 
 ## Management
 
 ```bash
-# View logs
-docker logs freetakserver -f
+# View all logs
+docker compose --env-file takserver.env logs -f
 
-# Restart
-docker compose restart
+# View database logs only
+make logs-db
 
-# Stop
-docker compose down
+# Restart all services
+docker compose --env-file takserver.env restart
+
+# Stop all services
+docker compose --env-file takserver.env down
 
 # Add new user
 ./generate_user.sh <username>
+# or: make add-user USERNAME=<username>
 
-# Rebuild after config changes
-docker compose --env-file .env build --quiet && docker compose --env-file .env up -d
+# List generated packages
+make list-packages
+
+# Service status
+make status
+
+# Shell into config container
+make shell
 ```
 
 ### Updating
@@ -145,27 +131,24 @@ Pull the latest config from git and rebuild in one step:
 # or: make update
 ```
 
-This pulls from GitHub, rebuilds the image, and restarts the container. Your `.env` and data in `/opt/fts` are never touched.
+This pulls from GitHub, rebuilds the image, and restarts containers. Your `takserver.env` and data volumes are never touched.
 
 ---
 
 ## Notes
 
-- All patches (timeout fixes) are baked into the Dockerfile
-- Data persists in `/opt/fts` even if container is recreated
-- To change the IP, update `.env` and run `docker compose up -d`
-- Certificate password is set in `.env` (default: `atakatak`)
+- All secrets are stored only in `takserver.env` — never committed to git
+- Data persists in Docker volumes (`takserver_data`, `takdb_data`) even if containers are recreated
+- To change the server address, update `TAK_SERVER_ADDRESS` in `takserver.env` and run `docker compose --env-file takserver.env up -d`
+- To reset certificates and re-run first-time init, remove the `takserver_data` volume: `docker compose down -v && docker compose --env-file takserver.env up -d`
 
 ## TAK Client Known Issues
 
 **Battery saving drops the connection (iOS and Android)**
 Any battery saving mode — iOS Low Power Mode or Android Battery Saver — aggressively suspends background network activity and will drop the TAK connection. Turn these off when using iTAK or ATAK.
 
-On Android, also set both ATAK and Tailscale to unrestricted battery usage (manufacturers like Xiaomi/Poco, Samsung, and OnePlus add their own battery management on top of Android's):
+On Android, also set both ATAK to unrestricted battery usage:
 - Settings → Apps → ATAK → Battery → **Unrestricted**
-- Settings → Apps → Tailscale → Battery → **Unrestricted**
-
-Tailscale in particular must be unrestricted — if the VPN is suspended, the connection to the server drops entirely regardless of what ATAK does.
 
 **Connection drops when the app is backgrounded**
 Both iOS and Android suspend network sockets when apps go to the background. Keep iTAK/ATAK in the foreground during active use. To reconnect manually:

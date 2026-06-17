@@ -1,18 +1,12 @@
-.PHONY: up down restart build update logs logs-fts logs-ui status \
-        add-user list-packages serve-packages shell
+.PHONY: build up down restart update logs logs-db status shell \
+        add-user list-packages serve-packages
 
-ENV_FILE  := .env
-DATA_DIR  := $(shell grep '^DATA_DIR=' $(ENV_FILE) 2>/dev/null | cut -d= -f2 || echo /opt/fts)
-PKG_DIR   := $(DATA_DIR)/certs/clientPackages
+ENV_FILE := takserver.env
 
 # ── Lifecycle ─────────────────────────────────────────────────────────────────
 
 build:
 	docker compose --env-file $(ENV_FILE) build
-
-## Pull latest config from git and rebuild the container.
-update:
-	@chmod +x ./update.sh && ./update.sh
 
 up:
 	@[ -f $(ENV_FILE) ] || { echo "Run './install.sh' first"; exit 1; }
@@ -24,7 +18,10 @@ down:
 restart:
 	docker compose --env-file $(ENV_FILE) restart
 
-# ── User cert & package management ───────────────────────────────────────────
+update:
+	@chmod +x ./update.sh && ./update.sh
+
+# ── User management ───────────────────────────────────────────────────────────
 
 ## Generate a TAK data package for a new user.
 ## Usage: make add-user USERNAME=alice
@@ -36,51 +33,35 @@ add-user:
 
 ## List generated packages ready for distribution.
 list-packages:
-	@ls -lh $(PKG_DIR)/*.zip 2>/dev/null \
+	@docker exec takserver_config ls -lh /opt/tak/data/certs/files/clientpkgs/ 2>/dev/null \
 		|| echo "No packages yet. Run: make add-user USERNAME=alice"
 
-## Serve packages over HTTP with correct MIME types for iOS (.p12 files).
-## Download URL is printed on start. Press Ctrl+C to stop.
+## Serve packages over HTTP on port 8888 (pkg_server container handles this automatically).
 serve-packages:
-	@[ -d "$(PKG_DIR)" ] || { echo "No packages dir at $(PKG_DIR). Run add-user first."; exit 1; }
-	@FTS_IP=$$(grep '^FTS_IP=' $(ENV_FILE) | cut -d= -f2); \
+	@TAK_ADDR=$$(grep '^TAK_SERVER_ADDRESS=' $(ENV_FILE) | cut -d= -f2); \
 	echo ""; \
-	echo "  Serving packages at http://$$FTS_IP:8888/"; \
-	echo "  On iPhone (Safari): http://$$FTS_IP:8888/<username>.zip"; \
-	echo "  Import in iTAK: Settings → Network → Servers → + → Upload Server Package"; \
-	echo "  Press Ctrl+C to stop."; \
+	echo "  Package server running at http://$$TAK_ADDR:8888/"; \
+	echo "  On device: http://$$TAK_ADDR:8888/<username>.zip"; \
 	echo ""
-	cd $(PKG_DIR) && python3 $(CURDIR)/scripts/serve_packages.py
 
 # ── Observability ─────────────────────────────────────────────────────────────
 
 logs:
 	docker compose --env-file $(ENV_FILE) logs -f
 
-## Stream logs for FTS core only (filters by supervisor process label)
-logs-fts:
-	docker exec freetakserver supervisorctl tail -f fts
-
-## Stream logs for FTS UI only (filters by supervisor process label)
-logs-ui:
-	docker exec freetakserver supervisorctl tail -f fts-ui
+logs-db:
+	docker compose --env-file $(ENV_FILE) logs -f takdb
 
 status:
-	@echo "=== Container ==="
+	@echo "=== Services ==="
 	@docker compose --env-file $(ENV_FILE) ps
-	@echo ""
-	@echo "=== Supervisor processes ==="
-	@docker exec freetakserver supervisorctl status 2>/dev/null || true
 	@echo ""
 	@echo "=== Listening ports ==="
 	@ss -tlnp 2>/dev/null \
-		| grep -E ":8087|:8089|:8080|:8443|:9000|:19023|:5000" \
+		| grep -E ":8089|:8443|:8888" \
 		| awk '{print "  " $$4}' | sort -u || true
-	@echo ""
-	@echo "=== Tailscale ==="
-	@tailscale ip -4 2>/dev/null | xargs -I{} echo "  {}" || echo "  (tailscale not found)"
 
 # ── Debug shell ───────────────────────────────────────────────────────────────
 
 shell:
-	docker exec -it freetakserver /bin/bash
+	docker exec -it takserver_config /bin/bash

@@ -1,25 +1,24 @@
 #!/bin/bash
 # ============================================================
-# install.sh — Interactive FreeTAKServer one-file installer
+# install.sh — Interactive TAK Server one-file installer
 # Run inside the LXC container as root.
 # ============================================================
 
 set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
-ENV_FILE="$SCRIPT_DIR/.env"
+ENV_FILE="$SCRIPT_DIR/takserver.env"
 
 # ── Colours ───────────────────────────────────────────────────────────────────
 RED='\033[0;31m'; GREEN='\033[0;32m'; YELLOW='\033[1;33m'
 CYAN='\033[0;36m'; BOLD='\033[1m'; NC='\033[0m'
-ok()   { echo -e "${GREEN}[✓]${NC} $*"; }
-info() { echo -e "${CYAN}[*]${NC} $*"; }
-warn() { echo -e "${YELLOW}[!]${NC} $*"; }
-err()  { echo -e "${RED}[✗]${NC} $*"; exit 1; }
+ok()      { echo -e "${GREEN}[✓]${NC} $*"; }
+info()    { echo -e "${CYAN}[*]${NC} $*"; }
+warn()    { echo -e "${YELLOW}[!]${NC} $*"; }
+err()     { echo -e "${RED}[✗]${NC} $*"; exit 1; }
 section() { echo -e "\n${CYAN}── $* $(printf '─%.0s' {1..50} | head -c $((50-${#1})))${NC}"; }
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
 ask() {
-    # ask VAR_NAME "Question" "default"
     local _var="$1" _q="$2" _default="${3:-}"
     local _ans
     if [ -n "$_default" ]; then
@@ -36,25 +35,20 @@ ask() {
 }
 
 ask_secret() {
-    local _var="$1" _q="$2" _default="${3:-}"
+    local _var="$1" _q="$2"
     local _ans
-    if [ -n "$_default" ]; then
-        read -rsp "$(echo -e "  ${BOLD}${_q}${NC}\n  ${CYAN}Default:${NC} ${_default}\n  → ")" _ans; echo
-        printf -v "$_var" '%s' "${_ans:-$_default}"
-    else
-        while true; do
-            read -rsp "$(echo -e "  ${BOLD}${_q}${NC}\n  → ")" _ans; echo
-            [ -n "$_ans" ] && break
-            echo "    (required)"
-        done
-        printf -v "$_var" '%s' "$_ans"
-    fi
+    while true; do
+        read -rsp "$(echo -e "  ${BOLD}${_q}${NC}\n  → ")" _ans; echo
+        [ -n "$_ans" ] && break
+        echo "    (required)"
+    done
+    printf -v "$_var" '%s' "$_ans"
 }
 
-gen_secret() { python3 -c "import secrets; print(secrets.token_urlsafe(32))"; }
+gen_secret() { openssl rand -hex 16; }
 
 # ── Timer helpers ─────────────────────────────────────────────────────────────
-_timer_pid=""; _timer_start=0; _elapsed="0s"
+_timer_pid=""; _timer_start=0
 trap '[ -n "$_timer_pid" ] && kill "$_timer_pid" 2>/dev/null' EXIT
 
 start_timer() {
@@ -87,123 +81,84 @@ stop_timer() {
     [ "$mm" -gt 0 ] && _elapsed="${mm}m ${ss}s" || _elapsed="${ss}s"
 }
 
-sysctl_set() {
-    local key="$1" val="$2"
-    if grep -qE "^${key}=" /etc/sysctl.conf 2>/dev/null; then
-        sed -i "s|^${key}=.*|${key}=${val}|" /etc/sysctl.conf
-    else
-        echo "${key}=${val}" >> /etc/sysctl.conf
-    fi
-}
-
 # ── Banner ────────────────────────────────────────────────────────────────────
 echo ""
 echo -e "${BOLD}╔══════════════════════════════════════════════════╗${NC}"
-echo -e "${BOLD}║     FreeTAKServer  ·  Interactive Installer      ║${NC}"
+echo -e "${BOLD}║      Official TAK Server  ·  Installer           ║${NC}"
 echo -e "${BOLD}╚══════════════════════════════════════════════════╝${NC}"
 echo ""
-echo "  Deploys FreeTAKServer in Docker with Tailscale access."
+echo "  Deploys the official Java TAK Server in Docker."
 echo "  Press Enter to accept defaults shown in [brackets]."
 
-# ── Tailscale ─────────────────────────────────────────────────────────────────
-section "Tailscale"
+# ── Networking ────────────────────────────────────────────────────────────────
+section "Networking"
 
-TS_CONNECTED=false
-TS_IP=""
-TS_HOSTNAME=""
+TAK_SERVER_ADDRESS=""
 
-if command -v tailscale &>/dev/null; then
-    TS_IP=$(tailscale ip -4 2>/dev/null || true)
-fi
-
-if [ -n "$TS_IP" ]; then
-    ok "Already connected — Tailscale IP: $TS_IP"
-    TS_HOSTNAME=$(tailscale status --json 2>/dev/null \
-        | python3 -c "import sys,json; d=json.load(sys.stdin); \
-          print(d.get('Self',{}).get('DNSName','').rstrip('.').split('.')[0])" \
-        2>/dev/null || echo "freetakserver")
-    TS_CONNECTED=true
-    NEED_TS_AUTH=false
+if ip addr show wt0 2>/dev/null | grep -q inet; then
+    TAK_SERVER_ADDRESS=$(ip addr show wt0 | awk '/inet / {print $2}' | cut -d/ -f1 | head -1)
+    ok "NetBird connected — wt0 IP: $TAK_SERVER_ADDRESS"
 else
-    warn "Tailscale not connected."
-    if ! command -v tailscale &>/dev/null; then
-        info "Tailscale will be installed."
-    fi
-    NEED_TS_AUTH=true
-    ask_secret TS_AUTHKEY "Tailscale auth key  (login.tailscale.com/admin/settings/keys)" ""
-    ask TS_HOSTNAME "Hostname for this server in Tailscale" "freetakserver"
+    warn "NetBird not detected on wt0."
+    echo ""
+    echo "  1) Install & connect NetBird"
+    echo "  2) Enter server address manually"
+    echo ""
+    read -rp "  → [1/2]: " _NB_CHOICE
+    case "${_NB_CHOICE:-2}" in
+        1)
+            ask_secret NB_SETUP_KEY "NetBird setup key"
+            start_timer "Installing NetBird..."
+            curl -fsSL https://pkgs.netbird.io/install.sh | sh > /dev/null 2>&1
+            stop_timer; ok "NetBird installed ($_elapsed)"
+            start_timer "Connecting to NetBird..."
+            netbird up --setup-key="$NB_SETUP_KEY" > /dev/null 2>&1 \
+                || { stop_timer; err "NetBird connection failed. Check your setup key."; }
+            sleep 5
+            TAK_SERVER_ADDRESS=$(ip addr show wt0 2>/dev/null \
+                | awk '/inet / {print $2}' | cut -d/ -f1 | head -1) \
+                || err "Could not read wt0 IP after connecting."
+            stop_timer; ok "NetBird connected: $TAK_SERVER_ADDRESS ($_elapsed)"
+            ;;
+        2)
+            ask TAK_SERVER_ADDRESS "Server address (IP or hostname)" ""
+            ;;
+        *)
+            ask TAK_SERVER_ADDRESS "Server address (IP or hostname)" ""
+            ;;
+    esac
 fi
 
-# ── Certificates ──────────────────────────────────────────────────────────────
-section "Certificates"
-echo "  TAK clients will be prompted for this password when importing .p12 files."
-ask CERT_PASSWORD "Certificate password" "atakatak"
-ask USER_CERT_VALIDITY_DAYS "User cert validity (days)" "365"
-
-# ── Initial users ─────────────────────────────────────────────────────────────
-section "Initial Users"
-echo "  Packages will be generated for these users right after install."
-echo "  Space-separated. Example: pilot1 pilot2 command"
-echo "  Leave empty to skip (add users later with: ./generate_user.sh <name>)"
-ask INITIAL_USERS "Usernames" ""
-
-# ── Storage & ports ───────────────────────────────────────────────────────────
-section "Storage & Ports"
-ask DATA_DIR          "Host data directory (certs, DB, packages)" "/opt/fts"
-ask COT_PORT          "CoT TCP port"  "8087"
-ask SSL_COT_PORT      "CoT SSL port"  "8089"
-ask API_PORT          "REST API port" "19023"
+# ── Certificate metadata ──────────────────────────────────────────────────────
+section "Certificate Metadata"
+ask COUNTRY       "Country code (2 letters)" "US"
+ask STATE         "State / Province"         ""
+ask CITY          "City / Locality"          ""
+ask ORGANIZATION  "Organization"             ""
+ask ORGANIZATIONAL_UNIT "Organizational unit" ""
 
 # ── Confirm ───────────────────────────────────────────────────────────────────
 echo ""
 echo -e "${BOLD}── Summary ──────────────────────────────────────────────────────${NC}"
-[ "$TS_CONNECTED" = true ] && echo "  Tailscale IP:      $TS_IP" \
-                            || echo "  Tailscale key:     ${TS_AUTHKEY:0:24}..."
-echo "  TS hostname:       $TS_HOSTNAME"
-echo "  Cert password:     $CERT_PASSWORD"
-echo "  Cert validity:     ${USER_CERT_VALIDITY_DAYS} days"
-[ -n "$INITIAL_USERS" ] && echo "  Initial users:     $INITIAL_USERS" \
-                         || echo "  Initial users:     (none — add later)"
-echo "  Data dir:          $DATA_DIR"
-echo "  Ports:             CoT=$COT_PORT  SSL=$SSL_COT_PORT  API=$API_PORT  UI=8090"
+echo "  Server address : $TAK_SERVER_ADDRESS"
+echo "  Country        : $COUNTRY"
+echo "  State          : $STATE"
+echo "  City           : $CITY"
+echo "  Organization   : $ORGANIZATION"
+echo "  Org unit       : $ORGANIZATIONAL_UNIT"
+echo "  Secrets        : (auto-generated)"
 echo ""
 read -rp "$(echo -e "  ${BOLD}Proceed with installation?${NC} [Y/n]: ")" _CONFIRM
 [[ "${_CONFIRM:-Y}" =~ ^[Yy] ]] || { echo "Aborted."; exit 0; }
 
-# ── Install Tailscale (if needed) ─────────────────────────────────────────────
-if [ "$NEED_TS_AUTH" = true ]; then
-    if ! command -v tailscale &>/dev/null; then
-        start_timer "Installing Tailscale..."
-        curl -fsSL https://tailscale.com/install.sh | sh > /dev/null 2>&1
-        systemctl enable --now tailscaled > /dev/null 2>&1 || true
-        stop_timer; ok "Tailscale installed ($_elapsed)"
-    fi
-    start_timer "Connecting to Tailscale..."
-    tailscale up --authkey="$TS_AUTHKEY" --hostname="$TS_HOSTNAME" --accept-routes \
-        || { stop_timer; err "Tailscale connection failed. Check your auth key."; }
-    TS_IP=$(tailscale ip -4) || err "Could not get Tailscale IP after connecting."
-    stop_timer; ok "Tailscale connected: $TS_IP ($_elapsed)"
-fi
-
-# ── Fix DNS (minimal LXC images sometimes have no working nameserver) ─────────
+# ── Fix DNS ───────────────────────────────────────────────────────────────────
 if ! getent hosts debian.org > /dev/null 2>&1; then
     warn "DNS not resolving — adding fallback nameserver 1.1.1.1"
     echo "nameserver 1.1.1.1" >> /etc/resolv.conf
-    if getent hosts debian.org > /dev/null 2>&1; then
-        ok "DNS fallback working"
-    else
-        err "DNS still not working after adding 1.1.1.1. Fix /etc/resolv.conf and retry."
-    fi
+    getent hosts debian.org > /dev/null 2>&1 \
+        || err "DNS still not working. Fix /etc/resolv.conf and retry."
+    ok "DNS fallback working"
 fi
-
-# ── Fix locale (prevents Python/apt locale errors on minimal LXC images) ──────
-start_timer "Configuring locale..."
-apt-get install -y locales > /dev/null 2>&1
-echo "en_US.UTF-8 UTF-8" > /etc/locale.gen
-locale-gen > /dev/null 2>&1
-update-locale LANG=en_US.UTF-8 LC_ALL=en_US.UTF-8 2>/dev/null || true
-export LANG=en_US.UTF-8 LC_ALL=en_US.UTF-8 2>/dev/null || true
-stop_timer; ok "Locale set to en_US.UTF-8 ($_elapsed)"
 
 # ── Install Docker ────────────────────────────────────────────────────────────
 if ! command -v docker &>/dev/null; then
@@ -216,53 +171,65 @@ else
 fi
 
 # ── TCP keepalive (prevents iTAK idle connection drops) ───────────────────────
-info "Setting TCP keepalive (prevents iTAK disconnects)..."
-sysctl_set net.ipv4.tcp_keepalive_time 60
-sysctl_set net.ipv4.tcp_keepalive_intvl 10
-sysctl_set net.ipv4.tcp_keepalive_probes 6
+for kv in "net.ipv4.tcp_keepalive_time=60" \
+           "net.ipv4.tcp_keepalive_intvl=10" \
+           "net.ipv4.tcp_keepalive_probes=6"; do
+    key="${kv%%=*}"; val="${kv##*=}"
+    if grep -qE "^${key}=" /etc/sysctl.conf 2>/dev/null; then
+        sed -i "s|^${key}=.*|${key}=${val}|" /etc/sysctl.conf
+    else
+        echo "${key}=${val}" >> /etc/sysctl.conf
+    fi
+done
 sysctl -p > /dev/null 2>&1
 ok "TCP keepalive configured (time=60s intvl=10s probes=6)"
 
-# ── Create data directory ─────────────────────────────────────────────────────
-info "Setting up data directory: $DATA_DIR"
-mkdir -p "$DATA_DIR/certs/clientPackages"
-chmod -R 777 "$DATA_DIR"
-ok "Data directory ready"
+# ── Generate secrets ──────────────────────────────────────────────────────────
+info "Generating secrets..."
+POSTGRES_PASSWORD=$(gen_secret)
+POSTGRES_SUPER_PASSWORD=$(gen_secret)
+ADMIN_CERT_PASS=$(gen_secret)
+TAKSERVER_CERT_PASS=$(gen_secret)
+CA_PASS=$(gen_secret)
+ok "Secrets generated"
 
-# ── Write .env ────────────────────────────────────────────────────────────────
-info "Writing .env..."
+# ── Write takserver.env ───────────────────────────────────────────────────────
+info "Writing takserver.env..."
 cat > "$ENV_FILE" << ENVEOF
-# FreeTAKServer configuration
-# Generated by install.sh on $(date -u '+%Y-%m-%d %H:%M UTC')
+# TAK Server configuration — generated by install.sh on $(date -u '+%Y-%m-%d %H:%M UTC')
 # DO NOT commit this file to version control.
 
-FTS_IP="${TS_IP}"
+TAK_SERVER_ADDRESS=${TAK_SERVER_ADDRESS}
+TAK_SERVER_NAME=takserver
 
-CERT_PASSWORD="${CERT_PASSWORD}"
-USER_CERT_VALIDITY_DAYS="${USER_CERT_VALIDITY_DAYS}"
-INITIAL_USERS="${INITIAL_USERS}"
+POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+POSTGRES_DB=cot
+POSTGRES_USER=martiuser
+POSTGRES_ADDRESS=takdb
+POSTGRES_SUPERUSER=martiuser
+POSTGRES_SUPER_PASSWORD=${POSTGRES_SUPER_PASSWORD}
 
-DATA_DIR="${DATA_DIR}"
+ADMIN_CERT_PASS=${ADMIN_CERT_PASS}
+ADMIN_CERT_NAME=admin
+TAKSERVER_CERT_PASS=${TAKSERVER_CERT_PASS}
+CA_NAME=takserver-ca
+CA_PASS=${CA_PASS}
 
-COT_PORT=${COT_PORT}
-SSL_COT_PORT=${SSL_COT_PORT}
-API_PORT=${API_PORT}
-UI_PORT=8090
+COUNTRY=${COUNTRY}
+STATE=${STATE}
+CITY=${CITY}
+ORGANIZATION=${ORGANIZATION}
+ORGANIZATIONAL_UNIT=${ORGANIZATIONAL_UNIT}
 
-FTS_CONNECTION_MESSAGE="Connected to FreeTAKServer"
-FTS_LOG_LEVEL="info"
-
-FTS_WEBSOCKET_KEY=$(gen_secret)
-FTS_SECRET_KEY=$(gen_secret)
-FTS_FED_PASSWORD=$(gen_secret)
-FTS_API_KEY=$(gen_secret)
+LOGGING_JSON_ENABLED=true
+LOGGING_CONFIG=/opt/tak/logback-stdout.xml
 ENVEOF
-ok ".env written"
+ok "takserver.env written"
 
 # ── Build & start ─────────────────────────────────────────────────────────────
 cd "$SCRIPT_DIR"
 
-start_timer "Building FTS Docker image..."
+start_timer "Building TAK Server image..."
 docker compose --env-file "$ENV_FILE" build --quiet
 stop_timer; ok "Image built ($_elapsed)"
 
@@ -270,72 +237,29 @@ start_timer "Starting containers..."
 docker compose --env-file "$ENV_FILE" up -d
 stop_timer; ok "Containers started ($_elapsed)"
 
-# ── Wait for FTS to generate its CA certificates ──────────────────────────────
-start_timer "Waiting for FTS to generate CA certificate..."
-MAX_WAIT=180; _cert_wait=0
-until [ -f "$DATA_DIR/certs/ca.pem" ] && [ -f "$DATA_DIR/certs/server.p12" ]; do
-    if [ $_cert_wait -ge $MAX_WAIT ]; then
-        stop_timer
-        warn "Timed out after ${MAX_WAIT}s — FTS may still be starting."
-        warn "Check logs: docker logs freetakserver"
-        warn "Then add users: ./generate_user.sh <username>"
-        break
-    fi
-    sleep 3; _cert_wait=$((_cert_wait + 3))
+info "Waiting for database to be ready..."
+until docker compose --env-file "$ENV_FILE" exec -T takdb \
+    pg_isready -U martiuser -d cot > /dev/null 2>&1; do
+    sleep 3
 done
-if [ -f "$DATA_DIR/certs/ca.pem" ]; then stop_timer; ok "Certificates ready ($_elapsed)"; fi
+ok "Database ready"
 
-# Ensure permissions after cert generation
-chmod -R 777 "$DATA_DIR" 2>/dev/null || true
-
-# ── Sync Web UI API token into FTS database ───────────────────────────────────
-# FTS stores the API token in SystemUser.token; it must match FTS_API_KEY from
-# .env so the Web UI can authenticate against the REST API on login.
-_raw_api_key=$(grep '^FTS_API_KEY=' "$ENV_FILE" | cut -d= -f2)
-if [ -n "$_raw_api_key" ]; then
-    cat > /tmp/sync_token.py << 'PYEOF'
-import sqlite3, os
-key = os.environ['_K']
-con = sqlite3.connect('/opt/fts/FTSDataBase.db')
-con.execute('UPDATE SystemUser SET token=? WHERE name=?', (key, 'admin'))
-con.commit()
-PYEOF
-    docker cp /tmp/sync_token.py freetakserver:/tmp/sync_token.py
-    docker exec -e _K="$_raw_api_key" freetakserver python3 /tmp/sync_token.py \
-        && ok "Web UI API token synced" \
-        || warn "Could not sync Web UI token — run: ./update.sh"
-fi
-
-# ── Generate initial user packages ────────────────────────────────────────────
-if [ -n "$INITIAL_USERS" ] && [ -f "$DATA_DIR/certs/ca.pem" ]; then
-    info "Generating TAK packages for: $INITIAL_USERS"
-    chmod +x "$SCRIPT_DIR/generate_user.sh"
-    for user in $INITIAL_USERS; do
-        "$SCRIPT_DIR/generate_user.sh" "$user" || warn "Failed to generate package for $user"
-    done
-    ok "Packages ready: $DATA_DIR/certs/clientPackages/"
-fi
+info "firstrun.sh will run automatically inside takserver_initialization."
+info "This generates certificates and initializes the DB schema (~2 min)."
+info "Monitor progress with: docker compose --env-file takserver.env logs -f takserver_initialization"
 
 # ── Final summary ─────────────────────────────────────────────────────────────
 echo ""
 echo -e "${BOLD}╔══════════════════════════════════════════════════╗${NC}"
-echo -e "${GREEN}${BOLD}║         FreeTAKServer is running!                ║${NC}"
+echo -e "${GREEN}${BOLD}║         TAK Server is starting up!               ║${NC}"
 echo -e "${BOLD}╚══════════════════════════════════════════════════╝${NC}"
 echo ""
-echo -e "  Tailscale IP : ${BOLD}$TS_IP${NC}"
-echo "  CoT  (TCP)   : $TS_IP:$COT_PORT"
-echo "  CoT  (SSL)   : $TS_IP:$SSL_COT_PORT"
-echo "  REST API     : http://$TS_IP:$API_PORT"
-echo "  Web UI       : http://$TS_IP:8090"
+echo -e "  Server address : ${BOLD}$TAK_SERVER_ADDRESS${NC}"
+echo "  SSL CoT        : $TAK_SERVER_ADDRESS:8089"
+echo "  HTTPS API      : https://$TAK_SERVER_ADDRESS:8443"
+echo "  Packages       : http://$TAK_SERVER_ADDRESS:8888/"
 echo ""
-if [ -n "$INITIAL_USERS" ] && [ -f "$DATA_DIR/certs/ca.pem" ]; then
-    echo "  Download packages on device:"
-    for u in $INITIAL_USERS; do
-        echo "    http://$TS_IP:8888/${u}.zip"
-    done
-    echo ""
-fi
-echo "  Add users    : ./generate_user.sh <username>"
-echo "  View logs    : docker logs freetakserver -f"
-echo "  Restart      : docker compose restart"
+echo "  Add users      : ./generate_user.sh <username>"
+echo "  View logs      : docker compose --env-file takserver.env logs -f"
+echo "  Restart        : docker compose --env-file takserver.env restart"
 echo ""
