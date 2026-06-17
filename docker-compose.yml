@@ -57,10 +57,13 @@ services:
 
   # ── Messaging service (shares network with config) ─────────────────────────
   takserver_messaging:
-    <<: *tak-base
+    image: takserver:local
+    env_file: takserver.env
+    volumes:
+      - takserver_data:/opt/tak/data
+    restart: unless-stopped
     command: ["/bin/bash", "/opt/scripts/start-tak.sh", "messaging"]
     network_mode: "service:takserver_config"
-    networks: []
     depends_on:
       takserver_initialization:
         condition: service_completed_successfully
