@@ -87,7 +87,7 @@ services:
   # ── Plugin manager ──────────────────────────────────────────────────────────
   takserver_pluginmanager:
     <<: *tak-base
-    command: ["/bin/bash", "/opt/scripts/start-tak.sh", "plugin-manager"]
+    command: ["/bin/bash", "/opt/scripts/start-tak.sh", "pm"]
     depends_on:
       takserver_initialization:
         condition: service_completed_successfully
