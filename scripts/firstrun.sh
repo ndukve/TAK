@@ -12,18 +12,14 @@ CONFIG=${TR}/data/CoreConfig.xml
 
 set -e
 
-# Remove hardcoded country code
-sed -i.orig "s/COUNTRY=US/COUNTRY=\${COUNTRY}/g" ${CR}/cert-metadata.sh
-
-# Override some distribution scripts outright since doing it with sed is too painful
-cp /opt/scripts/makeCert.sh ${CR}/
-
 # Seed initial certificate data if necessary
 if [[ ! -d "${TR}/data/certs" ]];then
 mkdir -p "${TR}/data/certs"
 fi
 
-if [[ -z "$(ls -A "${TR}/data/certs")" ]];then
+# Check for a cert script rather than empty dir — a partial previous run may leave
+# a files/ subdirectory without having copied the scripts.
+if [[ ! -f "${TR}/data/certs/cert-metadata.sh" ]];then
 echo Copying initial certificate configuration
 cp -R ${TR}/certs/* ${TR}/data/certs/
 else
@@ -35,6 +31,12 @@ if [[ ! -L "${TR}/certs" ]];then
 mv ${TR}/certs ${TR}/certs.orig
 ln -f -s "${TR}/data/certs/" "${TR}/certs"
 fi
+
+# Remove hardcoded country code (CR now resolves through symlink to data/certs)
+sed -i.orig "s/COUNTRY=US/COUNTRY=\${COUNTRY}/g" ${CR}/cert-metadata.sh
+
+# Override some distribution scripts outright since doing it with sed is too painful
+cp /opt/scripts/makeCert.sh ${CR}/
 
 # Symlink the log directory under data dir
 if [[ ! -d "${TR}/data/logs" ]];then

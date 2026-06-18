@@ -92,4 +92,14 @@ services:
 
 volumes:
   takdb_data:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: /tmp/tak-dbdata
   takserver_data:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: /tmp/tak-data
