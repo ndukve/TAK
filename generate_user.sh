@@ -15,7 +15,7 @@ ENV_FILE="$SCRIPT_DIR/takserver.env"
 
 [ -f "$ENV_FILE" ] || { echo "takserver.env not found — run ./install.sh first" >&2; exit 1; }
 
-docker exec -e CLIENT_CERT_NAME="$USERNAME" takserver_config bash /opt/scripts/make_client_zip.sh
+docker exec -e CLIENT_CERT_NAME="$USERNAME" tak-takserver_config-1 bash /opt/scripts/make_client_zip.sh
 
 TAK_SERVER_ADDRESS=$(grep '^TAK_SERVER_ADDRESS=' "$ENV_FILE" | cut -d= -f2)
 
