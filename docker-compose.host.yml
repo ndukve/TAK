@@ -1,0 +1,95 @@
+# Local testing with host networking (use when bridge/veth is unavailable)
+# Usage: docker compose -f docker-compose.host.yml --env-file takserver.env up -d
+
+x-tak: &tak-base
+  image: takserver:local
+  env_file: takserver.env
+  volumes:
+    - takserver_data:/opt/tak/data
+  network_mode: host
+  restart: unless-stopped
+
+services:
+
+  # ── Database ────────────────────────────────────────────────────────────────
+  takdb:
+    image: postgis/postgis:15-3.3
+    env_file: takserver.env
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-cot}
+      POSTGRES_USER: ${POSTGRES_USER:-martiuser}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    volumes:
+      - takdb_data:/var/lib/postgresql/data
+    network_mode: host
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-martiuser} -d ${POSTGRES_DB:-cot}"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+
+  # ── First-run initialisation (certs + DB schema) ───────────────────────────
+  takserver_initialization:
+    <<: *tak-base
+    command: ["/bin/bash", "/opt/scripts/firstrun.sh"]
+    depends_on:
+      takdb:
+        condition: service_healthy
+    restart: "no"
+
+  # ── Config service (TAK SSL CoT + HTTPS API) ───────────────────────────────
+  takserver_config:
+    <<: *tak-base
+    command: ["/bin/bash", "/opt/scripts/start-tak.sh", "config"]
+    depends_on:
+      takserver_initialization:
+        condition: service_completed_successfully
+
+  # ── Messaging service ──────────────────────────────────────────────────────
+  takserver_messaging:
+    <<: *tak-base
+    command: ["/bin/bash", "/opt/scripts/start-tak.sh", "messaging"]
+    depends_on:
+      takserver_initialization:
+        condition: service_completed_successfully
+
+  # ── API service ─────────────────────────────────────────────────────────────
+  takserver_api:
+    <<: *tak-base
+    command: ["/bin/bash", "/opt/scripts/start-tak.sh", "api"]
+    depends_on:
+      takserver_initialization:
+        condition: service_completed_successfully
+
+  # ── Retention service ───────────────────────────────────────────────────────
+  takserver_retention:
+    <<: *tak-base
+    command: ["/bin/bash", "/opt/scripts/start-tak.sh", "retention"]
+    depends_on:
+      takserver_initialization:
+        condition: service_completed_successfully
+
+  # ── Plugin manager ──────────────────────────────────────────────────────────
+  takserver_pluginmanager:
+    <<: *tak-base
+    command: ["/bin/bash", "/opt/scripts/start-tak.sh", "pm"]
+    depends_on:
+      takserver_initialization:
+        condition: service_completed_successfully
+
+  # ── Package download server (port 8888) ────────────────────────────────────
+  pkg_server:
+    image: python:3.11-slim
+    command: ["python3", "/srv/serve_packages.py"]
+    volumes:
+      - takserver_data:/opt/tak/data:ro
+      - ./scripts/serve_packages.py:/srv/serve_packages.py:ro
+    working_dir: /opt/tak/data/certs/files/clientpkgs
+    network_mode: host
+    restart: unless-stopped
+
+volumes:
+  takdb_data:
+  takserver_data:
