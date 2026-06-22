@@ -4,75 +4,60 @@ A fully reproducible official Java TAK Server deployment with NetBird, Docker, a
 
 ## Prerequisites
 
-- Proxmox host
-- NetBird account at [app.netbird.io](https://app.netbird.io) (optional — you can also use a plain IP)
+- A server or VM running Ubuntu 22.04 (minimal install)
+- NetBird account at [app.netbird.io](https://app.netbird.io) — the installer can set it up for you
 - Android/iOS/Windows device with a TAK client (ATAK/iTAK/WinTAK)
 
----
-
-## Step 1 — Create LXC Container (Proxmox host)
-
-```bash
-# Download Ubuntu 22.04 template
-pveam update
-pveam download local ubuntu-22.04-standard_22.04-1_amd64.tar.zst
-
-# Create container (adjust VMID, IP, gateway as needed)
-pct create <VMID> local:vztmpl/ubuntu-22.04-standard_22.04-1_amd64.tar.zst \
-  --hostname takserver \
-  --cores 4 \
-  --memory 6144 \
-  --swap 1024 \
-  --rootfs local-lvm:20 \
-  --net0 name=eth0,bridge=vmbr0,ip=<CT_IP>/24,gw=<GATEWAY_IP> \
-  --nameserver <DNS_IP> \
-  --unprivileged 1 \
-  --features nesting=1 \
-  --start 1
-```
+**Recommended VM specs:** 4 cores · 6–8 GB RAM · 40 GB disk
 
 ---
 
-## Step 2 — Enter Container and Deploy
+## Step 1 — Install Ubuntu 22.04
+
+Boot from the Ubuntu 22.04 Server ISO and choose **Minimal install**. No extra packages needed — the installer handles everything.
+
+---
+
+## Step 2 — Deploy
+
+Open a terminal on the server and run:
 
 ```bash
-pct enter <VMID>
-
-# One-liner — clones the repo and runs the installer
 curl -fsSL https://raw.githubusercontent.com/ndukve/TAK/main/install.sh | bash
 ```
 
-Or manually if you prefer:
+The installer will ask:
 
-```bash
-apt install -y git curl
-git clone https://github.com/ndukve/TAK.git ~/tak-server
-bash ~/tak-server/install.sh
-```
+**Networking — two options:**
+- **Option 1 — Install & connect NetBird** (recommended): paste your setup key from [app.netbird.io](https://app.netbird.io) → Keys. NetBird is installed and connected automatically, and the TAK server uses your NetBird IP.
+- **Option 2 — Manual IP**: enter the server's IP address directly (use this if you already have NetBird running or want to use a LAN IP).
 
-The installer will:
+Then it prompts for certificate metadata (country, state, city, org), generates all secrets automatically, builds the Docker image, and starts all services.
 
-1. Detect NetBird (`wt0` interface) or offer to install it / accept a manual IP
-2. Prompt for certificate metadata (country, state, city, org)
-3. Auto-generate all secrets (Postgres passwords, cert passwords)
-4. Build the Docker image and start all 7 services
-5. `firstrun.sh` runs automatically inside the initialization container — generates certs and initialises the database schema (~2 min)
+First-run takes ~2 minutes to generate certificates and initialise the database. When done, all services are up on:
+
+| Port | Purpose |
+|------|---------|
+| 8089 | TAK clients (SSL CoT) |
+| 8443 | HTTPS API |
+| 8888 | Package download |
 
 ---
 
 ## Step 3 — Generate User Package
 
 ```bash
-./generate_user.sh myusername
+cd ~/tak-server
+./generate_user.sh <username>
 ```
 
-Then on your device, open a browser and download the package:
+Download the package on the device:
 
 ```
-http://<SERVER_ADDRESS>:8888/myusername.zip
+http://<SERVER_ADDRESS>:8888/<username>.zip
 ```
 
-Import it in your TAK client:
+Import in the TAK client:
 
 **iTAK (iOS)**
 Settings → Network → Servers → **+** → Upload Server Package → select the `.zip`
@@ -85,24 +70,11 @@ Settings → Network Preferences → Server Connections → **+** → Import →
 
 ---
 
-## Ports
-
-| Port | Protocol | Purpose                              |
-|------|----------|--------------------------------------|
-| 8089 | TCP/SSL  | CoT (TAK clients — primary)          |
-| 8443 | HTTPS    | Marti API (iOS prefers HTTPS)        |
-| 8888 | HTTP     | Client package download server       |
-
----
-
 ## Management
 
 ```bash
 # View all logs
 docker compose --env-file takserver.env logs -f
-
-# View database logs only
-make logs-db
 
 # Restart all services
 docker compose --env-file takserver.env restart
@@ -126,33 +98,31 @@ make shell
 
 ### Updating
 
-Pull the latest config from git and rebuild in one step:
-
 ```bash
 ./update.sh
 # or: make update
 ```
 
-This pulls from GitHub, rebuilds the image, and restarts containers. Your `takserver.env` and data volumes are never touched.
+Pulls from GitHub, rebuilds the image, and restarts containers. `takserver.env` and data volumes are never touched.
 
 ---
 
 ## Notes
 
-- All secrets are stored only in `takserver.env` — never committed to git
-- Data persists in Docker volumes (`takserver_data`, `takdb_data`) even if containers are recreated
-- To change the server address, update `TAK_SERVER_ADDRESS` in `takserver.env` and run `docker compose --env-file takserver.env up -d`
-- To reset certificates and re-run first-time init, remove the `takserver_data` volume: `docker compose down -v && docker compose --env-file takserver.env up -d`
+- All secrets are in `takserver.env` — never committed to git
+- Data persists in Docker volumes even if containers are recreated
+- To reset and re-run first-time init: `docker compose down -v && docker compose --env-file takserver.env up -d`
+
+---
 
 ## TAK Client Known Issues
 
 **Battery saving drops the connection (iOS and Android)**
-Any battery saving mode — iOS Low Power Mode or Android Battery Saver — aggressively suspends background network activity and will drop the TAK connection. Turn these off when using iTAK or ATAK.
+iOS Low Power Mode and Android Battery Saver suspend background network activity. Turn these off when using iTAK or ATAK.
 
-On Android, also set both ATAK to unrestricted battery usage:
-- Settings → Apps → ATAK → Battery → **Unrestricted**
+On Android: Settings → Apps → ATAK → Battery → **Unrestricted**
 
 **Connection drops when the app is backgrounded**
-Both iOS and Android suspend network sockets when apps go to the background. Keep iTAK/ATAK in the foreground during active use. To reconnect manually:
+Keep iTAK/ATAK in the foreground during active use. To reconnect manually:
 - **iTAK**: Settings → Network → Servers → tap the server → reconnect
 - **ATAK**: Settings → Network Preferences → TAK Servers → tap the server → reconnect
