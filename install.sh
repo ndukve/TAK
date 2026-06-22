@@ -5,7 +5,25 @@
 # ============================================================
 
 set -euo pipefail
-SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+
+REPO_URL="https://github.com/ndukve/TAK.git"
+INSTALL_DIR="${INSTALL_DIR:-$HOME/tak-server}"
+
+# ── Bootstrap: clone repo if running via curl | bash ──────────────────────────
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]:-$0}")" 2>/dev/null && pwd || echo "$PWD")"
+if [ ! -f "$SCRIPT_DIR/docker-compose.yml" ]; then
+    echo "Bootstrapping — cloning repo to $INSTALL_DIR ..."
+    if ! command -v git &>/dev/null; then
+        apt-get update -qq && apt-get install -y -qq git
+    fi
+    if [ -d "$INSTALL_DIR/.git" ]; then
+        git -C "$INSTALL_DIR" pull --ff-only
+    else
+        git clone "$REPO_URL" "$INSTALL_DIR"
+    fi
+    exec bash "$INSTALL_DIR/install.sh"
+fi
+
 ENV_FILE="$SCRIPT_DIR/takserver.env"
 
 # ── Colours ───────────────────────────────────────────────────────────────────

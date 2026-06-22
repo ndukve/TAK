@@ -38,14 +38,16 @@ pct create <VMID> local:vztmpl/ubuntu-22.04-standard_22.04-1_amd64.tar.zst \
 ```bash
 pct enter <VMID>
 
-apt update && apt upgrade -y
+# One-liner — clones the repo and runs the installer
+curl -fsSL https://raw.githubusercontent.com/ndukve/TAK/main/install.sh | bash
+```
+
+Or manually if you prefer:
+
+```bash
 apt install -y git curl
-
-git clone https://github.com/ndukve/TAK.git /opt/TAK
-cd /opt/TAK
-
-# Run installer — asks all required questions interactively
-./install.sh
+git clone https://github.com/ndukve/TAK.git ~/tak-server
+bash ~/tak-server/install.sh
 ```
 
 The installer will:
