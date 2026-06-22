@@ -33,7 +33,7 @@ add-user:
 
 ## List generated packages ready for distribution.
 list-packages:
-	@docker exec tak-takserver_config-1 ls -lh /opt/tak/data/certs/files/clientpkgs/ 2>/dev/null \
+	@docker compose --env-file $(ENV_FILE) exec takserver_config ls -lh /opt/tak/data/certs/files/clientpkgs/ 2>/dev/null \
 		|| echo "No packages yet. Run: make add-user USERNAME=alice"
 
 ## Serve packages over HTTP on port 8888 (pkg_server container handles this automatically).
@@ -64,4 +64,4 @@ status:
 # ── Debug shell ───────────────────────────────────────────────────────────────
 
 shell:
-	docker exec -it tak-takserver_config-1 /bin/bash
+	docker compose --env-file $(ENV_FILE) exec takserver_config /bin/bash
