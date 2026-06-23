@@ -7,9 +7,10 @@ A fully reproducible official Java TAK Server deployment with NetBird, Docker, a
 - A server or VM running Ubuntu 22.04 (minimal install)
 - NetBird account at [app.netbird.io](https://app.netbird.io) — the installer can set it up for you
 - Android/iOS/Windows device with a TAK client (ATAK/iTAK/WinTAK)
+- NetBird app on the mobile device (see Step 3)
 
 **Recommended VM specs:** 4 cores · 6–8 GB RAM · 40 GB disk
-
+/
 ---
 
 ## Step 1 — Install Ubuntu 22.04
@@ -44,7 +45,17 @@ First-run takes ~2 minutes to generate certificates and initialise the database.
 
 ---
 
-## Step 3 — Generate User Package
+## Step 3 — Connect Mobile Device to NetBird
+
+Before using the TAK client, the mobile device must be on the same NetBird network as the server.
+
+1. Install the NetBird app — [iOS](https://apps.apple.com/app/netbird/id6469329339) / [Android](https://play.google.com/store/apps/details?id=io.netbird.client)
+2. Open it → **Connect with setup key** → paste your key
+3. Once connected, the device can reach the server over the NetBird network
+
+---
+
+## Step 4 — Generate User Package
 
 ```bash
 cd ~/tak-server
