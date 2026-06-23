@@ -104,10 +104,11 @@ stop_timer() {
 
 # ── Banner ────────────────────────────────────────────────────────────────────
 echo ""
-echo -e "${BOLD}╔══════════════════════════════════════════════════╗${NC}"
-echo -e "${BOLD}║      Official TAK Server  ·  Installer           ║${NC}"
-echo -e "${BOLD}╚══════════════════════════════════════════════════╝${NC}"
+echo -e "${BOLD}  ▀▀█▀▀ █▀▀█ █░█   █▀▀ █▀▀ █▀▀█ █░░█ █▀▀ █▀▀█${NC}"
+echo -e "${BOLD}  ░░█░░ █▄▄█ █▀▄   ▀▀█ █▀▀ █▄▄▀ ▀▄▄▀ █▀▀ █▄▄▀${NC}"
+echo -e "${BOLD}  ░░▀░░ ▀░░▀ ▀░▀   ▀▀▀ ▀▀▀ ▀░▀▀ ░▀▀░ ▀▀▀ ▀░▀▀${NC}"
 echo ""
+echo -e "${BOLD}  Installer${NC}"
 echo "  Deploys the official Java TAK Server in Docker."
 echo "  Press Enter to accept defaults shown in [brackets]."
 
