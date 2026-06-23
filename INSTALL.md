@@ -1,14 +1,3 @@
----
-title: TAK Server — Installation Guide
-description: Deploy TAK Server 5.7 on Ubuntu 22.04 with NetBird overlay networking. Covers server setup, client onboarding, plugin distribution, and EFDI integration.
-tags:
-  - tak
-  - installation
-  - netbird
-  - atak
-date: 2026-06-23
----
-
 ## Before You Start
 
 You will need:
@@ -50,9 +39,7 @@ When prompted for networking, choose **option 1 (Install & connect NetBird)** an
 - Generate all secrets automatically
 - Build the TAK Server image and start all services
 
-::: info
-Installation takes approximately 5–10 minutes. When the summary screen appears, the server is running.
-:::
+> Installation takes approximately 5–10 minutes. When the summary screen appears, the server is running.
 
 ---
 
@@ -136,9 +123,7 @@ On the Android device: open a browser → navigate to `http://<SERVER_NETBIRD_IP
 
 Synchronises missions, map overlays, data packages, and files between all connected ATAK devices through the TAK Server.
 
-::: tip Server requirement
-None. The Mission API is built into TAK Server and runs automatically at `https://<server>:8443/Marti/api/missions`. No additional configuration required.
-:::
+> **Server requirement:** None. The Mission API is built into TAK Server and runs automatically at `https://<server>:8443/Marti/api/missions`. No additional configuration required.
 
 **Install on device:**
 1. Download the DataSync APK from `http://<server>:8888/plugins/`
@@ -154,9 +139,7 @@ DataSync reads the server connection from your existing `.zip` data package — 
 
 Displays drone video feeds as picture-in-picture on the ATAK map, and shows UAV tracks from your MAVLink bridge in a dedicated flight control panel.
 
-::: tip EFDI integration
-With the MAVLink bridge running, UAS Tool automatically shows all MAVLink-connected drones as blue UAV icons on the map. Video feed URL is configured per-drone inside UAS Tool settings.
-:::
+> **EFDI integration:** With the MAVLink bridge running, UAS Tool automatically shows all MAVLink-connected drones as blue UAV icons on the map. Video feed URL is configured per-drone inside UAS Tool settings.
 
 **Install:** Same sideload procedure as DataSync.
 
@@ -184,18 +167,13 @@ Structured tactical reporting — 9-line MEDEVAC, CAS (close air support), SALUT
 
 ## Troubleshooting
 
-::: warning Can't download the package on the device
-Confirm the NetBird app shows **Connected** on the device. The package server is only reachable over the NetBird network.
-:::
+> **Can't download the package on the device**
+> Confirm the NetBird app shows **Connected** on the device. The package server is only reachable over the NetBird network.
 
-::: warning Server appears but won't connect
-The package may have been generated with the wrong server IP. Delete the server entry, regenerate the package with `./generate_user.sh YourCallsign`, and re-import.
-:::
+> **Server appears but won't connect**
+> The package may have been generated with the wrong server IP. Delete the server entry, regenerate the package with `./generate_user.sh YourCallsign`, and re-import.
 
-::: warning Connection drops when the screen turns off
-Disable battery optimisation for the TAK app.
-
-- **Android:** Settings → Apps → ATAK → Battery → **Unrestricted**
-- **iOS:** disable **Low Power Mode** in Settings → Battery
-:::
-
+> **Connection drops when the screen turns off**
+> Disable battery optimisation for the TAK app.
+> - **Android:** Settings → Apps → ATAK → Battery → **Unrestricted**
+> - **iOS:** disable **Low Power Mode** in Settings → Battery

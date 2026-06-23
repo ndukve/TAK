@@ -1,14 +1,3 @@
----
-title: TAK Serveris — Diegimo instrukcija
-description: TAK Server 5.7 diegimas Ubuntu 22.04 su NetBird tinklo perdanga. Apima serverio diegimą, klientų prijungimą, papildinių platinimą ir EFDI integraciją.
-tags:
-  - tak
-  - diegimas
-  - netbird
-  - atak
-date: 2026-06-23
----
-
 ## Prieš pradedant
 
 Jums reikės:
@@ -50,9 +39,7 @@ Kai paklaus apie tinklą, pasirinkite **1 parinktį (Install & connect NetBird)*
 - Automatiškai sugeneruos visus slaptažodžius
 - Sukurs TAK serverio Docker atvaizdą ir paleis visas paslaugas
 
-::: info
-Diegimas trunka apie 5–10 minučių. Kai pasirodys suvestinės ekranas, serveris veikia.
-:::
+> Diegimas trunka apie 5–10 minučių. Kai pasirodys suvestinės ekranas, serveris veikia.
 
 ---
 
@@ -108,7 +95,7 @@ Serverio įrašas atsiras automatiškai. Paspauskite **Connect**.
 
 ---
 
-## Kliento papildiniai (plugins)
+## Kliento papildiniai
 
 ATAK papildiniai — tai APK failai, diegiami Android įrenginiuose, o ne serveryje. TAK serveris automatiškai palaiko visus standartinius papildinius per savo vidinius API.
 
@@ -136,9 +123,7 @@ Android įrenginyje: atidarykite naršyklę → `http://<SERVERIO_NETBIRD_IP>:88
 
 Sinchronizuoja misijas, žemėlapių sluoksnius, duomenų paketus ir failus tarp visų prijungtų ATAK įrenginių per TAK serverį.
 
-::: tip Serverio reikalavimai
-Jokie. Mission API jau veikia TAK serveryje adresu `https://<serveris>:8443/Marti/api/missions`. Papildomos konfigūracijos nereikia.
-:::
+> **Serverio reikalavimai:** Jokie. Mission API jau veikia TAK serveryje adresu `https://<serveris>:8443/Marti/api/missions`. Papildomos konfigūracijos nereikia.
 
 **Diegimas įrenginyje:**
 1. Atsisiųskite DataSync APK iš `http://<serveris>:8888/plugins/`
@@ -154,9 +139,7 @@ DataSync serverio adresą nuskaito iš jūsų `.zip` duomenų paketo — papildo
 
 Rodo dronų vaizdo įrašą kaip „picture-in-picture" ant ATAK žemėlapio ir vaizduoja UAV takelius iš MAVLink tilto atskirame valdymo skydelyje.
 
-::: tip EFDI integracija
-Kai MAVLink bridge veikia, UAS Tool automatiškai rodo visus MAVLink prijungtus dronus kaip mėlynas UAV piktogramas žemėlapyje. Vaizdo srauto URL konfigūruojamas UAS Tool nustatymuose kiekvienam dronui atskirai.
-:::
+> **EFDI integracija:** Kai MAVLink bridge veikia, UAS Tool automatiškai rodo visus MAVLink prijungtus dronus kaip mėlynas UAV piktogramas žemėlapyje. Vaizdo srauto URL konfigūruojamas UAS Tool nustatymuose kiekvienam dronui atskirai.
 
 **Diegimas:** Ta pati APK diegimo procedūra kaip DataSync.
 
@@ -184,18 +167,13 @@ Struktūrizuotos taktinės ataskaitos — 9-linijinis MEDEVAC, CAS (artima oro p
 
 ## Dažnos problemos
 
-::: warning Nepavyksta atsisiųsti paketo įrenginyje
-Patikrinkite, ar NetBird programėlė rodo **Connected**. Paketų serveris pasiekiamas tik per NetBird tinklą.
-:::
+> **Nepavyksta atsisiųsti paketo įrenginyje**
+> Patikrinkite, ar NetBird programėlė rodo **Connected**. Paketų serveris pasiekiamas tik per NetBird tinklą.
 
-::: warning Serveris matomas, bet neprisijungia
-Paketas gali būti sugeneruotas su netinkamu serverio IP. Ištrinkite serverio įrašą, sugeneruokite paketą iš naujo su `./generate_user.sh JusuŠaukinis` ir importuokite pakartotinai.
-:::
+> **Serveris matomas, bet neprisijungia**
+> Paketas gali būti sugeneruotas su netinkamu serverio IP. Ištrinkite serverio įrašą, sugeneruokite paketą iš naujo su `./generate_user.sh JusuŠaukinis` ir importuokite pakartotinai.
 
-::: warning Ryšys nutrūksta užgęsus ekranui
-Išjunkite energijos taupymo optimizaciją TAK programėlei.
-
-- **Android:** Settings → Apps → ATAK → Battery → **Unrestricted**
-- **iOS:** išjunkite **Low Power Mode** Settings → Battery
-:::
-
+> **Ryšys nutrūksta užgęsus ekranui**
+> Išjunkite energijos taupymo optimizaciją TAK programėlei.
+> - **Android:** Settings → Apps → ATAK → Battery → **Unrestricted**
+> - **iOS:** išjunkite **Low Power Mode** Settings → Battery
