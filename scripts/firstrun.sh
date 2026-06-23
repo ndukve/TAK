@@ -33,7 +33,7 @@ ln -f -s "${TR}/data/certs/" "${TR}/certs"
 fi
 
 # Remove hardcoded country code (CR now resolves through symlink to data/certs)
-sed -i.orig "s/COUNTRY=US/COUNTRY=\${COUNTRY}/g" ${CR}/cert-metadata.sh
+sed -i.orig "s|COUNTRY=US|COUNTRY=\${COUNTRY}|g" ${CR}/cert-metadata.sh
 
 # Override some distribution scripts outright since doing it with sed is too painful
 cp /opt/scripts/makeCert.sh ${CR}/

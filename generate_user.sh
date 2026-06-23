@@ -10,6 +10,11 @@ if [ -z "$USERNAME" ]; then
     exit 1
 fi
 
+if [[ ! "$USERNAME" =~ ^[a-zA-Z0-9_-]+$ ]]; then
+    echo "Error: username must contain only letters, numbers, hyphens, and underscores" >&2
+    exit 1
+fi
+
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 ENV_FILE="$SCRIPT_DIR/takserver.env"
 
