@@ -171,7 +171,7 @@ Struktūrizuotos taktinės ataskaitos — 9-linijinis MEDEVAC, CAS (artima oro p
 > Patikrinkite, ar NetBird programėlė rodo **Connected**. Paketų serveris pasiekiamas tik per NetBird tinklą.
 
 > **Serveris matomas, bet neprisijungia**
-> Paketas gali būti sugeneruotas su netinkamu serverio IP. Ištrinkite serverio įrašą, sugeneruokite paketą iš naujo su `./generate_user.sh JusuŠaukinis` ir importuokite pakartotinai.
+> Paketas gali būti sugeneruotas su netinkamu serverio IP. Ištrinkite serverio įrašą, sugeneruokite paketą iš naujo su `./generate_user.sh JusuŠaukinys` ir importuokite pakartotinai.
 
 > **Ryšys nutrūksta užgęsus ekranui**
 > Išjunkite energijos taupymo optimizaciją TAK programėlei.
