@@ -7,7 +7,7 @@ You will need:
 - The **NetBird app** installed on each device that will connect to TAK
 - A TAK client: **iTAK** (iOS), **ATAK** (Android), or **WinTAK** (Windows)
 
-**Minimum server specs:** 4 CPU cores · 6 GB RAM · 40 GB disk
+**Minimum server specs:** 4 CPU cores · 8 GB RAM · 40 GB disk
 
 ---
 

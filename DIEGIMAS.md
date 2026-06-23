@@ -7,7 +7,7 @@ Jums reikės:
 - **NetBird programėlės** kiekviename įrenginyje, kuris jungiasi prie TAK
 - TAK kliento programėlės: **iTAK** (iOS), **ATAK** (Android) arba **WinTAK** (Windows)
 
-**Minimalūs serverio reikalavimai:** 4 CPU branduoliai · 6 GB RAM · 40 GB disko vietos
+**Minimalūs serverio reikalavimai:** 4 CPU branduoliai · 8 GB RAM · 40 GB disko vietos
 
 ---
 
