@@ -199,29 +199,3 @@ Disable battery optimisation for the TAK app.
 - **iOS:** disable **Low Power Mode** in Settings → Battery
 :::
 
----
-
-## Changelog
-
-| Date | Change |
-|------|--------|
-| 2026-06-14 | Initial commit — forked from official efdi-moon-pod-main repository |
-| 2026-06-15 | Base bridge adapters wired; repository structure established; README added |
-| 2026-06-16 | airplanes.live bridge: regional ADS-B and global military aircraft |
-| 2026-06-16 | ICAO NOTAM bridge: active NOTAM ingestion via ICAO Dataservices API |
-| 2026-06-16 | FlightRadar24 bridge: FR24 commercial broadcast integration |
-| 2026-06-16 | Windy bridge: point weather forecast API integration |
-| 2026-06-16 | Protocol Buffer descriptors for new track types (aircraft_track, ais_track, aprs_track, cat62_track) |
-| 2026-06-17/18 | Quality improvements: bridge stability, layer duplicate filtering, track fusion tuning |
-| 2026-06-18 | ASTERIX full-decode design specification document |
-| 2026-06-19/22 | Additional bridge and layer improvements; Giraffe ASTERIX bridge completed |
-| 2026-06-22 | dronuradaras.lt bridge: acoustic sensor network and drone detection events |
-| 2026-06-22 | CoT DETECTION section with audio recording URL in ATAK remarks field |
-| 2026-06-22 | Radar site marker: published on startup + 60 s keepalive so ATAK does not lose the marker |
-| 2026-06-23 | Security audit: hardcoded API key removed from register_topics.sh; key moved to `$EFDI_PORTAL_KEY` environment variable |
-| 2026-06-23 | Security: personal namespace UUID, email, IP and vendor identifier removed from all tracked files; bridges read `PARTNER_NAMESPACE` from environment |
-| 2026-06-23 | Security: `compose/.env` and `register_topics.sh` added to `.gitignore` — credentials remain local only |
-| 2026-06-23 | Security: unbounded HTTP body read in `rest-http/bridge.py` limited to 10 MB |
-| 2026-06-23 | Documentation update: INSTALL.md (English), DIEGIMAS.md (Lithuanian), README.md rewritten as architecture overview |
-| 2026-06-23 | ASTERIX CAT-34 I034/120 decoder: radar self-reports WGS-84 position from live stream — manual coordinate configuration no longer required |
-| 2026-06-23 | Mobile radar support: position, speed and heading derived from sequential I034/120 messages; ATAK shows movement track on vehicle-mounted radars |
