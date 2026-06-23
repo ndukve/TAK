@@ -4,6 +4,8 @@ xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
 xsi:schemaLocation="/opt/tak/CoreConfig.xsd">
 <network multicastTTL="5">
 <input _name="stdssl" protocol="tls" port="8089" coreVersion="2"/>
+<!-- Plaintext TCP input for internal services on the NetBird overlay (e.g. EFDI moon-pod) -->
+<input _name="stdtcp" protocol="tcp" port="8087" coreVersion="2"/>
 <!-- default web connectors
 <connector port="8443" _name="https"/>
 <connector port="8444" useFederationTruststore="true" _name="fed_https"/>

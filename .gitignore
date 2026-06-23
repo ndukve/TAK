@@ -6,6 +6,9 @@ takserver.env
 packages/*.zip
 !packages/.gitkeep
 
+# Service cert output (make add-service)
+certs/
+
 # IDE
 .idea/
 *.iml

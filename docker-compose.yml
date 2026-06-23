@@ -7,6 +7,8 @@ x-tak: &tak-base
   env_file: takserver.env
   volumes:
     - takserver_data:/opt/tak/data
+    - tak_plugins:/opt/tak/plugins
+    - tak_plugin_conf:/opt/tak/conf/plugins
   networks:
     - taknet
   restart: unless-stopped
@@ -51,6 +53,7 @@ services:
     ports:
       - "8089:8089"
       - "8443:8443"
+      - "8087:8087"
     depends_on:
       takserver_initialization:
         condition: service_completed_successfully
@@ -99,7 +102,7 @@ services:
     volumes:
       - takserver_data:/opt/tak/data:ro
       - ./scripts/serve_packages.py:/srv/serve_packages.py:ro
-    working_dir: /opt/tak/data/certs/files/clientpkgs
+    working_dir: /opt/tak/data
     ports:
       - "8888:8888"
     networks:
@@ -109,6 +112,8 @@ services:
 volumes:
   takdb_data:
   takserver_data:
+  tak_plugins:
+  tak_plugin_conf:
 
 networks:
   taknet:

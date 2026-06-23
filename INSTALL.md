@@ -101,6 +101,106 @@ The server entry will appear automatically. Tap **Connect**.
 
 ---
 
+## Client Plugins
+
+ATAK plugins are APK files installed on Android devices — they do not go on the server. The TAK Server automatically supports all standard plugins through its existing APIs.
+
+### Uploading plugins to the server for distribution
+
+Copy APKs to the server so team devices can download them at `http://<server>:8888/plugins/`:
+
+```bash
+cd ~/tak-server
+
+# Upload each plugin APK
+make add-plugin APK=/path/to/ATAK-Plugin-datasync-4.0.4-...-release.apk
+make add-plugin APK=/path/to/ATAK-Plugin-uastool-13.0.0-...-release.apk
+make add-plugin APK=/path/to/ATAK-Plugin-icetak-2.0.2-...-release.apk
+make add-plugin APK=/path/to/ATAK-Plugin-hammer-1.2-...-release.apk
+
+# List what's published
+make list-plugins
+```
+
+On the Android device, open a browser, navigate to `http://<SERVER_NETBIRD_IP>:8888/plugins/`, and tap each file to sideload. Then open ATAK → **Settings → Manage Plugins → Install from file**.
+
+---
+
+### DataSync
+
+**What it does:** Synchronises missions, map overlays, data packages, and files between all connected ATAK devices through the TAK Server.
+
+**Server requirement:** None — the Mission API is built into your TAK Server and runs automatically on `https://<server>:8443/Marti/api/missions`. No additional configuration required.
+
+**Install on device:**
+1. Download the DataSync APK from `http://<server>:8888/plugins/`
+2. ATAK → **Settings → Manage Plugins → Install from file** → select the APK
+3. Restart ATAK if prompted
+4. DataSync appears in the ATAK toolbar (sync icon)
+
+**First use:** DataSync reads the server connection from your existing `.zip` data package — no additional server address configuration needed.
+
+---
+
+### UAS Tool
+
+**What it does:** Displays drone video feeds as picture-in-picture on the ATAK map, and shows UAV tracks from your MAVLink bridge in a dedicated flight control panel.
+
+**Server requirement:** None — drone tracks arrive via the CoT stream your EFDI bridge already sends.
+
+**Install:** Same sideload procedure as DataSync.
+
+**EFDI integration:** With the MAVLink bridge running, UAS Tool automatically shows all MAVLink-connected drones as blue UAV icons on the map. The video feed URL must be configured per-drone inside UAS Tool settings.
+
+---
+
+### ICE Voice (iceTAK)
+
+**What it does:** Encrypted push-to-talk voice over the TAK network using the XMPP/ICE protocol.
+
+**Server requirement:** None — uses existing TCP connection to the TAK Server.
+
+**Install:** Same sideload procedure.
+
+---
+
+### Hammer
+
+**What it does:** Structured tactical reporting — 9-line MEDEVAC, CAS (close air support), SALUTE, SPOT reports. Sends reports as CoT messages visible to all connected devices.
+
+**Server requirement:** None.
+
+**Install:** Same sideload procedure.
+
+---
+
+## Changelog
+
+| Date | Change |
+|------|--------|
+| 2026-06-14 | Initial commit — forked from official efdi-moon-pod-main repository |
+| 2026-06-15 | Base bridge adapters wired; repository structure established; README added |
+| 2026-06-16 | airplanes.live bridge: regional ADS-B and global military aircraft |
+| 2026-06-16 | ICAO NOTAM bridge: active NOTAM ingestion via ICAO Dataservices API |
+| 2026-06-16 | FlightRadar24 bridge: FR24 commercial broadcast integration |
+| 2026-06-16 | Windy bridge: point weather forecast API integration |
+| 2026-06-16 | Protocol Buffer descriptors for new track types (aircraft_track, ais_track, aprs_track, cat62_track) |
+| 2026-06-17/18 | Quality improvements: bridge stability, layer duplicate filtering, track fusion tuning |
+| 2026-06-18 | ASTERIX full-decode design specification document |
+| 2026-06-19/22 | Additional bridge and layer improvements; Giraffe ASTERIX bridge completed |
+| 2026-06-22 | dronuradaras.lt bridge: acoustic sensor network and drone detection events |
+| 2026-06-22 | CoT DETECTION section with audio recording URL in ATAK remarks field |
+| 2026-06-22 | Radar site marker: published on startup + 60s keepalive so ATAK does not lose the marker |
+| 2026-06-23 | Security audit: hardcoded API key removed from register_topics.sh; key moved to `$EFDI_PORTAL_KEY` environment variable |
+| 2026-06-23 | Security: personal namespace UUID, email, IP and vendor identifier removed from all tracked files; bridges read `PARTNER_NAMESPACE` from environment |
+| 2026-06-23 | Security: `compose/.env` and `register_topics.sh` added to `.gitignore` — credentials remain local only |
+| 2026-06-23 | Security: unbounded HTTP body read in `rest-http/bridge.py` limited to 10 MB |
+| 2026-06-23 | Documentation update: INSTALL.md (English), DIEGIMAS.md (Lithuanian), README.md rewritten as architecture overview |
+| 2026-06-23 | ASTERIX CAT-34 I034/120 decoder: radar self-reports WGS-84 position from live stream — manual coordinate configuration no longer required |
+| 2026-06-23 | Mobile radar support: position, speed and heading derived from sequential I034/120 messages; ATAK shows movement track on vehicle-mounted radars |
+
+---
+
 ## Troubleshooting
 
 **Can't download the package on the device**
