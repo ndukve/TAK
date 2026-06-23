@@ -116,33 +116,60 @@ section "Networking"
 
 TAK_SERVER_ADDRESS=""
 
-if ip addr show wt0 2>/dev/null | grep -q inet; then
-    TAK_SERVER_ADDRESS=$(ip addr show wt0 | awk '/inet / {print $2}' | cut -d/ -f1 | head -1)
+_NB_IP=$(ip addr show wt0 2>/dev/null | awk '/inet / {print $2}' | cut -d/ -f1 | head -1)
+_TS_IP=$(ip addr show tailscale0 2>/dev/null | awk '/inet / {print $2}' | cut -d/ -f1 | head -1)
+
+if [ -n "$_NB_IP" ] && [ -n "$_TS_IP" ]; then
+    ok "NetBird detected: $_NB_IP"
+    ok "Tailscale detected: $_TS_IP"
+    echo ""
+    echo "  1) Use NetBird ($_NB_IP)"
+    echo "  2) Use Tailscale ($_TS_IP)"
+    echo ""
+    read -rp "  → [1/2]: " _VPN_CHOICE
+    [ "${_VPN_CHOICE:-1}" = "2" ] && TAK_SERVER_ADDRESS="$_TS_IP" || TAK_SERVER_ADDRESS="$_NB_IP"
+elif [ -n "$_NB_IP" ]; then
+    TAK_SERVER_ADDRESS="$_NB_IP"
     ok "NetBird connected — wt0 IP: $TAK_SERVER_ADDRESS"
+elif [ -n "$_TS_IP" ]; then
+    TAK_SERVER_ADDRESS="$_TS_IP"
+    ok "Tailscale connected — tailscale0 IP: $TAK_SERVER_ADDRESS"
 else
-    warn "NetBird not detected on wt0."
+    warn "No VPN detected."
     echo ""
     echo "  1) Install & connect NetBird"
-    echo "  2) Enter server address manually"
+    echo "  2) Install & connect Tailscale"
+    echo "  3) Enter server address manually"
     echo ""
-    read -rp "  → [1/2]: " _NB_CHOICE
-    case "${_NB_CHOICE:-2}" in
+    read -rp "  → [1/2/3]: " _VPN_CHOICE
+    case "${_VPN_CHOICE:-3}" in
         1)
-            ask_secret NB_SETUP_KEY "NetBird setup key"
+            ask_secret VPN_KEY "NetBird setup key (app.netbird.io → Keys)"
             start_timer "Installing NetBird..."
             curl -fsSL https://pkgs.netbird.io/install.sh | sh > /dev/null 2>&1
             stop_timer; ok "NetBird installed ($_elapsed)"
             start_timer "Connecting to NetBird..."
-            netbird up --setup-key="$NB_SETUP_KEY" > /dev/null 2>&1 \
+            netbird up --setup-key="$VPN_KEY" > /dev/null 2>&1 \
                 || { stop_timer; err "NetBird connection failed. Check your setup key."; }
             sleep 5
             TAK_SERVER_ADDRESS=$(ip addr show wt0 2>/dev/null \
-                | awk '/inet / {print $2}' | cut -d/ -f1 | head -1) \
-                || err "Could not read wt0 IP after connecting."
+                | awk '/inet / {print $2}' | cut -d/ -f1 | head -1)
+            [ -n "$TAK_SERVER_ADDRESS" ] || err "Could not read wt0 IP after connecting."
             stop_timer; ok "NetBird connected: $TAK_SERVER_ADDRESS ($_elapsed)"
             ;;
         2)
-            ask TAK_SERVER_ADDRESS "Server address (IP or hostname)" ""
+            ask_secret VPN_KEY "Tailscale auth key (login.tailscale.com → Settings → Keys)"
+            start_timer "Installing Tailscale..."
+            curl -fsSL https://tailscale.com/install.sh | sh > /dev/null 2>&1
+            stop_timer; ok "Tailscale installed ($_elapsed)"
+            start_timer "Connecting to Tailscale..."
+            tailscale up --authkey="$VPN_KEY" > /dev/null 2>&1 \
+                || { stop_timer; err "Tailscale connection failed. Check your auth key."; }
+            sleep 5
+            TAK_SERVER_ADDRESS=$(ip addr show tailscale0 2>/dev/null \
+                | awk '/inet / {print $2}' | cut -d/ -f1 | head -1)
+            [ -n "$TAK_SERVER_ADDRESS" ] || err "Could not read tailscale0 IP after connecting."
+            stop_timer; ok "Tailscale connected: $TAK_SERVER_ADDRESS ($_elapsed)"
             ;;
         *)
             ask TAK_SERVER_ADDRESS "Server address (IP or hostname)" ""
