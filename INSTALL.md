@@ -1,7 +1,12 @@
-# Installation Guide
-
-This guide walks through deploying TAK Server on a fresh Ubuntu 22.04 machine. No prior experience with Docker or TAK is required.
-
+---
+title: TAK Server — Installation Guide
+description: Deploy TAK Server 5.7 on Ubuntu 22.04 with NetBird overlay networking. Covers server setup, client onboarding, plugin distribution, and EFDI integration.
+tags:
+  - tak
+  - installation
+  - netbird
+  - atak
+date: 2026-06-23
 ---
 
 ## Before You Start
@@ -9,11 +14,11 @@ This guide walks through deploying TAK Server on a fresh Ubuntu 22.04 machine. N
 You will need:
 
 - A machine running **Ubuntu 22.04** (server edition, minimal install) with internet access
-- A free **NetBird account** at [app.netbird.io](https://app.netbird.io) — this provides the encrypted tunnel between the server and your devices
+- A free **NetBird account** at [app.netbird.io](https://app.netbird.io) — provides the encrypted tunnel between the server and your devices
 - The **NetBird app** installed on each device that will connect to TAK
-- A TAK client on your device: **iTAK** (iOS), **ATAK** (Android), or **WinTAK** (Windows)
+- A TAK client: **iTAK** (iOS), **ATAK** (Android), or **WinTAK** (Windows)
 
-Minimum server specs: 4 CPU cores · 6 GB RAM · 40 GB disk
+**Minimum server specs:** 4 CPU cores · 6 GB RAM · 40 GB disk
 
 ---
 
@@ -45,7 +50,9 @@ When prompted for networking, choose **option 1 (Install & connect NetBird)** an
 - Generate all secrets automatically
 - Build the TAK Server image and start all services
 
+::: info
 Installation takes approximately 5–10 minutes. When the summary screen appears, the server is running.
+:::
 
 ---
 
@@ -76,7 +83,7 @@ This generates a data package containing a client certificate and server connect
 http://<SERVER_NETBIRD_IP>:8888/YourCallsign.zip
 ```
 
-The server's NetBird IP is printed at the end of the installation output. You can also retrieve it with:
+To retrieve the server's NetBird IP:
 
 ```bash
 ip addr show wt0 | grep "inet " | awk '{print $2}' | cut -d/ -f1
@@ -105,32 +112,33 @@ The server entry will appear automatically. Tap **Connect**.
 
 ATAK plugins are APK files installed on Android devices — they do not go on the server. The TAK Server automatically supports all standard plugins through its existing APIs.
 
-### Uploading plugins to the server for distribution
+### Uploading Plugins for Distribution
 
 Copy APKs to the server so team devices can download them at `http://<server>:8888/plugins/`:
 
 ```bash
 cd ~/tak-server
 
-# Upload each plugin APK
 make add-plugin APK=/path/to/ATAK-Plugin-datasync-4.0.4-...-release.apk
 make add-plugin APK=/path/to/ATAK-Plugin-uastool-13.0.0-...-release.apk
 make add-plugin APK=/path/to/ATAK-Plugin-icetak-2.0.2-...-release.apk
 make add-plugin APK=/path/to/ATAK-Plugin-hammer-1.2-...-release.apk
 
-# List what's published
+# List what is published
 make list-plugins
 ```
 
-On the Android device, open a browser, navigate to `http://<SERVER_NETBIRD_IP>:8888/plugins/`, and tap each file to sideload. Then open ATAK → **Settings → Manage Plugins → Install from file**.
+On the Android device: open a browser → navigate to `http://<SERVER_NETBIRD_IP>:8888/plugins/` → tap each file to sideload → ATAK → **Settings → Manage Plugins → Install from file**.
 
 ---
 
 ### DataSync
 
-**What it does:** Synchronises missions, map overlays, data packages, and files between all connected ATAK devices through the TAK Server.
+Synchronises missions, map overlays, data packages, and files between all connected ATAK devices through the TAK Server.
 
-**Server requirement:** None — the Mission API is built into your TAK Server and runs automatically on `https://<server>:8443/Marti/api/missions`. No additional configuration required.
+::: tip Server requirement
+None. The Mission API is built into TAK Server and runs automatically at `https://<server>:8443/Marti/api/missions`. No additional configuration required.
+:::
 
 **Install on device:**
 1. Download the DataSync APK from `http://<server>:8888/plugins/`
@@ -138,27 +146,29 @@ On the Android device, open a browser, navigate to `http://<SERVER_NETBIRD_IP>:8
 3. Restart ATAK if prompted
 4. DataSync appears in the ATAK toolbar (sync icon)
 
-**First use:** DataSync reads the server connection from your existing `.zip` data package — no additional server address configuration needed.
+DataSync reads the server connection from your existing `.zip` data package — no additional server address configuration needed.
 
 ---
 
 ### UAS Tool
 
-**What it does:** Displays drone video feeds as picture-in-picture on the ATAK map, and shows UAV tracks from your MAVLink bridge in a dedicated flight control panel.
+Displays drone video feeds as picture-in-picture on the ATAK map, and shows UAV tracks from your MAVLink bridge in a dedicated flight control panel.
 
-**Server requirement:** None — drone tracks arrive via the CoT stream your EFDI bridge already sends.
+::: tip EFDI integration
+With the MAVLink bridge running, UAS Tool automatically shows all MAVLink-connected drones as blue UAV icons on the map. Video feed URL is configured per-drone inside UAS Tool settings.
+:::
 
 **Install:** Same sideload procedure as DataSync.
 
-**EFDI integration:** With the MAVLink bridge running, UAS Tool automatically shows all MAVLink-connected drones as blue UAV icons on the map. The video feed URL must be configured per-drone inside UAS Tool settings.
+Two variants are available:
+- **UAS Tool** — standard, for any compatible drone
+- **UAS Tool DIUBLUE** — for Blue UAS-cleared drones (Skydio, Autel, Parrot)
 
 ---
 
 ### ICE Voice (iceTAK)
 
-**What it does:** Encrypted push-to-talk voice over the TAK network using the XMPP/ICE protocol.
-
-**Server requirement:** None — uses existing TCP connection to the TAK Server.
+Encrypted push-to-talk voice over the TAK network using the XMPP/ICE protocol. Uses the existing TCP connection to the TAK Server — no additional server configuration required.
 
 **Install:** Same sideload procedure.
 
@@ -166,11 +176,28 @@ On the Android device, open a browser, navigate to `http://<SERVER_NETBIRD_IP>:8
 
 ### Hammer
 
-**What it does:** Structured tactical reporting — 9-line MEDEVAC, CAS (close air support), SALUTE, SPOT reports. Sends reports as CoT messages visible to all connected devices.
-
-**Server requirement:** None.
+Structured tactical reporting — 9-line MEDEVAC, CAS (close air support), SALUTE, SPOT reports. Sends reports as CoT messages visible to all connected devices.
 
 **Install:** Same sideload procedure.
+
+---
+
+## Troubleshooting
+
+::: warning Can't download the package on the device
+Confirm the NetBird app shows **Connected** on the device. The package server is only reachable over the NetBird network.
+:::
+
+::: warning Server appears but won't connect
+The package may have been generated with the wrong server IP. Delete the server entry, regenerate the package with `./generate_user.sh YourCallsign`, and re-import.
+:::
+
+::: warning Connection drops when the screen turns off
+Disable battery optimisation for the TAK app.
+
+- **Android:** Settings → Apps → ATAK → Battery → **Unrestricted**
+- **iOS:** disable **Low Power Mode** in Settings → Battery
+:::
 
 ---
 
@@ -190,7 +217,7 @@ On the Android device, open a browser, navigate to `http://<SERVER_NETBIRD_IP>:8
 | 2026-06-19/22 | Additional bridge and layer improvements; Giraffe ASTERIX bridge completed |
 | 2026-06-22 | dronuradaras.lt bridge: acoustic sensor network and drone detection events |
 | 2026-06-22 | CoT DETECTION section with audio recording URL in ATAK remarks field |
-| 2026-06-22 | Radar site marker: published on startup + 60s keepalive so ATAK does not lose the marker |
+| 2026-06-22 | Radar site marker: published on startup + 60 s keepalive so ATAK does not lose the marker |
 | 2026-06-23 | Security audit: hardcoded API key removed from register_topics.sh; key moved to `$EFDI_PORTAL_KEY` environment variable |
 | 2026-06-23 | Security: personal namespace UUID, email, IP and vendor identifier removed from all tracked files; bridges read `PARTNER_NAMESPACE` from environment |
 | 2026-06-23 | Security: `compose/.env` and `register_topics.sh` added to `.gitignore` — credentials remain local only |
@@ -198,18 +225,3 @@ On the Android device, open a browser, navigate to `http://<SERVER_NETBIRD_IP>:8
 | 2026-06-23 | Documentation update: INSTALL.md (English), DIEGIMAS.md (Lithuanian), README.md rewritten as architecture overview |
 | 2026-06-23 | ASTERIX CAT-34 I034/120 decoder: radar self-reports WGS-84 position from live stream — manual coordinate configuration no longer required |
 | 2026-06-23 | Mobile radar support: position, speed and heading derived from sequential I034/120 messages; ATAK shows movement track on vehicle-mounted radars |
-
----
-
-## Troubleshooting
-
-**Can't download the package on the device**
-Confirm the NetBird app shows **Connected** on the device. The package server is only reachable over the NetBird network.
-
-**Server appears but won't connect**
-The package may have been generated with the wrong server IP. Delete the package, regenerate with `./generate_user.sh`, and re-import.
-
-**Connection drops when the screen turns off**
-Disable battery optimisation for the TAK app.
-- Android: Settings → Apps → ATAK → Battery → **Unrestricted**
-- iOS: disable **Low Power Mode** in Settings → Battery

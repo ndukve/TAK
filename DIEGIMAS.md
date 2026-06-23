@@ -1,7 +1,12 @@
-# Diegimo instrukcija
-
-Šis vadovas aprašo TAK serverio diegimą naujame Ubuntu 22.04 kompiuteryje. Docker ar TAK patirtis nereikalinga.
-
+---
+title: TAK Serveris — Diegimo instrukcija
+description: TAK Server 5.7 diegimas Ubuntu 22.04 su NetBird tinklo perdanga. Apima serverio diegimą, klientų prijungimą, papildinių platinimą ir EFDI integraciją.
+tags:
+  - tak
+  - diegimas
+  - netbird
+  - atak
+date: 2026-06-23
 ---
 
 ## Prieš pradedant
@@ -9,11 +14,11 @@
 Jums reikės:
 
 - Kompiuterio su **Ubuntu 22.04** (serverio leidimas, minimalus diegimas) ir interneto ryšiu
-- Nemokamos **NetBird paskyros** [app.netbird.io](https://app.netbird.io) — ji sukuria šifruotą tunelį tarp serverio ir jūsų įrenginių
+- Nemokamos **NetBird paskyros** [app.netbird.io](https://app.netbird.io) — sukuria šifruotą tunelį tarp serverio ir jūsų įrenginių
 - **NetBird programėlės** kiekviename įrenginyje, kuris jungiasi prie TAK
 - TAK kliento programėlės: **iTAK** (iOS), **ATAK** (Android) arba **WinTAK** (Windows)
 
-Minimalūs serverio reikalavimai: 4 CPU branduoliai · 6 GB RAM · 40 GB disko vietos
+**Minimalūs serverio reikalavimai:** 4 CPU branduoliai · 6 GB RAM · 40 GB disko vietos
 
 ---
 
@@ -45,7 +50,9 @@ Kai paklaus apie tinklą, pasirinkite **1 parinktį (Install & connect NetBird)*
 - Automatiškai sugeneruos visus slaptažodžius
 - Sukurs TAK serverio Docker atvaizdą ir paleis visas paslaugas
 
+::: info
 Diegimas trunka apie 5–10 minučių. Kai pasirodys suvestinės ekranas, serveris veikia.
+:::
 
 ---
 
@@ -76,7 +83,7 @@ cd ~/tak-server
 http://<SERVERIO_NETBIRD_IP>:8888/JusuŠaukinis.zip
 ```
 
-Serverio NetBird IP rodomas diegimo pabaigoje. Taip pat galite jį gauti komanda:
+Serverio NetBird IP adresą galite gauti komanda:
 
 ```bash
 ip addr show wt0 | grep "inet " | awk '{print $2}' | cut -d/ -f1
@@ -112,7 +119,6 @@ Nukopijuokite APK failus į serverį, kad komandos įrenginiai galėtų juos ats
 ```bash
 cd ~/tak-server
 
-# Įkelkite kiekvieną papildinį
 make add-plugin APK=/kelias/iki/ATAK-Plugin-datasync-4.0.4-...-release.apk
 make add-plugin APK=/kelias/iki/ATAK-Plugin-uastool-13.0.0-...-release.apk
 make add-plugin APK=/kelias/iki/ATAK-Plugin-icetak-2.0.2-...-release.apk
@@ -122,15 +128,17 @@ make add-plugin APK=/kelias/iki/ATAK-Plugin-hammer-1.2-...-release.apk
 make list-plugins
 ```
 
-Android įrenginyje atidarykite naršyklę, eikite į `http://<SERVERIO_NETBIRD_IP>:8888/plugins/` ir paspauskite ant kiekvieno failo, kad įdiegtumėte. Tada ATAK → **Settings → Manage Plugins → Install from file**.
+Android įrenginyje: atidarykite naršyklę → `http://<SERVERIO_NETBIRD_IP>:8888/plugins/` → paspauskite ant failo → ATAK → **Settings → Manage Plugins → Install from file**.
 
 ---
 
 ### DataSync
 
-**Paskirtis:** Sinchronizuoja misijas, žemėlapių sluoksnius, duomenų paketus ir failus tarp visų prijungtų ATAK įrenginių per TAK serverį.
+Sinchronizuoja misijas, žemėlapių sluoksnius, duomenų paketus ir failus tarp visų prijungtų ATAK įrenginių per TAK serverį.
 
-**Serverio reikalavimai:** Jokie — Mission API jau veikia jūsų TAK serveryje adresu `https://<serveris>:8443/Marti/api/missions`. Papildomos konfigūracijos nereikia.
+::: tip Serverio reikalavimai
+Jokie. Mission API jau veikia TAK serveryje adresu `https://<serveris>:8443/Marti/api/missions`. Papildomos konfigūracijos nereikia.
+:::
 
 **Diegimas įrenginyje:**
 1. Atsisiųskite DataSync APK iš `http://<serveris>:8888/plugins/`
@@ -138,27 +146,29 @@ Android įrenginyje atidarykite naršyklę, eikite į `http://<SERVERIO_NETBIRD_
 3. Iš naujo paleiskite ATAK, jei paprašoma
 4. DataSync atsiranda ATAK įrankių juostoje (sinchronizavimo piktograma)
 
-**Pirmas naudojimas:** DataSync serverio adresą nuskaito iš jūsų `.zip` duomenų paketo — papildomos konfigūracijos nereikia.
+DataSync serverio adresą nuskaito iš jūsų `.zip` duomenų paketo — papildomos konfigūracijos nereikia.
 
 ---
 
 ### UAS Tool
 
-**Paskirtis:** Rodo dronų vaizdo įrašą kaip "picture-in-picture" ant ATAK žemėlapio ir vaizduoja UAV takelius iš jūsų MAVLink tilto atskirame valdymo skydelyje.
+Rodo dronų vaizdo įrašą kaip „picture-in-picture" ant ATAK žemėlapio ir vaizduoja UAV takelius iš MAVLink tilto atskirame valdymo skydelyje.
 
-**Serverio reikalavimai:** Jokie — dronų takeliai perduodami per CoT srautą, kurį EFDI bridge jau siunčia.
+::: tip EFDI integracija
+Kai MAVLink bridge veikia, UAS Tool automatiškai rodo visus MAVLink prijungtus dronus kaip mėlynas UAV piktogramas žemėlapyje. Vaizdo srauto URL konfigūruojamas UAS Tool nustatymuose kiekvienam dronui atskirai.
+:::
 
 **Diegimas:** Ta pati APK diegimo procedūra kaip DataSync.
 
-**EFDI integracija:** Kai MAVLink bridge veikia, UAS Tool automatiškai rodo visus MAVLink prijungtus dronus kaip mėlynas UAV piktogramas žemėlapyje. Vaizdo srauto URL konfigūruojamas UAS Tool nustatymuose kiekvienam dronui atskirai.
+Galimi du variantai:
+- **UAS Tool** — standartinis, bet kuriam suderinamam dronui
+- **UAS Tool DIUBLUE** — Blue UAS sąraše esantiems dronams (Skydio, Autel, Parrot)
 
 ---
 
 ### ICE Voice (iceTAK)
 
-**Paskirtis:** Šifruotas "push-to-talk" balsas per TAK tinklą naudojant XMPP/ICE protokolą.
-
-**Serverio reikalavimai:** Jokie — naudoja esamą TCP ryšį su TAK serveriu.
+Šifruotas „push-to-talk" balsas per TAK tinklą naudojant XMPP/ICE protokolą. Naudoja esamą TCP ryšį su TAK serveriu — papildomos serverio konfigūracijos nereikia.
 
 **Diegimas:** Ta pati APK diegimo procedūra.
 
@@ -166,11 +176,28 @@ Android įrenginyje atidarykite naršyklę, eikite į `http://<SERVERIO_NETBIRD_
 
 ### Hammer
 
-**Paskirtis:** Struktūrizuotos taktinės ataskaitos — 9-linijinis MEDEVAC, CAS (artima oro parama), SALUTE, SPOT ataskaitos. Siunčia ataskaitas kaip CoT pranešimus, matomus visiems prijungtiems įrenginiams.
-
-**Serverio reikalavimai:** Jokie.
+Struktūrizuotos taktinės ataskaitos — 9-linijinis MEDEVAC, CAS (artima oro parama), SALUTE, SPOT ataskaitos. Siunčia ataskaitas kaip CoT pranešimus, matomus visiems prijungtiems įrenginiams.
 
 **Diegimas:** Ta pati APK diegimo procedūra.
+
+---
+
+## Dažnos problemos
+
+::: warning Nepavyksta atsisiųsti paketo įrenginyje
+Patikrinkite, ar NetBird programėlė rodo **Connected**. Paketų serveris pasiekiamas tik per NetBird tinklą.
+:::
+
+::: warning Serveris matomas, bet neprisijungia
+Paketas gali būti sugeneruotas su netinkamu serverio IP. Ištrinkite serverio įrašą, sugeneruokite paketą iš naujo su `./generate_user.sh JusuŠaukinis` ir importuokite pakartotinai.
+:::
+
+::: warning Ryšys nutrūksta užgęsus ekranui
+Išjunkite energijos taupymo optimizaciją TAK programėlei.
+
+- **Android:** Settings → Apps → ATAK → Battery → **Unrestricted**
+- **iOS:** išjunkite **Low Power Mode** Settings → Battery
+:::
 
 ---
 
@@ -198,18 +225,3 @@ Android įrenginyje atidarykite naršyklę, eikite į `http://<SERVERIO_NETBIRD_
 | 2026-06-23 | Dokumentacijos atnaujinimas: INSTALL.md (anglų), DIEGIMAS.md (lietuvių), README.md perrašytas kaip architektūros apžvalga |
 | 2026-06-23 | ASTERIX CAT-34 I034/120 dekoderis: radaras pats praneša WGS-84 poziciją iš gyvo srauto — rankinis koordinačių nustatymas nebereikalingas |
 | 2026-06-23 | Mobiliojo radaro palaikymas: pozicija, greitis ir kursas gaunami iš nuoseklių I034/120 pranešimų; ATAK rodo judėjimo taką ant transporto priemonėje montuojamų radarų |
-
----
-
-## Dažnos problemos
-
-**Nepavyksta atsisiųsti paketo įrenginyje**
-Patikrinkite, ar NetBird programėlė rodo **Connected**. Paketų serveris pasiekiamas tik per NetBird tinklą.
-
-**Serveris matomas, bet neprisijungia**
-Paketas gali būti sugeneruotas su netinkamu serverio IP. Ištrinkite paketą, sugeneruokite iš naujo su `./generate_user.sh` ir importuokite pakartotinai.
-
-**Ryšys nutrūksta užgęsus ekranui**
-Išjunkite energijos taupymo optimizaciją TAK programėlei.
-- Android: Settings → Apps → ATAK → Battery → **Unrestricted**
-- iOS: išjunkite **Low Power Mode** Settings → Battery
