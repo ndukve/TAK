@@ -3,17 +3,32 @@
 You will need:
 
 - A machine running **Ubuntu 22.04** (server edition, minimal install) with internet access
-- A free **NetBird account** at [app.netbird.io](https://app.netbird.io) — provides the encrypted tunnel between the server and your devices
-- The **NetBird app** installed on each device that will connect to TAK
 - A TAK client: **iTAK** (iOS), **ATAK** (Android), or **WinTAK** (Windows)
 
 **Minimum server specs:** 4 CPU cores · 8 GB RAM · 40 GB disk
 
+**Choose how devices will reach the server:**
+
+| Scenario | What to use |
+|---|---|
+| All devices on the **same LAN or Wi-Fi** as the server | Use the server's local IP — no VPN needed |
+| Devices connecting **remotely** (different network, internet) | Use NetBird or Tailscale overlay |
+
 ---
 
-## Step 1 — Create a NetBird Setup Key
+## Step 1 — Decide on Networking
 
-A setup key lets devices join your private NetBird network.
+### Option A — Local network (no VPN)
+
+If your phones, laptops, and the TAK server are all on the same Wi-Fi or LAN, you do not need any VPN. The server's local IP (e.g. `192.168.1.50`) is the server address.
+
+> **Assign a static IP** to the server (or a DHCP reservation on your router). If the IP changes, existing data packages will stop working.
+
+Skip to Step 2. During the installer you will choose **"Enter address manually"** and type the server's LAN IP.
+
+### Option B — Remote access (NetBird)
+
+If devices will connect from outside the local network, use NetBird to create an encrypted overlay tunnel.
 
 1. Sign in at [app.netbird.io](https://app.netbird.io)
 2. Navigate to **Setup Keys** in the left sidebar
@@ -30,11 +45,16 @@ On your Ubuntu machine, open a terminal and run:
 curl -fsSL https://raw.githubusercontent.com/ndukve/TAK/main/install.sh | bash
 ```
 
-When prompted for networking, choose **option 1 (Install & connect NetBird)** and paste your setup key. The installer will:
+When prompted for networking, choose the option that matches Step 1:
+
+- **Option 1 — Install & connect NetBird** → paste your setup key (Option B above)
+- **Option 2 — Install & connect Tailscale** → paste your Tailscale auth key
+- **Option 3 — Enter address manually** → type the server's LAN IP (Option A above)
+
+The installer will:
 
 - Install Docker Engine
-- Install and connect NetBird using your setup key
-- Detect the NetBird IP (`wt0` interface) and use it as the server address
+- Connect to the chosen network (or skip if manual IP)
 - Prompt for certificate metadata (country, state, city, organisation — defaults are fine for testing)
 - Generate all secrets automatically
 - Build the TAK Server image and start all services
@@ -43,9 +63,11 @@ When prompted for networking, choose **option 1 (Install & connect NetBird)** an
 
 ---
 
-## Step 3 — Connect Your Device to NetBird
+## Step 3 — Connect Your Device to the Network
 
-Each device that will connect to TAK must join the same NetBird network.
+**If you chose Option A (local network):** skip this step. Devices reach the server directly over LAN/Wi-Fi.
+
+**If you chose Option B (NetBird):** install the NetBird app on each device that will connect to TAK.
 
 1. Install the NetBird app:
    - iOS: [App Store](https://apps.apple.com/app/netbird/id6469329339)
@@ -67,10 +89,12 @@ cd ~/tak-server
 This generates a data package containing a client certificate and server connection config. On your device, open a browser and navigate to:
 
 ```
-http://<SERVER_NETBIRD_IP>:8888/YourCallsign.zip
+http://<SERVER_IP>:8888/YourCallsign.zip
 ```
 
-To retrieve the server's NetBird IP:
+Replace `<SERVER_IP>` with:
+- **Option A:** the server's LAN IP (e.g. `192.168.1.50`)
+- **Option B:** the server's NetBird IP — find it with:
 
 ```bash
 ip addr show wt0 | grep "inet " | awk '{print $2}' | cut -d/ -f1
@@ -101,7 +125,7 @@ ATAK plugins are APK files installed on Android devices — they do not go on th
 
 ### Uploading Plugins for Distribution
 
-Copy APKs to the server so team devices can download them at `http://<server>:8888/plugins/`:
+Copy APKs to the server so team devices can download them at `http://<SERVER_IP>:8888/plugins/`:
 
 ```bash
 cd ~/tak-server
@@ -115,7 +139,7 @@ make add-plugin APK=/path/to/ATAK-Plugin-hammer-1.2-...-release.apk
 make list-plugins
 ```
 
-On the Android device: open a browser → navigate to `http://<SERVER_NETBIRD_IP>:8888/plugins/` → tap each file to sideload → ATAK → **Settings → Manage Plugins → Install from file**.
+On the Android device: open a browser → navigate to `http://<SERVER_IP>:8888/plugins/` → tap each file to sideload → ATAK → **Settings → Manage Plugins → Install from file**.
 
 ---
 
@@ -126,7 +150,7 @@ Synchronises missions, map overlays, data packages, and files between all connec
 > **Server requirement:** None. The Mission API is built into TAK Server and runs automatically at `https://<server>:8443/Marti/api/missions`. No additional configuration required.
 
 **Install on device:**
-1. Download the DataSync APK from `http://<server>:8888/plugins/`
+1. Download the DataSync APK from `http://<SERVER_IP>:8888/plugins/`
 2. ATAK → **Settings → Manage Plugins → Install from file** → select the APK
 3. Restart ATAK if prompted
 4. DataSync appears in the ATAK toolbar (sync icon)
@@ -168,7 +192,7 @@ Structured tactical reporting — 9-line MEDEVAC, CAS (close air support), SALUT
 ## Troubleshooting
 
 > **Can't download the package on the device**
-> Confirm the NetBird app shows **Connected** on the device. The package server is only reachable over the NetBird network.
+> Confirm the device can reach the server IP on port 8888. For Option A: check that the device is on the same Wi-Fi/LAN. For Option B: confirm the NetBird app shows **Connected**.
 
 > **Server appears but won't connect**
 > The package may have been generated with the wrong server IP. Delete the server entry, regenerate the package with `./generate_user.sh YourCallsign`, and re-import.

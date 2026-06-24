@@ -3,17 +3,32 @@
 Jums reikės:
 
 - Kompiuterio su **Ubuntu 22.04** (serverio leidimas, minimalus diegimas) ir interneto ryšiu
-- Nemokamos **NetBird paskyros** [app.netbird.io](https://app.netbird.io) — sukuria šifruotą tunelį tarp serverio ir jūsų įrenginių
-- **NetBird programėlės** kiekviename įrenginyje, kuris jungiasi prie TAK
 - TAK kliento programėlės: **iTAK** (iOS), **ATAK** (Android) arba **WinTAK** (Windows)
 
 **Minimalūs serverio reikalavimai:** 4 CPU branduoliai · 8 GB RAM · 40 GB disko vietos
 
+**Pasirinkite, kaip įrenginiai pasiekia serverį:**
+
+| Situacija | Ką naudoti |
+|---|---|
+| Visi įrenginiai tame **pačiame tinkle (LAN arba Wi-Fi)** kaip serveris | Serverio vietinis IP — VPN nereikia |
+| Įrenginiai jungiasi **nuotoliniu būdu** (kitas tinklas, internetas) | NetBird arba Tailscale tunelį |
+
 ---
 
-## 1 žingsnis — Sukurti NetBird setup raktą
+## 1 žingsnis — Pasirinkti tinklo variantą
 
-Setup raktas leidžia įrenginiams prisijungti prie jūsų privataus NetBird tinklo.
+### A variantas — Vietinis tinklas (be VPN)
+
+Jei telefonai, nešiojami kompiuteriai ir TAK serveris yra tame pačiame Wi-Fi arba LAN tinkle, VPN nereikia. Serverio vietinis IP (pvz. `192.168.1.50`) naudojamas kaip serverio adresas.
+
+> **Priskirti statinį IP** serveriui (arba DHCP rezervaciją maršrutizatoriuje). Jei IP pasikeičia, esami duomenų paketai nustos veikti.
+
+Pereikite prie 2 žingsnio. Diegimo metu pasirinksite **„Enter address manually"** ir įvesite serverio LAN IP.
+
+### B variantas — Nuotolinis prisijungimas (NetBird)
+
+Jei įrenginiai jungiasi iš kito tinklo, naudokite NetBird šifruotam tuneliui sukurti.
 
 1. Prisijunkite prie [app.netbird.io](https://app.netbird.io)
 2. Kairėje juostoje pasirinkite **Setup Keys**
@@ -30,11 +45,16 @@ Ubuntu kompiuteryje atidarykite terminalą ir paleiskite:
 curl -fsSL https://raw.githubusercontent.com/ndukve/TAK/main/install.sh | bash
 ```
 
-Kai paklaus apie tinklą, pasirinkite **1 parinktį (Install & connect NetBird)** ir įklijuokite setup raktą. Skriptas automatiškai:
+Kai paklaus apie tinklą, pasirinkite variantą pagal 1 žingsnį:
+
+- **1 parinktis — Install & connect NetBird** → įklijuokite setup raktą (B variantas)
+- **2 parinktis — Install & connect Tailscale** → įklijuokite Tailscale auth raktą
+- **3 parinktis — Enter address manually** → įveskite serverio LAN IP (A variantas)
+
+Skriptas automatiškai:
 
 - Įdiegs Docker Engine
-- Įdiegs ir prijungs NetBird naudodamas jūsų setup raktą
-- Aptiks NetBird IP adresą (`wt0` sąsaja) ir naudos jį kaip serverio adresą
+- Prisijungs prie pasirinkto tinklo (arba praleis, jei rankinis IP)
 - Paklaus sertifikatų metaduomenų (šalis, valstija, miestas, organizacija — numatytosios reikšmės tinka testavimui)
 - Automatiškai sugeneruos visus slaptažodžius
 - Sukurs TAK serverio Docker atvaizdą ir paleis visas paslaugas
@@ -43,9 +63,11 @@ Kai paklaus apie tinklą, pasirinkite **1 parinktį (Install & connect NetBird)*
 
 ---
 
-## 3 žingsnis — Prijungti įrenginį prie NetBird
+## 3 žingsnis — Prijungti įrenginį prie tinklo
 
-Kiekvienas įrenginys, kuris jungiasi prie TAK, turi būti tame pačiame NetBird tinkle.
+**Jei pasirinkote A variantą (vietinis tinklas):** praleiskite šį žingsnį. Įrenginiai pasiekia serverį tiesiogiai per LAN/Wi-Fi.
+
+**Jei pasirinkote B variantą (NetBird):** įdiekite NetBird programėlę kiekviename įrenginyje, kuris jungiasi prie TAK.
 
 1. Įdiekite NetBird programėlę:
    - iOS: [App Store](https://apps.apple.com/app/netbird/id6469329339)
@@ -67,10 +89,12 @@ cd ~/tak-server
 Ši komanda sugeneruoja duomenų paketą su kliento sertifikatu ir serverio ryšio konfigūracija. Įrenginio naršyklėje atidarykite:
 
 ```
-http://<SERVERIO_NETBIRD_IP>:8888/JusuŠaukinis.zip
+http://<SERVERIO_IP>:8888/JusuŠaukinis.zip
 ```
 
-Serverio NetBird IP adresą galite gauti komanda:
+Vietoje `<SERVERIO_IP>` naudokite:
+- **A variantas:** serverio LAN IP (pvz. `192.168.1.50`)
+- **B variantas:** serverio NetBird IP — gaukite komanda:
 
 ```bash
 ip addr show wt0 | grep "inet " | awk '{print $2}' | cut -d/ -f1
@@ -101,7 +125,7 @@ ATAK papildiniai — tai APK failai, diegiami Android įrenginiuose, o ne server
 
 ### Papildinių įkėlimas į serverį platinimui
 
-Nukopijuokite APK failus į serverį, kad komandos įrenginiai galėtų juos atsisiųsti adresu `http://<serveris>:8888/plugins/`:
+Nukopijuokite APK failus į serverį, kad komandos įrenginiai galėtų juos atsisiųsti adresu `http://<SERVERIO_IP>:8888/plugins/`:
 
 ```bash
 cd ~/tak-server
@@ -115,7 +139,7 @@ make add-plugin APK=/kelias/iki/ATAK-Plugin-hammer-1.2-...-release.apk
 make list-plugins
 ```
 
-Android įrenginyje: atidarykite naršyklę → `http://<SERVERIO_NETBIRD_IP>:8888/plugins/` → paspauskite ant failo → ATAK → **Settings → Manage Plugins → Install from file**.
+Android įrenginyje: atidarykite naršyklę → `http://<SERVERIO_IP>:8888/plugins/` → paspauskite ant failo → ATAK → **Settings → Manage Plugins → Install from file**.
 
 ---
 
@@ -126,7 +150,7 @@ Sinchronizuoja misijas, žemėlapių sluoksnius, duomenų paketus ir failus tarp
 > **Serverio reikalavimai:** Jokie. Mission API jau veikia TAK serveryje adresu `https://<serveris>:8443/Marti/api/missions`. Papildomos konfigūracijos nereikia.
 
 **Diegimas įrenginyje:**
-1. Atsisiųskite DataSync APK iš `http://<serveris>:8888/plugins/`
+1. Atsisiųskite DataSync APK iš `http://<SERVERIO_IP>:8888/plugins/`
 2. ATAK → **Settings → Manage Plugins → Install from file** → pasirinkite APK
 3. Iš naujo paleiskite ATAK, jei paprašoma
 4. DataSync atsiranda ATAK įrankių juostoje (sinchronizavimo piktograma)
@@ -168,7 +192,7 @@ Struktūrizuotos taktinės ataskaitos — 9-linijinis MEDEVAC, CAS (artima oro p
 ## Dažnos problemos
 
 > **Nepavyksta atsisiųsti paketo įrenginyje**
-> Patikrinkite, ar NetBird programėlė rodo **Connected**. Paketų serveris pasiekiamas tik per NetBird tinklą.
+> Patikrinkite, ar įrenginys pasiekia serverio IP per prievadą 8888. A variantas: įsitikinkite, kad įrenginys yra tame pačiame Wi-Fi/LAN tinkle. B variantas: patikrinkite, ar NetBird programėlė rodo **Connected**.
 
 > **Serveris matomas, bet neprisijungia**
 > Paketas gali būti sugeneruotas su netinkamu serverio IP. Ištrinkite serverio įrašą, sugeneruokite paketą iš naujo su `./generate_user.sh JusuŠaukinys` ir importuokite pakartotinai.
