@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<customMapSource>
+    <name>EE Greyscale (Maa-amet)</name>
+    <minZoom>6</minZoom>
+    <maxZoom>14</maxZoom>
+    <tileType>png</tileType>
+    <tileUpdate>None</tileUpdate>
+    <url>https://tiles.maaamet.ee/tm/tms/1.0.0/hallkaart@GMC/{$z}/{$x}/{$y}.png</url>
+    <invertYCoordinate>true</invertYCoordinate>
+    <backgroundColor>#000000</backgroundColor>
+</customMapSource>

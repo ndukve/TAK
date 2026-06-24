@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<customMapSource>
+    <name>EE Orthophoto (Maa-amet)</name>
+    <minZoom>6</minZoom>
+    <maxZoom>14</maxZoom>
+    <tileType>jpg</tileType>
+    <tileUpdate>None</tileUpdate>
+    <url>https://tiles.maaamet.ee/tm/tms/1.0.0/foto@GMC/{$z}/{$x}/{$y}.jpg</url>
+    <invertYCoordinate>true</invertYCoordinate>
+    <backgroundColor>#000000</backgroundColor>
+</customMapSource>

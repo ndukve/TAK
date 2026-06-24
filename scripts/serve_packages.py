@@ -21,7 +21,8 @@ BIND       = "0.0.0.0"
 DATA_ROOT  = "/opt/tak/data"
 PKG_DIR    = os.path.join(DATA_ROOT, "certs/files/clientpkgs")
 PLUGIN_DIR = os.path.join(DATA_ROOT, "plugins")
-MAPS_DIR   = "/opt/tak/maps"
+MAPS_ROOT  = "/opt/tak/maps"
+MAPS_DIRS  = [os.path.join(MAPS_ROOT, d) for d in ("upstream", "local")]
 
 MIME = {
     ".p12":  "application/x-pkcs12",
@@ -52,12 +53,11 @@ class TAKHandler(http.server.BaseHTTPRequestHandler):
             if any(p == ".." or "/" in p or "\\" in p for p in parts):
                 self.send_error(404)
                 return
-            candidate = os.path.realpath(os.path.join(MAPS_DIR, *parts))
-            root = os.path.realpath(MAPS_DIR)
-            if not (candidate == root or candidate.startswith(root + os.sep)):
+            fpath = self._resolve_map_file(parts)
+            if fpath is None:
                 self.send_error(404)
                 return
-            self._send_file(candidate)
+            self._send_file(fpath)
         elif path in ("/", "/index.html"):
             self._list_packages()
         else:
@@ -110,9 +110,11 @@ class TAKHandler(http.server.BaseHTTPRequestHandler):
 
     def _list_maps(self):
         rows = []
-        if os.path.isdir(MAPS_DIR):
-            for provider in sorted(os.listdir(MAPS_DIR)):
-                pdir = os.path.join(MAPS_DIR, provider)
+        for maps_dir in MAPS_DIRS:
+            if not os.path.isdir(maps_dir):
+                continue
+            for provider in sorted(os.listdir(maps_dir)):
+                pdir = os.path.join(maps_dir, provider)
                 if not os.path.isdir(pdir):
                     continue
                 for fname in sorted(f for f in os.listdir(pdir) if f.endswith(".xml")):
@@ -130,12 +132,22 @@ class TAKHandler(http.server.BaseHTTPRequestHandler):
                    f'Or download the ZIP, extract, and import all at once via Import Manager.</p>'
                    f'<table><tr><th>Provider</th><th>Map Source</th><th>Size</th></tr>{body_rows}</table>')
 
+    def _resolve_map_file(self, parts):
+        for maps_dir in MAPS_DIRS:
+            candidate = os.path.realpath(os.path.join(maps_dir, *parts))
+            root = os.path.realpath(maps_dir)
+            if candidate.startswith(root + os.sep) and os.path.isfile(candidate):
+                return candidate
+        return None
+
     def _maps_zip(self):
         buf = io.BytesIO()
         with zipfile.ZipFile(buf, "w", zipfile.ZIP_DEFLATED) as zf:
-            if os.path.isdir(MAPS_DIR):
-                for provider in sorted(os.listdir(MAPS_DIR)):
-                    pdir = os.path.join(MAPS_DIR, provider)
+            for maps_dir in MAPS_DIRS:
+                if not os.path.isdir(maps_dir):
+                    continue
+                for provider in sorted(os.listdir(maps_dir)):
+                    pdir = os.path.join(maps_dir, provider)
                     if not os.path.isdir(pdir):
                         continue
                     for fname in sorted(f for f in os.listdir(pdir) if f.endswith(".xml")):
