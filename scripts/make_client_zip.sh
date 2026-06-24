@@ -41,39 +41,10 @@ mkdir -p $WORK_DIR
 cp -R /opt/templates/missionpkg/* $WORK_DIR/
 
 cat ${WORK_DIR}/content/blueteam.pref.tpl | gomplate >${WORK_DIR}/content/blueteam.pref
+
+cat ${WORK_DIR}/MANIFEST/manifest.xml.tpl | gomplate >${WORK_DIR}/MANIFEST/manifest.xml
+
 rm ${WORK_DIR}/content/blueteam.pref.tpl ${WORK_DIR}/MANIFEST/manifest.xml.tpl
-
-# Copy all map source XMLs from the maps submodule
-MAPS_DIR=/opt/tak/maps
-if [ -d "$MAPS_DIR" ]; then
-    find "$MAPS_DIR" -name "*.xml" | while read xmlfile; do
-        cp "$xmlfile" "${WORK_DIR}/content/"
-    done
-fi
-
-# Generate manifest dynamically to include all content files
-MAP_ENTRIES=""
-for f in "${WORK_DIR}/content/"*.xml; do
-    [ -f "$f" ] || continue
-    MAP_ENTRIES="${MAP_ENTRIES}    <Content ignore=\"false\" zipEntry=\"content/$(basename $f)\"/>\n"
-done
-
-UID_VAL=$(echo "${TAK_SERVER_NAME:-takserver}-DEFAULT" | tr '[:upper:]' '[:lower:]' | sed 's/[^a-z0-9]/-/g')
-cat > "${WORK_DIR}/MANIFEST/manifest.xml" << MANIFEST
-<MissionPackageManifest version="2">
-<Configuration>
-<Parameter name="uid" value="${UID_VAL}"/>
-<Parameter name="name" value="${TAK_SERVER_NAME:-takserver}"/>
-<Parameter name="onReceiveDelete" value="false"/>
-</Configuration>
-<Contents>
-<Content ignore="false" zipEntry="content/blueteam.pref"/>
-$(printf '%s' "$MAP_ENTRIES")<Content ignore="false" zipEntry="content/${CLIENT_CERT_NAME}.p12"/>
-<Content ignore="false" zipEntry="content/truststore-root.p12"/>
-<Content ignore="false" zipEntry="TAK_defaults.pref"/>
-</Contents>
-</MissionPackageManifest>
-MANIFEST
 
 cd ${CR}
 

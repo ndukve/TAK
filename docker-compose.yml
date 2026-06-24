@@ -9,7 +9,6 @@ x-tak: &tak-base
     - takserver_data:/opt/tak/data
     - tak_plugins:/opt/tak/plugins
     - tak_plugin_conf:/opt/tak/conf/plugins
-    - ./packages/tak-maps:/opt/tak/maps:ro
   networks:
     - taknet
   restart: unless-stopped
