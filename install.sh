@@ -21,13 +21,13 @@ if [ ! -f "$SCRIPT_DIR/docker-compose.yml" ]; then
     else
         git clone "$REPO_URL" "$INSTALL_DIR"
     fi
-    exec bash "$INSTALL_DIR/install.sh"
+    exec bash "$INSTALL_DIR/install.sh" < /dev/tty
 fi
 
 ENV_FILE="$SCRIPT_DIR/takserver.env"
 
 # When run via curl | bash, stdin is the pipe — redirect to terminal so read works
-[ -t 0 ] || exec < /dev/tty
+[ -t 0 ] || exec < /dev/tty 2>/dev/null || true
 
 # ── Colours ───────────────────────────────────────────────────────────────────
 RED='\033[0;31m'; GREEN='\033[0;32m'; YELLOW='\033[1;33m'
