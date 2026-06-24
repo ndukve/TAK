@@ -45,6 +45,8 @@ On your Ubuntu machine, open a terminal and run:
 curl -fsSL https://raw.githubusercontent.com/ndukve/TAK/main/install.sh | bash
 ```
 
+> **The installer requires root.** If you are not already root, it will automatically re-run itself with `sudo` and prompt for your password once. The rest of the install runs unattended.
+
 When prompted for networking, choose the option that matches Step 1:
 
 - **Option 1 — Install & connect NetBird** → paste your setup key (Option B above)
@@ -113,9 +115,27 @@ Settings → Network → Servers → **+** → Upload Server Package → select 
 Hamburger menu → Settings → Network Preferences → TAK Servers → **+** → Import from file → select the `.zip`
 
 **WinTAK (Windows)**
-Settings → Network Preferences → Server Connections → **+** → Import → select the `.zip`
+Hamburger menu → **Import Manager** → Import → select the `.zip`
+
+> **WinTAK note:** Do not use the "Install CA" or "Install Client Cert" dialogs — those are for manual certificate installation only. The Import Manager handles the full package including server connection, certs, and map sources in one step.
 
 The server entry will appear automatically. Tap **Connect**.
+
+---
+
+## Map Sources
+
+36 ATAK-compatible map sources (Bing, Google, ESRI, USGS, OpenTopo, OpenSeaMap and more) are served automatically at `http://<SERVER_IP>:8888/maps/`.
+
+**Install on ATAK (Android):**
+1. Open browser on device → `http://<SERVER_IP>:8888/maps/`
+2. Download one or more `.xml` files
+3. ATAK → hamburger → **Import Manager** → select the XML file
+4. The map source appears in ATAK → Maps → Manage Sources
+
+**Install on WinTAK:**
+1. Download the `.xml` file from `http://<SERVER_IP>:8888/maps/`
+2. WinTAK → hamburger → **Import Manager** → select the XML file
 
 ---
 

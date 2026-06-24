@@ -45,6 +45,8 @@ Ubuntu kompiuteryje atidarykite terminalą ir paleiskite:
 curl -fsSL https://raw.githubusercontent.com/ndukve/TAK/main/install.sh | bash
 ```
 
+> **Diegimui reikalingos root teisės.** Jei nesate root, skriptas automatiškai paleis save su `sudo` ir paprašys slaptažodžio vieną kartą. Likęs diegimas vyksta automatiškai.
+
 Kai paklaus apie tinklą, pasirinkite variantą pagal 1 žingsnį:
 
 - **1 parinktis — Install & connect NetBird** → įklijuokite setup raktą (B variantas)
@@ -113,9 +115,27 @@ Settings → Network → Servers → **+** → Upload Server Package → pasirin
 Hamburger meniu → Settings → Network Preferences → TAK Servers → **+** → Import from file → pasirinkite `.zip`
 
 **WinTAK (Windows)**
-Settings → Network Preferences → Server Connections → **+** → Import → pasirinkite `.zip`
+Hamburger meniu → **Import Manager** → Import → pasirinkite `.zip`
+
+> **WinTAK pastaba:** Nenaudokite „Install CA" arba „Install Client Cert" langų — jie skirti tik rankiniam sertifikatų diegimui. Import Manager vienu veiksmu įdiegs serverio ryšį, sertifikatus ir žemėlapių šaltinius.
 
 Serverio įrašas atsiras automatiškai. Paspauskite **Connect**.
+
+---
+
+## Žemėlapių šaltiniai
+
+36 ATAK suderinami žemėlapių šaltiniai (Bing, Google, ESRI, USGS, OpenTopo, OpenSeaMap ir kt.) pasiekiami adresu `http://<SERVERIO_IP>:8888/maps/`.
+
+**Diegimas ATAK (Android):**
+1. Įrenginyje atidarykite naršyklę → `http://<SERVERIO_IP>:8888/maps/`
+2. Atsisiųskite vieną ar kelis `.xml` failus
+3. ATAK → hamburger → **Import Manager** → pasirinkite XML failą
+4. Žemėlapio šaltinis atsiranda ATAK → Maps → Manage Sources
+
+**Diegimas WinTAK:**
+1. Atsisiųskite `.xml` failą iš `http://<SERVERIO_IP>:8888/maps/`
+2. WinTAK → hamburger → **Import Manager** → pasirinkite XML failą
 
 ---
 
