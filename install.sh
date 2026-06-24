@@ -243,7 +243,7 @@ ok "TCP keepalive configured (time=60s intvl=10s probes=6)"
 # ── Generate secrets ──────────────────────────────────────────────────────────
 info "Generating secrets..."
 POSTGRES_PASSWORD=$(gen_secret)
-POSTGRES_SUPER_PASSWORD=$(gen_secret)
+POSTGRES_SUPER_PASSWORD=${POSTGRES_PASSWORD}
 ADMIN_CERT_PASS=$(gen_secret)
 TAKSERVER_CERT_PASS=$(gen_secret)
 CA_PASS=$(gen_secret)
