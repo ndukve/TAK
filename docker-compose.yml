@@ -25,7 +25,6 @@ services:
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
     volumes:
       - takdb_data:/var/lib/postgresql/data
-      - ./scripts/takdb_base.sql:/docker-entrypoint-initdb.d/takdb_base.sql:ro
     networks:
       - taknet
     restart: unless-stopped
