@@ -6,6 +6,8 @@ Routes:
   /<callsign>.zip     direct package link
   /plugins/           ATAK/WinTAK plugin index
   /plugins/<file>     plugin download (APK / ZIP)
+  /maps/              ATAK map source XMLs (MOBAC format)
+  /maps/<dir>/<file>  individual map source XML download
 """
 import http.server
 import os
@@ -17,14 +19,16 @@ BIND       = "0.0.0.0"
 DATA_ROOT  = "/opt/tak/data"
 PKG_DIR    = os.path.join(DATA_ROOT, "certs/files/clientpkgs")
 PLUGIN_DIR = os.path.join(DATA_ROOT, "plugins")
+MAPS_DIR   = "/opt/tak/maps"
 
 MIME = {
     ".p12":  "application/x-pkcs12",
     ".zip":  "application/zip",
     ".pref": "text/xml",
+    ".xml":  "text/xml",
     ".apk":  "application/vnd.android.package-archive",
 }
-FORCE_DOWNLOAD = {".zip", ".p12", ".apk"}
+FORCE_DOWNLOAD = {".zip", ".p12", ".apk", ".xml"}
 
 
 class TAKHandler(http.server.BaseHTTPRequestHandler):
@@ -37,6 +41,19 @@ class TAKHandler(http.server.BaseHTTPRequestHandler):
         elif path.startswith("/plugins/"):
             fname = os.path.basename(path)
             self._send_file(os.path.join(PLUGIN_DIR, fname))
+        elif path in ("/maps", "/maps/"):
+            self._list_maps()
+        elif path.startswith("/maps/"):
+            parts = [p for p in path[len("/maps/"):].split("/") if p]
+            if any(p == ".." or "/" in p or "\\" in p for p in parts):
+                self.send_error(404)
+                return
+            candidate = os.path.realpath(os.path.join(MAPS_DIR, *parts))
+            root = os.path.realpath(MAPS_DIR)
+            if not (candidate == root or candidate.startswith(root + os.sep)):
+                self.send_error(404)
+                return
+            self._send_file(candidate)
         elif path in ("/", "/index.html"):
             self._list_packages()
         else:
@@ -69,7 +86,7 @@ class TAKHandler(http.server.BaseHTTPRequestHandler):
             for f in files
         ) or "<tr><td colspan=2>No packages yet — run: make add-user USERNAME=alice</td></tr>"
         self._html("TAK User Packages",
-                   f'<p><a href="/plugins/">→ Plugin repository</a></p>'
+                   f'<p><a href="/plugins/">→ Plugin repository</a> &nbsp; <a href="/maps/">→ Map sources</a></p>'
                    f'<table><tr><th>Package</th><th>Size</th></tr>{rows}</table>')
 
     def _list_plugins(self):
@@ -82,10 +99,31 @@ class TAKHandler(http.server.BaseHTTPRequestHandler):
             for f in files
         ) or "<tr><td colspan=2>No plugins yet — run: make add-plugin APK=/path/to/plugin.apk</td></tr>"
         self._html("ATAK Plugin Repository",
-                   f'<p><a href="/">← User packages</a></p>'
+                   f'<p><a href="/">← User packages</a> &nbsp; <a href="/maps/">→ Map sources</a></p>'
                    f'<p>On device: open ATAK → Settings → Manage Plugins → Install from file<br>'
                    f'Or navigate to this page in ATAK browser and tap a file to sideload.</p>'
                    f'<table><tr><th>Plugin</th><th>Size</th></tr>{rows}</table>')
+
+    def _list_maps(self):
+        rows = []
+        if os.path.isdir(MAPS_DIR):
+            for provider in sorted(os.listdir(MAPS_DIR)):
+                pdir = os.path.join(MAPS_DIR, provider)
+                if not os.path.isdir(pdir):
+                    continue
+                for fname in sorted(f for f in os.listdir(pdir) if f.endswith(".xml")):
+                    url = f"/maps/{urllib.parse.quote(provider)}/{urllib.parse.quote(fname)}"
+                    rows.append(
+                        f'<tr><td>{provider}</td>'
+                        f'<td><a href="{url}">{fname}</a></td>'
+                        f'<td>{_size(os.path.join(pdir, fname))}</td></tr>'
+                    )
+        body_rows = "".join(rows) or "<tr><td colspan=3>No map sources found.</td></tr>"
+        self._html("ATAK Map Sources",
+                   f'<p><a href="/">← User packages</a> &nbsp; <a href="/plugins/">← Plugins</a></p>'
+                   f'<p>On device: download XML → ATAK → Settings → Maps → Import Remote Map Source.<br>'
+                   f'Or use ATAK Import Manager to batch-import a folder of XMLs.</p>'
+                   f'<table><tr><th>Provider</th><th>Map Source</th><th>Size</th></tr>{body_rows}</table>')
 
     def _html(self, title, body):
         page = (
@@ -124,6 +162,7 @@ def _size(path: str) -> str:
 print(f"\nTAK package + plugin server → http://{BIND}:{PORT}/")
 print(f"  User packages : http://<server>:8888/<callsign>.zip")
 print(f"  Plugin repo   : http://<server>:8888/plugins/")
+print(f"  Map sources   : http://<server>:8888/maps/")
 print("Press Ctrl+C to stop.\n")
 
 with http.server.HTTPServer((BIND, PORT), TAKHandler) as httpd:

@@ -1,0 +1,3 @@
+[submodule "packages/tak-maps"]
+	path = packages/tak-maps
+	url = https://github.com/thebarracksarmy/TAK-MAPS

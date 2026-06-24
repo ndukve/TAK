@@ -21,6 +21,7 @@ if [ ! -f "$SCRIPT_DIR/docker-compose.yml" ]; then
     else
         git clone "$REPO_URL" "$INSTALL_DIR"
     fi
+    git -C "$INSTALL_DIR" submodule update --init --recursive
     exec bash "$INSTALL_DIR/install.sh" < /dev/tty
 fi
 

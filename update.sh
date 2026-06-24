@@ -19,6 +19,7 @@ cd "$SCRIPT_DIR"
 
 info "Pulling latest changes..."
 git pull --ff-only || err "git pull failed. Resolve conflicts manually."
+git submodule update --init --recursive
 ok "Up to date: $(git log -1 --format='%h %s')"
 
 info "Rebuilding image..."
