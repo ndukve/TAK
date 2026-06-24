@@ -6,6 +6,9 @@ takserver.env
 packages/*.zip
 !packages/.gitkeep
 
+# Plugin APKs — licensed, do not redistribute via git
+*.apk
+
 # Service cert output (make add-service)
 certs/
 

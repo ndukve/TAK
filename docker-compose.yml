@@ -7,8 +7,6 @@ x-tak: &tak-base
   env_file: takserver.env
   volumes:
     - takserver_data:/opt/tak/data
-    - tak_plugins:/opt/tak/plugins
-    - tak_plugin_conf:/opt/tak/conf/plugins
   networks:
     - taknet
   restart: unless-stopped
@@ -57,7 +55,7 @@ services:
       takserver_initialization:
         condition: service_completed_successfully
 
-  # ── Messaging service (shares network with config) ─────────────────────────
+  # ── Messaging service (shares network namespace with config) ───────────────
   takserver_messaging:
     image: takserver:local
     env_file: takserver.env
@@ -70,26 +68,43 @@ services:
       takserver_initialization:
         condition: service_completed_successfully
 
-  # ── API service ─────────────────────────────────────────────────────────────
+  # ── API service (shares network namespace with messaging) ──────────────────
   takserver_api:
-    <<: *tak-base
+    image: takserver:local
+    env_file: takserver.env
+    volumes:
+      - takserver_data:/opt/tak/data
+    restart: unless-stopped
     command: ["/bin/bash", "/opt/scripts/start-tak.sh", "api"]
+    network_mode: "service:takserver_messaging"
     depends_on:
       takserver_initialization:
         condition: service_completed_successfully
 
-  # ── Retention service ───────────────────────────────────────────────────────
+  # ── Retention service (shares network namespace with messaging) ────────────
   takserver_retention:
-    <<: *tak-base
+    image: takserver:local
+    env_file: takserver.env
+    volumes:
+      - takserver_data:/opt/tak/data
+    restart: unless-stopped
     command: ["/bin/bash", "/opt/scripts/start-tak.sh", "retention"]
+    network_mode: "service:takserver_messaging"
     depends_on:
       takserver_initialization:
         condition: service_completed_successfully
 
-  # ── Plugin manager ──────────────────────────────────────────────────────────
+  # ── Plugin manager (shares network namespace with messaging) ───────────────
   takserver_pluginmanager:
-    <<: *tak-base
+    image: takserver:local
+    env_file: takserver.env
+    volumes:
+      - takserver_data:/opt/tak/data
+      - tak_plugins:/opt/tak/plugins
+      - tak_plugin_conf:/opt/tak/conf/plugins
+    restart: unless-stopped
     command: ["/bin/bash", "/opt/scripts/start-tak.sh", "pm"]
+    network_mode: "service:takserver_messaging"
     depends_on:
       takserver_initialization:
         condition: service_completed_successfully

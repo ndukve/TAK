@@ -27,6 +27,7 @@ docker compose --env-file "$ENV_FILE" build --quiet
 ok "Image rebuilt"
 
 info "Restarting containers..."
+docker compose --env-file "$ENV_FILE" down --remove-orphans
 docker compose --env-file "$ENV_FILE" up -d
 ok "Containers restarted"
 
