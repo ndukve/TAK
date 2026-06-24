@@ -117,8 +117,8 @@ section "Networking"
 
 TAK_SERVER_ADDRESS=""
 
-_NB_IP=$(ip addr show wt0 2>/dev/null | awk '/inet / {print $2}' | cut -d/ -f1 | head -1)
-_TS_IP=$(ip addr show tailscale0 2>/dev/null | awk '/inet / {print $2}' | cut -d/ -f1 | head -1)
+_NB_IP=$(ip addr show wt0 2>/dev/null | awk '/inet / {print $2}' | cut -d/ -f1 | head -1) || true
+_TS_IP=$(ip addr show tailscale0 2>/dev/null | awk '/inet / {print $2}' | cut -d/ -f1 | head -1) || true
 
 if [ -n "$_NB_IP" ] && [ -n "$_TS_IP" ]; then
     ok "NetBird detected: $_NB_IP"
