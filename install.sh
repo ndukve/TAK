@@ -284,6 +284,9 @@ ok "takserver.env written"
 # ── Build & start ─────────────────────────────────────────────────────────────
 cd "$SCRIPT_DIR"
 
+info "Cleaning up any previous install attempt..."
+docker compose --env-file "$ENV_FILE" down -v --remove-orphans 2>/dev/null || true
+
 start_timer "Building TAK Server image..."
 docker compose --env-file "$ENV_FILE" build --quiet
 stop_timer; ok "Image built ($_elapsed)"
