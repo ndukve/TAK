@@ -226,6 +226,11 @@ else
     ok "Docker $(docker --version | awk '{print $3}' | tr -d ,) already installed"
 fi
 
+if [ -n "${SUDO_USER:-}" ]; then
+    usermod -aG docker "$SUDO_USER"
+    ok "Added $SUDO_USER to docker group — no sudo needed for future docker commands"
+fi
+
 # ── TCP keepalive (prevents iTAK idle connection drops) ───────────────────────
 for kv in "net.ipv4.tcp_keepalive_time=60" \
            "net.ipv4.tcp_keepalive_intvl=10" \
