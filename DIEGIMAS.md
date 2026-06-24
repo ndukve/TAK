@@ -125,17 +125,17 @@ Serverio įrašas atsiras automatiškai. Paspauskite **Connect**.
 
 ## Žemėlapių šaltiniai
 
-36 ATAK suderinami žemėlapių šaltiniai (Bing, Google, ESRI, USGS, OpenTopo, OpenSeaMap ir kt.) pasiekiami adresu `http://<SERVERIO_IP>:8888/maps/`.
+40+ ATAK suderinami žemėlapių šaltiniai (Bing, Google, ESRI, USGS, OpenTopo, OpenSeaMap, Estijos Maa-amet, Ukrainos Visicom ir kt.) pasiekiami adresu `http://<SERVERIO_IP>:8888/maps/`.
 
-**Diegimas ATAK (Android):**
+**Atsisiųsti visus iš karto (rekomenduojama):**
+1. Atidarykite `http://<SERVERIO_IP>:8888/maps/` → spustelėkite **[Download All as ZIP]**
+2. Išskleiskite `tak-maps.zip` į aplanką
+3. ATAK/WinTAK → hamburger → **Import Manager** → Import → pasirinkite išsklestą aplanką arba atskirus XML failus
+
+**Atsisiųsti atskirus šaltinius:**
 1. Įrenginyje atidarykite naršyklę → `http://<SERVERIO_IP>:8888/maps/`
-2. Atsisiųskite vieną ar kelis `.xml` failus
-3. ATAK → hamburger → **Import Manager** → pasirinkite XML failą
-4. Žemėlapio šaltinis atsiranda ATAK → Maps → Manage Sources
-
-**Diegimas WinTAK:**
-1. Atsisiųskite `.xml` failą iš `http://<SERVERIO_IP>:8888/maps/`
-2. WinTAK → hamburger → **Import Manager** → pasirinkite XML failą
+2. Paspauskite ant `.xml` failo, kad atsisiųstumėte
+3. ATAK/WinTAK → hamburger → **Import Manager** → pasirinkite failą
 
 ---
 

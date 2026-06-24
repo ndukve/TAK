@@ -125,17 +125,17 @@ The server entry will appear automatically. Tap **Connect**.
 
 ## Map Sources
 
-36 ATAK-compatible map sources (Bing, Google, ESRI, USGS, OpenTopo, OpenSeaMap and more) are served automatically at `http://<SERVER_IP>:8888/maps/`.
+40+ ATAK-compatible map sources (Bing, Google, ESRI, USGS, OpenTopo, OpenSeaMap, Estonia Maa-amet, Ukraine Visicom, and more) are served at `http://<SERVER_IP>:8888/maps/`.
 
-**Install on ATAK (Android):**
+**Download all at once (recommended):**
+1. Navigate to `http://<SERVER_IP>:8888/maps/` and click **[Download All as ZIP]**
+2. Extract `tak-maps.zip` to a folder
+3. ATAK/WinTAK → hamburger → **Import Manager** → Import → select the extracted folder or individual XML files
+
+**Download individual sources:**
 1. Open browser on device → `http://<SERVER_IP>:8888/maps/`
-2. Download one or more `.xml` files
-3. ATAK → hamburger → **Import Manager** → select the XML file
-4. The map source appears in ATAK → Maps → Manage Sources
-
-**Install on WinTAK:**
-1. Download the `.xml` file from `http://<SERVER_IP>:8888/maps/`
-2. WinTAK → hamburger → **Import Manager** → select the XML file
+2. Tap any `.xml` to download
+3. ATAK/WinTAK → hamburger → **Import Manager** → select the file
 
 ---
 

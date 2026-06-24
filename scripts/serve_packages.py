@@ -10,9 +10,11 @@ Routes:
   /maps/<dir>/<file>  individual map source XML download
 """
 import http.server
+import io
 import os
 import sys
 import urllib.parse
+import zipfile
 
 PORT       = int(sys.argv[1]) if len(sys.argv) > 1 else 8888
 BIND       = "0.0.0.0"
@@ -43,6 +45,8 @@ class TAKHandler(http.server.BaseHTTPRequestHandler):
             self._send_file(os.path.join(PLUGIN_DIR, fname))
         elif path in ("/maps", "/maps/"):
             self._list_maps()
+        elif path == "/maps/download-all.zip":
+            self._maps_zip()
         elif path.startswith("/maps/"):
             parts = [p for p in path[len("/maps/"):].split("/") if p]
             if any(p == ".." or "/" in p or "\\" in p for p in parts):
@@ -120,10 +124,29 @@ class TAKHandler(http.server.BaseHTTPRequestHandler):
                     )
         body_rows = "".join(rows) or "<tr><td colspan=3>No map sources found.</td></tr>"
         self._html("ATAK Map Sources",
-                   f'<p><a href="/">← User packages</a> &nbsp; <a href="/plugins/">← Plugins</a></p>'
-                   f'<p>On device: download XML → ATAK → Settings → Maps → Import Remote Map Source.<br>'
-                   f'Or use ATAK Import Manager to batch-import a folder of XMLs.</p>'
+                   f'<p><a href="/">← User packages</a> &nbsp; <a href="/plugins/">← Plugins</a>'
+                   f' &nbsp; <strong><a href="/maps/download-all.zip">[Download All as ZIP]</a></strong></p>'
+                   f'<p>On device: download XML → ATAK → Import Manager → select XML.<br>'
+                   f'Or download the ZIP, extract, and import all at once via Import Manager.</p>'
                    f'<table><tr><th>Provider</th><th>Map Source</th><th>Size</th></tr>{body_rows}</table>')
+
+    def _maps_zip(self):
+        buf = io.BytesIO()
+        with zipfile.ZipFile(buf, "w", zipfile.ZIP_DEFLATED) as zf:
+            if os.path.isdir(MAPS_DIR):
+                for provider in sorted(os.listdir(MAPS_DIR)):
+                    pdir = os.path.join(MAPS_DIR, provider)
+                    if not os.path.isdir(pdir):
+                        continue
+                    for fname in sorted(f for f in os.listdir(pdir) if f.endswith(".xml")):
+                        zf.write(os.path.join(pdir, fname), os.path.join(provider, fname))
+        data = buf.getvalue()
+        self.send_response(200)
+        self.send_header("Content-Type", "application/zip")
+        self.send_header("Content-Length", str(len(data)))
+        self.send_header("Content-Disposition", 'attachment; filename="tak-maps.zip"')
+        self.end_headers()
+        self.wfile.write(data)
 
     def _html(self, title, body):
         page = (
