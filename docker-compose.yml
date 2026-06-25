@@ -115,8 +115,7 @@ services:
     command: ["python3", "/srv/serve_packages.py"]
     volumes:
       - takserver_data:/opt/tak/data:ro
-      - ./packages/tak-maps:/opt/tak/maps/upstream:ro
-      - ./packages/local-maps:/opt/tak/maps/local:ro
+      - ./packages/tak-maps:/opt/tak/maps:ro
       - ./scripts/serve_packages.py:/srv/serve_packages.py:ro
     working_dir: /opt/tak/data
     ports:
