@@ -81,17 +81,45 @@ Skriptas automatiškai:
 
 ## 4 žingsnis — Sugeneruoti vartotojo paketą
 
-Serveryje paleiskite:
+Kiekvienas vartotojas gauna duomenų paketą (`.zip`), kuriame yra:
+
+| Failas | Paskirtis |
+|---|---|
+| `<šaukinys>.p12` | **Kliento sertifikatas** — įrenginio tapatybė serveriui (mTLS) |
+| `truststore-root.p12` | **CA pasitikėjimo saugykla** — leidžia įrenginiui patikrinti serverio sertifikatą |
+| `blueteam.pref` | Serverio adresas, prievadas ir sertifikatų nustatymai |
+
+Abu sertifikatų failai būtini. Kliento sertifikatas autentifikuoja įrenginį serveriui; pasitikėjimo saugykla — serverį įrenginiui.
+
+### Standartinis būdas (generuoti ir suteikti prieigą vienu žingsniu)
 
 ```bash
 cd ~/tak-server
-./generate_user.sh JusuŠaukinis
+make add-user USERNAME=JusuŠaukinys
 ```
 
-Ši komanda sugeneruoja duomenų paketą su kliento sertifikatu ir serverio ryšio konfigūracija. Įrenginio naršyklėje atidarykite:
+### Atskiras būdas (paruošti iš anksto, prieigą suteikti vėliau)
+
+Jei norite sugeneruoti paketus iš anksto, nesuteikiant prieigos iš karto — pvz., paruošiant rinkinius prieš operaciją — naudokite atskirus žingsnius:
+
+```bash
+# Tik įrenginio sertifikatas (.p12 failas, be paketo)
+make gen-device-cert USERNAME=JusuŠaukinys
+
+# Sukurti atsisiunčiamą paketą iš esamo sertifikato
+make make-package USERNAME=JusuŠaukinys
+
+# Arba abu kartu (sertifikatas + paketas, dar neautorizuota)
+make gen-cert USERNAME=JusuŠaukinys
+
+# Suteikti prieigą, kai esate pasiruošę
+make enable-user USERNAME=JusuŠaukinys
+```
+
+Kai paketas paruoštas, įrenginio naršyklėje atidarykite:
 
 ```
-http://<SERVERIO_IP>:8888/JusuŠaukinis.zip
+http://<SERVERIO_IP>:8888/JusuŠaukinys.zip
 ```
 
 Vietoje `<SERVERIO_IP>` naudokite:
@@ -215,7 +243,7 @@ Struktūrizuotos taktinės ataskaitos — 9-linijinis MEDEVAC, CAS (artima oro p
 > Patikrinkite, ar įrenginys pasiekia serverio IP per prievadą 8888. A variantas: įsitikinkite, kad įrenginys yra tame pačiame Wi-Fi/LAN tinkle. B variantas: patikrinkite, ar NetBird programėlė rodo **Connected**.
 
 > **Serveris matomas, bet neprisijungia**
-> Paketas gali būti sugeneruotas su netinkamu serverio IP. Ištrinkite serverio įrašą, sugeneruokite paketą iš naujo su `./generate_user.sh JusuŠaukinys` ir importuokite pakartotinai.
+> Paketas gali būti sugeneruotas su netinkamu serverio IP. Ištrinkite serverio įrašą, sugeneruokite paketą iš naujo su `make add-user USERNAME=JusuŠaukinys` ir importuokite pakartotinai.
 
 > **Ryšys nutrūksta užgęsus ekranui**
 > Išjunkite energijos taupymo optimizaciją TAK programėlei.

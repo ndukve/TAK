@@ -1,6 +1,6 @@
 .PHONY: build up down restart update logs logs-db status shell \
-        add-user list-packages serve-packages install-plugin add-service \
-        add-plugin list-plugins
+        add-user gen-cert gen-device-cert make-package enable-user \
+        list-packages serve-packages install-plugin add-service add-plugin list-plugins
 
 ENV_FILE := takserver.env
 
@@ -24,13 +24,53 @@ update:
 
 # ── User management ───────────────────────────────────────────────────────────
 
-## Generate a TAK data package for a new user.
+## Generate client cert + data package AND authorize it on the server.
 ## Usage: make add-user USERNAME=alice
 add-user:
 	@[ -n "$(USERNAME)" ] || { echo "Usage: make add-user USERNAME=alice"; exit 1; }
 	@[ -f $(ENV_FILE) ] || { echo "Run './install.sh' first"; exit 1; }
 	@chmod +x ./generate_user.sh
 	./generate_user.sh $(USERNAME)
+
+## Generate device cert (.p12) only — no package, not authorized yet.
+## Usage: make gen-device-cert USERNAME=alice
+gen-device-cert:
+	@[ -n "$(USERNAME)" ] || { echo "Usage: make gen-device-cert USERNAME=alice"; exit 1; }
+	@[ -f $(ENV_FILE) ] || { echo "Run './install.sh' first"; exit 1; }
+	$(eval DC := $(shell docker info &>/dev/null 2>&1 && echo "docker compose" || echo "sudo docker compose"))
+	$(DC) --env-file $(ENV_FILE) exec \
+		-e CLIENT_CERT_NAME="$(USERNAME)" \
+		takserver_config bash /opt/scripts/gen_client_cert.sh
+
+## Build the downloadable data package from an existing device cert.
+## Requires gen-device-cert to have run first.
+## Usage: make make-package USERNAME=alice
+make-package:
+	@[ -n "$(USERNAME)" ] || { echo "Usage: make make-package USERNAME=alice"; exit 1; }
+	@[ -f $(ENV_FILE) ] || { echo "Run './install.sh' first"; exit 1; }
+	$(eval DC := $(shell docker info &>/dev/null 2>&1 && echo "docker compose" || echo "sudo docker compose"))
+	$(eval ADDR := $(shell grep '^TAK_SERVER_ADDRESS=' $(ENV_FILE) | cut -d= -f2))
+	$(DC) --env-file $(ENV_FILE) exec \
+		-e CLIENT_CERT_NAME="$(USERNAME)" \
+		-e TAK_SERVER_ADDRESS="$(ADDR)" \
+		takserver_config bash /opt/scripts/make_pkg_zip.sh
+	@echo "Download: http://$(ADDR):8888/$(USERNAME).zip"
+
+## Generate device cert + package, not yet authorized.
+## Usage: make gen-cert USERNAME=alice
+gen-cert: gen-device-cert make-package
+	@echo "Cert + package ready (not authorized). Run: make enable-user USERNAME=$(USERNAME)"
+
+## Authorize an already-generated client cert to connect to the server.
+## Usage: make enable-user USERNAME=alice
+enable-user:
+	@[ -n "$(USERNAME)" ] || { echo "Usage: make enable-user USERNAME=alice"; exit 1; }
+	@[ -f $(ENV_FILE) ] || { echo "Run './install.sh' first"; exit 1; }
+	$(eval DC := $(shell docker info &>/dev/null 2>&1 && echo "docker compose" || echo "sudo docker compose"))
+	$(DC) --env-file $(ENV_FILE) exec \
+		-e USER_CERT_NAME="$(USERNAME)" \
+		takserver_config bash /opt/scripts/enable_user.sh
+	@echo "$(USERNAME) authorized."
 
 ## List generated packages ready for distribution.
 list-packages:

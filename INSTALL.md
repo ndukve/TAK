@@ -81,14 +81,42 @@ The installer will:
 
 ## Step 4 — Generate a User Package
 
-On the server, run:
+Each user needs a data package (`.zip`) that contains:
+
+| File | Purpose |
+|---|---|
+| `<callsign>.p12` | **Client certificate** — proves the device's identity to the server (mTLS) |
+| `truststore-root.p12` | **CA trust store** — lets the device verify the server's certificate |
+| `blueteam.pref` | Server address, port, and cert settings |
+
+Both certificate files are required. The client cert authenticates the device to the server; the trust store authenticates the server to the device.
+
+### Standard flow (generate + authorize in one step)
 
 ```bash
 cd ~/tak-server
-./generate_user.sh YourCallsign
+make add-user USERNAME=YourCallsign
 ```
 
-This generates a data package containing a client certificate and server connection config. On your device, open a browser and navigate to:
+### Split flow (prepare ahead, authorize later)
+
+If you want to pre-generate packages without granting access yet — for example, staging kit before an operation — use the separate steps:
+
+```bash
+# Device certificate only (.p12 file, no package yet)
+make gen-device-cert USERNAME=YourCallsign
+
+# Build the downloadable package from the existing cert
+make make-package USERNAME=YourCallsign
+
+# Or both at once (cert + package, still not authorized)
+make gen-cert USERNAME=YourCallsign
+
+# Authorize when ready to grant access
+make enable-user USERNAME=YourCallsign
+```
+
+Once the package is ready, open a browser on the device and navigate to:
 
 ```
 http://<SERVER_IP>:8888/YourCallsign.zip
@@ -215,7 +243,7 @@ Structured tactical reporting — 9-line MEDEVAC, CAS (close air support), SALUT
 > Confirm the device can reach the server IP on port 8888. For Option A: check that the device is on the same Wi-Fi/LAN. For Option B: confirm the NetBird app shows **Connected**.
 
 > **Server appears but won't connect**
-> The package may have been generated with the wrong server IP. Delete the server entry, regenerate the package with `./generate_user.sh YourCallsign`, and re-import.
+> The package may have been generated with the wrong server IP. Delete the server entry, regenerate the package with `make add-user USERNAME=YourCallsign`, and re-import.
 
 > **Connection drops when the screen turns off**
 > Disable battery optimisation for the TAK app.
