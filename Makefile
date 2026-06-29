@@ -1,6 +1,7 @@
 .PHONY: build up down restart update logs logs-db status shell \
         add-user gen-cert gen-device-cert make-package enable-user \
-        list-packages serve-packages install-plugin add-service add-plugin list-plugins
+        list-packages serve-packages install-plugin add-service add-plugin list-plugins \
+        generate-lockfile
 
 ENV_FILE := takserver.env
 
@@ -134,6 +135,15 @@ add-service:
 	@[ -n "$(NAME)" ] || { echo "Usage: make add-service NAME=efdi-pod"; exit 1; }
 	@chmod +x ./scripts/generate_service_cert.sh
 	./scripts/generate_service_cert.sh $(NAME)
+
+# ── Admin panel ───────────────────────────────────────────────────────────────
+
+## Generate pnpm-lock.yaml for the admin UI (requires Docker, not pnpm on host).
+## Run once after checkout, then commit the lockfile.
+generate-lockfile:
+	docker run --rm -v "$(PWD)/admin/ui:/ui" node:20-slim \
+		sh -c "npm install -g pnpm && cd /ui && pnpm install"
+	@echo "Lockfile written to admin/ui/pnpm-lock.yaml — commit it."
 
 # ── Debug shell ───────────────────────────────────────────────────────────────
 

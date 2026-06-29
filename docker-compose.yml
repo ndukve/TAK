@@ -130,7 +130,7 @@ services:
     env_file: takserver.env
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
-      - takserver_data:/opt/tak/data:ro
+      - takserver_data:/opt/tak/data:rw
       - tak_plugins:/opt/tak/plugins:rw
     ports:
       - "127.0.0.1:8889:8889"

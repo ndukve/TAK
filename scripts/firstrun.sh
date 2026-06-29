@@ -72,6 +72,12 @@ chmod -R 777 ${TR}/data/
 echo "Wait for postgres"
 WAITFORIT_TIMEOUT=60 /usr/bin/wait-for-it.sh ${POSTGRES_ADDRESS}:5432 -- true
 
+echo "[firstrun] Creating admin panel database..."
+PGPASSWORD="${POSTGRES_PASSWORD}" psql \
+  -h "${POSTGRES_HOST:-takdb}" \
+  -U "${POSTGRES_USER}" \
+  -c "CREATE DATABASE admin;" 2>/dev/null || echo "[firstrun] admin database already exists, skipping"
+
 echo "Init db"
 java -jar ${TR}/db-utils/SchemaManager.jar -url jdbc:postgresql://${POSTGRES_ADDRESS}:5432/${POSTGRES_DB} -user ${POSTGRES_USER} -password ${POSTGRES_PASSWORD} upgrade
 

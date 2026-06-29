@@ -26,6 +26,7 @@ class CreateUserRequest(BaseModel):
 class PatchUserRequest(BaseModel):
     role: str | None = None
     password: str | None = None
+    is_active: bool | None = None
 
 
 class InviteRequest(BaseModel):
@@ -77,6 +78,8 @@ async def patch_user(user_id: str, body: PatchUserRequest, db: AsyncSession = De
         if len(body.password) < 12:
             raise HTTPException(status_code=400, detail="Password must be at least 12 characters")
         user.password_hash = pwd_ctx.hash(body.password)
+    if body.is_active is not None:
+        user.is_active = body.is_active
     await db.commit()
     await write_audit(db, actor.id, "patch_admin_user", user_id)
     return {"id": user.id, "username": user.username, "role": user.role}

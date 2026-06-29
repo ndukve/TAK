@@ -41,6 +41,6 @@ app.include_router(packages_router)
 app.include_router(logs_router)
 app.include_router(shell_router)
 
-UI_DIR = os.path.join(os.path.dirname(__file__), "..", "ui", "dist")
-if os.path.isdir(UI_DIR):
-    app.mount("/", StaticFiles(directory=UI_DIR, html=True), name="ui")
+STATIC_DIR = "/app/static"
+if os.path.isdir(STATIC_DIR):
+    app.mount("/", StaticFiles(directory=STATIC_DIR, html=True), name="static")

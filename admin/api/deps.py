@@ -10,7 +10,9 @@ from sqlalchemy import select
 from .db import get_db
 from .models import AdminUser, AuditLog
 
-SECRET_KEY = os.environ.get("ADMIN_SECRET_KEY", "changeme")
+SECRET_KEY = os.environ.get("ADMIN_SECRET_KEY", "")
+if not SECRET_KEY:
+    raise RuntimeError("ADMIN_SECRET_KEY environment variable is required and must not be empty")
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 15
 
