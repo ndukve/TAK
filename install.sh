@@ -74,6 +74,7 @@ ask_secret() {
 }
 
 gen_secret() { openssl rand -hex 16; }
+gen_pass()   { openssl rand -hex 12; }
 
 # ── Timer helpers ─────────────────────────────────────────────────────────────
 _timer_pid=""; _timer_start=0
@@ -252,6 +253,8 @@ POSTGRES_SUPER_PASSWORD=${POSTGRES_PASSWORD}
 ADMIN_CERT_PASS=$(gen_secret)
 TAKSERVER_CERT_PASS=$(gen_secret)
 CA_PASS=$(gen_secret)
+ADMIN_SECRET_KEY=$(gen_secret)
+ADMIN_FIRST_PASS=$(gen_pass)
 ok "Secrets generated"
 
 # ── Write takserver.env ───────────────────────────────────────────────────────
@@ -284,6 +287,10 @@ ORGANIZATIONAL_UNIT=${ORGANIZATIONAL_UNIT}
 
 LOGGING_JSON_ENABLED=true
 LOGGING_CONFIG=/opt/tak/logback-stdout.xml
+
+ADMIN_SECRET_KEY=${ADMIN_SECRET_KEY}
+ADMIN_FIRST_USER=admin
+ADMIN_FIRST_PASS=${ADMIN_FIRST_PASS}
 ENVEOF
 ok "takserver.env written"
 
@@ -326,4 +333,8 @@ echo ""
 echo "  Add users      : ./generate_user.sh <username>"
 echo "  View logs      : docker compose --env-file takserver.env logs -f"
 echo "  Restart        : docker compose --env-file takserver.env restart"
+echo ""
+echo -e "  Admin panel     : ${BOLD}http://$TAK_SERVER_ADDRESS:8889/${NC}"
+echo -e "  Admin user      : ${BOLD}admin${NC}"
+echo -e "  Admin password  : ${BOLD}${ADMIN_FIRST_PASS}${NC}"
 echo ""
