@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<customMapSource>
+    <name>UA National Orthophoto 2012 (DZK)</name>
+    <minZoom>6</minZoom>
+    <maxZoom>15</maxZoom>
+    <tileType>jpg</tileType>
+    <tileUpdate>None</tileUpdate>
+    <url>https://m1.land.gov.ua/map/ortho10k_all/{$z}/{$x}/{$y}.jpg</url>
+    <invertYCoordinate>true</invertYCoordinate>
+    <backgroundColor>#000000</backgroundColor>
+</customMapSource>

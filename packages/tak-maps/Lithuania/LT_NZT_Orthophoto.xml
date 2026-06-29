@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<customMapSource>
+    <name>LT Orthophoto (NŽT ORT10LT)</name>
+    <minZoom>6</minZoom>
+    <maxZoom>14</maxZoom>
+    <tileType>jpg</tileType>
+    <tileUpdate>None</tileUpdate>
+    <url>https://ort10lt.openmap.lt/g16/{$z}/{$x}/{$y}.jpeg</url>
+    <backgroundColor>#000000</backgroundColor>
+</customMapSource>
