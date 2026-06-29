@@ -124,6 +124,25 @@ services:
       - taknet
     restart: unless-stopped
 
+  # ── Admin panel (port 8889) ───────────────────────────────────────────────
+  admin:
+    build: ./admin
+    env_file: takserver.env
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - takserver_data:/opt/tak/data:ro
+      - tak_plugins:/opt/tak/plugins:rw
+    ports:
+      - "127.0.0.1:8889:8889"
+    networks:
+      - taknet
+    depends_on:
+      takdb:
+        condition: service_healthy
+      takserver_initialization:
+        condition: service_completed_successfully
+    restart: unless-stopped
+
 volumes:
   takdb_data:
   takserver_data:
