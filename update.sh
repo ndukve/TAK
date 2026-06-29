@@ -17,9 +17,11 @@ err()  { echo -e "${RED}[✗]${NC} $*"; exit 1; }
 
 cd "$SCRIPT_DIR"
 
-info "Pulling latest changes..."
-git pull --ff-only || err "git pull failed. Resolve conflicts manually."
-git submodule update --init --recursive
+BRANCH="$(git rev-parse --abbrev-ref HEAD)"
+info "Fetching latest changes..."
+git fetch origin "$BRANCH" || err "git fetch failed. Check network/remote."
+info "Overwriting local changes with origin/$BRANCH..."
+git reset --hard "origin/$BRANCH" || err "git reset failed."
 ok "Up to date: $(git log -1 --format='%h %s')"
 
 info "Rebuilding image..."
