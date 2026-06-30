@@ -29,8 +29,15 @@ def _get_states() -> list[dict]:
     out = []
     for name in SERVICES:
         try:
-            c = _client.containers.get(name)
-            out.append({"name": name, "status": c.status, "health": c.attrs.get("State", {}).get("Health", {}).get("Status", "none")})
+            matches = _client.containers.list(
+                all=True,
+                filters={"label": f"com.docker.compose.service={name}"},
+            )
+            if matches:
+                c = matches[0]
+                out.append({"name": name, "status": c.status, "health": c.attrs.get("State", {}).get("Health", {}).get("Status", "none")})
+            else:
+                out.append({"name": name, "status": "not_found", "health": "none"})
         except DockerException:
             out.append({"name": name, "status": "not_found", "health": "none"})
     return out

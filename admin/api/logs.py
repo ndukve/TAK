@@ -40,7 +40,10 @@ async def log_stream(ws: WebSocket, service: str = Query(...), token: str = Quer
     await ws.accept()
 
     try:
-        container = _client.containers.get(service)
+        matches = _client.containers.list(all=True, filters={"label": f"com.docker.compose.service={service}"})
+        if not matches:
+            raise DockerException(f"No container for service '{service}'")
+        container = matches[0]
     except DockerException as e:
         await ws.send_text(f"[error] {e}")
         await ws.close()

@@ -6,7 +6,14 @@ from .auth import consume_shell_ticket
 
 router = APIRouter(tags=["shell"])
 _client = docker.from_env()
-CONTAINER_NAME = "takserver_config"
+_SERVICE = "takserver_config"
+
+
+def _get_container():
+    matches = _client.containers.list(filters={"label": f"com.docker.compose.service={_SERVICE}"})
+    if not matches:
+        raise DockerException(f"No running container for service '{_SERVICE}'")
+    return matches[0]
 
 
 @router.websocket("/api/shell/ws")
@@ -20,7 +27,7 @@ async def shell_ws(ws: WebSocket, t: str = Query(...)):
 
     loop = asyncio.get_running_loop()
     try:
-        container = _client.containers.get(CONTAINER_NAME)
+        container = _get_container()
     except DockerException as e:
         await ws.send_text(f"[error] {e}\r\n")
         await ws.close()

@@ -124,7 +124,7 @@ services:
       - taknet
     restart: unless-stopped
 
-  # ── Admin panel (port 8889) ───────────────────────────────────────────────
+  # ── Admin panel (internal only — accessed via admin_proxy) ───────────────
   admin:
     build: ./admin
     env_file: takserver.env
@@ -132,8 +132,6 @@ services:
       - /var/run/docker.sock:/var/run/docker.sock
       - takserver_data:/opt/tak/data:rw
       - tak_plugins:/opt/tak/plugins:rw
-    ports:
-      - "127.0.0.1:8889:8889"
     networks:
       - taknet
     depends_on:
@@ -143,11 +141,28 @@ services:
         condition: service_completed_successfully
     restart: unless-stopped
 
+  # ── Admin TLS reverse proxy (port 8889 HTTPS) ────────────────────────────
+  admin_proxy:
+    image: nginx:alpine
+    volumes:
+      - ./admin/nginx/nginx.conf:/etc/nginx/conf.d/default.conf:ro
+      - ./admin/nginx/entrypoint.sh:/entrypoint.sh:ro
+      - admin_ssl:/etc/nginx/ssl
+    entrypoint: ["/bin/sh", "/entrypoint.sh"]
+    ports:
+      - "8889:443"
+    networks:
+      - taknet
+    depends_on:
+      - admin
+    restart: unless-stopped
+
 volumes:
   takdb_data:
   takserver_data:
   tak_plugins:
   tak_plugin_conf:
+  admin_ssl:
 
 networks:
   taknet:

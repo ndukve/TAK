@@ -2,8 +2,18 @@ import asyncio
 import docker
 from docker.errors import DockerException
 
-CONTAINER_NAME = "takserver_config"
+SERVICE_NAME = "takserver_config"
 _client = docker.from_env()
+
+
+def _get_takserver_config():
+    """Find takserver_config container by compose service label (works with any project prefix)."""
+    matches = _client.containers.list(
+        filters={"label": f"com.docker.compose.service={SERVICE_NAME}"}
+    )
+    if not matches:
+        raise DockerException(f"No running container for service '{SERVICE_NAME}'")
+    return matches[0]
 
 
 async def run_in_container(
@@ -11,17 +21,11 @@ async def run_in_container(
     env: dict[str, str] | None = None,
     workdir: str | None = None,
 ) -> tuple[int, str]:
-    """
-    Run cmd in CONTAINER_NAME via docker exec.
-    Returns (exit_code, combined_output).
-    Scoped strictly to CONTAINER_NAME — no other container can be targeted.
-    Pass env vars via `env` dict instead of shell interpolation to prevent injection.
-    """
     loop = asyncio.get_running_loop()
 
     def _exec():
         try:
-            container = _client.containers.get(CONTAINER_NAME)
+            container = _get_takserver_config()
             result = container.exec_run(cmd, demux=False, environment=env, workdir=workdir)
             output = result.output.decode("utf-8", errors="replace") if result.output else ""
             return result.exit_code, output
