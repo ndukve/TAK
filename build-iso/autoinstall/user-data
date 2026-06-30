@@ -1,0 +1,78 @@
+#cloud-config
+autoinstall:
+  version: 1
+
+  locale: en_US.UTF-8
+  keyboard:
+    layout: us
+
+  network:
+    network:
+      version: 2
+      ethernets:
+        any:
+          match:
+            name: "en*"
+          dhcp4: true
+          dhcp-identifier: mac
+
+  storage:
+    layout:
+      name: lvm
+      sizing-policy: all
+
+  identity:
+    hostname: tak-server
+    username: tak
+    # password: TAKserver1! — change on first login
+    password: "$6$rounds=4096$saltvalue$7Gpt3GVF3L3YAT7hGdmVKLhOJkIDfPzQjK.ULXvq3BO5tHHXXlzuWGFfAWxBROBq4xoSHovuNi3KkpONqnkN1"
+
+  ssh:
+    install-server: true
+    allow-pw: true
+
+  packages:
+    - ca-certificates
+    - curl
+    - gnupg
+    - git
+    - jq
+    - net-tools
+
+  user-data:
+    disable_root: false
+
+  late-commands:
+    # Copy bundled files from ISO mount
+    - "mkdir -p /target/opt/tak-server"
+    - "cp -r /cdrom/tak-server/. /target/opt/tak-server/"
+    - "cp /cdrom/tak-server/build-iso/firstboot.sh /target/opt/firstboot.sh"
+    - "chmod +x /target/opt/firstboot.sh"
+    # Install Docker from bundled debs
+    - "mkdir -p /target/var/cache/apt/archives"
+    - "cp /cdrom/docker-debs/*.deb /target/var/cache/apt/archives/ 2>/dev/null || true"
+    - "curtin in-target --target=/target -- dpkg -i /var/cache/apt/archives/*.deb || true"
+    # Register firstboot systemd service
+    - |
+      cat > /target/etc/systemd/system/tak-firstboot.service << 'EOF'
+      [Unit]
+      Description=TAK Server first-boot setup
+      After=network-online.target
+      Wants=network-online.target
+      ConditionPathExists=/opt/firstboot.sh
+
+      [Service]
+      Type=oneshot
+      ExecStart=/opt/firstboot.sh
+      ExecStartPost=/bin/rm -f /opt/firstboot.sh
+      RemainAfterExit=yes
+      StandardOutput=tty
+      TTYPath=/dev/tty1
+
+      [Install]
+      WantedBy=multi-user.target
+      EOF
+    - "curtin in-target --target=/target -- systemctl enable tak-firstboot.service"
+
+  updates: security
+  shutdown: reboot
