@@ -8,7 +8,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 router = APIRouter(tags=["packages"])
 _admin = require_role("admin", "superadmin")
 
-MAX_UPLOAD_BYTES = 50 * 1024 * 1024  # 50 MB
+MAX_UPLOAD_BYTES = 100 * 1024 * 1024  # 100 MB
 
 TAK_DATA = "/opt/tak/data"
 PKGS_DIR = os.path.join(TAK_DATA, "certs/files/clientpkgs")
@@ -52,7 +52,7 @@ async def upload_package(file: UploadFile = File(...), db: AsyncSession = Depend
     dest = os.path.join(PKGS_DIR, safe_name)
     data = await file.read(MAX_UPLOAD_BYTES + 1)
     if len(data) > MAX_UPLOAD_BYTES:
-        raise HTTPException(status_code=413, detail="File too large (max 50 MB)")
+        raise HTTPException(status_code=413, detail="File too large (max 100 MB)")
     async with aiofiles.open(dest, "wb") as f:
         await f.write(data)
     await write_audit(db, actor.id, "upload_package", safe_name)
@@ -85,7 +85,7 @@ async def upload_plugin(file: UploadFile = File(...), db: AsyncSession = Depends
     dest = os.path.join(PLUGINS_DIR, os.path.basename(file.filename))
     data = await file.read(MAX_UPLOAD_BYTES + 1)
     if len(data) > MAX_UPLOAD_BYTES:
-        raise HTTPException(status_code=413, detail="File too large (max 50 MB)")
+        raise HTTPException(status_code=413, detail="File too large (max 100 MB)")
     async with aiofiles.open(dest, "wb") as f:
         await f.write(data)
     await write_audit(db, actor.id, "upload_plugin", file.filename)
@@ -131,7 +131,7 @@ async def upload_map(
     dest = os.path.join(dest_dir, os.path.basename(file.filename))
     data = await file.read(MAX_UPLOAD_BYTES + 1)
     if len(data) > MAX_UPLOAD_BYTES:
-        raise HTTPException(status_code=413, detail="File too large (max 50 MB)")
+        raise HTTPException(status_code=413, detail="File too large (max 100 MB)")
     async with aiofiles.open(dest, "wb") as f:
         await f.write(data)
     await write_audit(db, actor.id, "upload_map", f"{provider}/{file.filename}")
