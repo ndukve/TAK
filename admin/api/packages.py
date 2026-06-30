@@ -1,6 +1,7 @@
+import hashlib
 import os
 import aiofiles
-from fastapi import APIRouter, Depends, UploadFile, File, HTTPException
+from fastapi import APIRouter, Depends, Form, UploadFile, File, HTTPException
 
 from .deps import require_role, write_audit, get_db
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -15,6 +16,24 @@ PKGS_DIR = os.path.join(TAK_DATA, "certs/files/clientpkgs")
 PLUGINS_DIR = "/opt/tak/plugins"   # tak_plugins volume → /opt/tak/plugins in admin container
 MAPS_DIR = os.path.join(TAK_DATA, "maps")  # takserver_data volume → /opt/tak/data/maps
 PKG_SERVER_URL = os.environ.get("PKG_SERVER_URL", "").rstrip("/")
+
+
+def _sha256_stored(path: str) -> str | None:
+    sidecar = path + ".sha256"
+    try:
+        return open(sidecar).read().strip() or None
+    except OSError:
+        return None
+
+
+def _sha256_compute_and_store(data: bytes, path: str) -> str:
+    digest = hashlib.sha256(data).hexdigest()
+    try:
+        with open(path + ".sha256", "w") as f:
+            f.write(digest)
+    except OSError:
+        pass
+    return digest
 
 
 def _size(path: str) -> str:
@@ -74,11 +93,16 @@ async def list_plugins(_=Depends(_admin)):
     if not os.path.isdir(PLUGINS_DIR):
         return {"plugins": []}
     files = sorted(f for f in os.listdir(PLUGINS_DIR) if f.endswith(".apk") or f.endswith(".zip"))
-    return {"plugins": [{"filename": f, "size": _size(os.path.join(PLUGINS_DIR, f))} for f in files]}
+    return {"plugins": [{"filename": f, "size": _size(os.path.join(PLUGINS_DIR, f)), "sha256": _sha256_stored(os.path.join(PLUGINS_DIR, f))} for f in files]}
 
 
 @router.post("/api/plugins", status_code=201)
-async def upload_plugin(file: UploadFile = File(...), db: AsyncSession = Depends(get_db), actor=Depends(_admin)):
+async def upload_plugin(
+    file: UploadFile = File(...),
+    expected_sha256: str | None = Form(None),
+    db: AsyncSession = Depends(get_db),
+    actor=Depends(_admin),
+):
     if not (file.filename.endswith(".apk") or file.filename.endswith(".zip")):
         raise HTTPException(status_code=400, detail="Only .apk or .zip files allowed")
     os.makedirs(PLUGINS_DIR, exist_ok=True)
@@ -86,10 +110,18 @@ async def upload_plugin(file: UploadFile = File(...), db: AsyncSession = Depends
     data = await file.read(MAX_UPLOAD_BYTES + 1)
     if len(data) > MAX_UPLOAD_BYTES:
         raise HTTPException(status_code=413, detail="File too large (max 100 MB)")
+    actual_sha256 = _sha256_compute_and_store(data, dest)
+    if expected_sha256 and expected_sha256.lower() != actual_sha256:
+        try:
+            os.remove(dest)
+            os.remove(dest + ".sha256")
+        except OSError:
+            pass
+        raise HTTPException(status_code=400, detail=f"SHA-256 mismatch — got {actual_sha256}")
     async with aiofiles.open(dest, "wb") as f:
         await f.write(data)
     await write_audit(db, actor.id, "upload_plugin", file.filename)
-    return {"filename": file.filename, "size": _size(dest)}
+    return {"filename": file.filename, "size": _size(dest), "sha256": actual_sha256}
 
 
 @router.delete("/api/plugins/{filename}", status_code=204)
@@ -111,7 +143,8 @@ async def list_maps(_=Depends(_admin)):
             if not os.path.isdir(pdir):
                 continue
             for fname in sorted(f for f in os.listdir(pdir) if f.endswith(".xml")):
-                result.append({"provider": provider, "filename": fname, "size": _size(os.path.join(pdir, fname))})
+                fpath = os.path.join(pdir, fname)
+                result.append({"provider": provider, "filename": fname, "size": _size(fpath), "sha256": _sha256_stored(fpath)})
     return {"maps": result}
 
 
@@ -132,10 +165,11 @@ async def upload_map(
     data = await file.read(MAX_UPLOAD_BYTES + 1)
     if len(data) > MAX_UPLOAD_BYTES:
         raise HTTPException(status_code=413, detail="File too large (max 100 MB)")
+    sha256 = _sha256_compute_and_store(data, dest)
     async with aiofiles.open(dest, "wb") as f:
         await f.write(data)
     await write_audit(db, actor.id, "upload_map", f"{provider}/{file.filename}")
-    return {"provider": provider, "filename": file.filename, "size": _size(dest)}
+    return {"provider": provider, "filename": file.filename, "size": _size(dest), "sha256": sha256}
 
 
 @router.delete("/api/maps/{provider}/{filename}", status_code=204)

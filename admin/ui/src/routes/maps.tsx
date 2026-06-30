@@ -4,7 +4,22 @@ import { Layout } from '@/components/Layout'
 import { apiJson, apiFetch } from '@/lib/api'
 import { useAuth } from '@/store/auth'
 import { toast } from 'sonner'
-import { Trash2, Upload } from 'lucide-react'
+import { Trash2, Upload, Copy, Check } from 'lucide-react'
+
+function CopyHash({ hash }: { hash: string }) {
+  const [copied, setCopied] = useState(false)
+  function copy() {
+    navigator.clipboard.writeText(hash)
+    setCopied(true)
+    setTimeout(() => setCopied(false), 2000)
+  }
+  return (
+    <button onClick={copy} title="Copy SHA-256" className="flex items-center gap-1 font-mono text-xs text-zinc-500 hover:text-zinc-300 transition-colors">
+      <span>{hash.slice(0, 16)}…</span>
+      {copied ? <Check size={11} className="text-green-400" /> : <Copy size={11} />}
+    </button>
+  )
+}
 
 export const Route = createFileRoute('/maps')({
   beforeLoad: () => {
@@ -18,6 +33,7 @@ interface MapSource {
   provider: string
   filename: string
   size: string
+  sha256: string | null
 }
 
 function MapsPage() {
@@ -118,13 +134,14 @@ function MapsPage() {
                 <th className="px-4 py-3 text-left font-medium">Provider</th>
                 <th className="px-4 py-3 text-left font-medium">File</th>
                 <th className="px-4 py-3 text-left font-medium">Size</th>
+                <th className="px-4 py-3 text-left font-medium">SHA-256</th>
                 <th className="px-4 py-3 text-right font-medium">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-zinc-800">
               {maps.length === 0 && (
                 <tr>
-                  <td colSpan={4} className="px-4 py-8 text-center text-zinc-500">
+                  <td colSpan={5} className="px-4 py-8 text-center text-zinc-500">
                     No map sources loaded
                   </td>
                 </tr>
@@ -134,6 +151,7 @@ function MapsPage() {
                   <td className="px-4 py-3 text-zinc-400">{m.provider}</td>
                   <td className="px-4 py-3 font-mono">{m.filename}</td>
                   <td className="px-4 py-3 text-zinc-400">{m.size}</td>
+                  <td className="px-4 py-3">{m.sha256 ? <CopyHash hash={m.sha256} /> : <span className="text-zinc-600 text-xs">—</span>}</td>
                   <td className="px-4 py-3">
                     <div className="flex justify-end">
                       <button
