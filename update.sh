@@ -24,6 +24,18 @@ info "Overwriting local changes with origin/$BRANCH..."
 git reset --hard "origin/$BRANCH" || err "git reset failed."
 ok "Up to date: $(git log -1 --format='%h %s')"
 
+info "Checking for new required env vars..."
+backfill_var() {
+  local key="$1" val="$2"
+  if ! grep -q "^${key}=" "$ENV_FILE"; then
+    echo "${key}=${val}" >> "$ENV_FILE"
+    ok "Added ${key} to takserver.env"
+  fi
+}
+backfill_var "ADMIN_SECRET_KEY"  "$(openssl rand -hex 32)"
+backfill_var "ADMIN_FIRST_USER"  "admin"
+backfill_var "ADMIN_FIRST_PASS"  "$(openssl rand -base64 16 | tr -d '/+=' | head -c 20)"
+
 info "Rebuilding image..."
 docker compose --env-file "$ENV_FILE" build --quiet
 ok "Image rebuilt"
