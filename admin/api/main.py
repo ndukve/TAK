@@ -4,7 +4,7 @@ from fastapi import FastAPI
 from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
 
-from .db import engine, Base
+from .db import engine, Base, ensure_database
 from . import models  # noqa: F401 — ensures models register with Base
 from .auth import router as auth_router, _ensure_first_user
 from .admin_users import router as admin_users_router
@@ -17,6 +17,7 @@ from .shell import router as shell_router
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    await ensure_database()
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
     await _ensure_first_user()

@@ -1,4 +1,5 @@
 import os
+import asyncpg
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession, async_sessionmaker
 from sqlalchemy.orm import DeclarativeBase
 
@@ -10,6 +11,26 @@ DATABASE_URL = (
     f"postgresql+asyncpg://{POSTGRES_USER}:{POSTGRES_PASSWORD}"
     f"@{POSTGRES_ADDRESS}:5432/admin"
 )
+
+
+async def ensure_database():
+    """Create the 'admin' database if it doesn't exist."""
+    conn = await asyncpg.connect(
+        host=POSTGRES_ADDRESS,
+        port=5432,
+        user=POSTGRES_USER,
+        password=POSTGRES_PASSWORD,
+        database="postgres",
+    )
+    try:
+        exists = await conn.fetchval(
+            "SELECT 1 FROM pg_database WHERE datname = 'admin'"
+        )
+        if not exists:
+            await conn.execute("CREATE DATABASE admin")
+            print("[admin] Created 'admin' database", flush=True)
+    finally:
+        await conn.close()
 
 engine = create_async_engine(DATABASE_URL, echo=False)
 SessionLocal = async_sessionmaker(engine, expire_on_commit=False)
