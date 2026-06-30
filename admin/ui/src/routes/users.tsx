@@ -4,7 +4,55 @@ import { Layout } from '@/components/Layout'
 import { apiJson, apiFetch } from '@/lib/api'
 import { useAuth } from '@/store/auth'
 import { toast } from 'sonner'
-import { UserPlus, Trash2, CheckCircle, XCircle } from 'lucide-react'
+import { UserPlus, Trash2, CheckCircle, XCircle, KeyRound } from 'lucide-react'
+
+function SetPasswordModal({ username, onClose }: { username: string; onClose: () => void }) {
+  const [password, setPassword] = useState('')
+  const [confirm, setConfirm] = useState('')
+  const [loading, setLoading] = useState(false)
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault()
+    if (password !== confirm) { toast.error('Passwords do not match'); return }
+    setLoading(true)
+    try {
+      await apiJson('/api/users/set-password', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username, password }),
+      })
+      toast.success(`Password set for ${username}`)
+      onClose()
+    } catch (e: any) {
+      toast.error(e.message)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  return (
+    <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50">
+      <div className="bg-zinc-900 border border-zinc-700 rounded-lg p-6 w-full max-w-sm">
+        <h2 className="text-lg font-semibold mb-1">Set Password</h2>
+        <p className="text-sm text-zinc-400 mb-4">TAK Server web UI password for <span className="font-mono text-zinc-200">{username}</span></p>
+        <form onSubmit={handleSubmit} className="space-y-3">
+          <input type="password" placeholder="New password (min 12 chars)" value={password}
+            onChange={e => setPassword(e.target.value)}
+            className="w-full bg-zinc-800 border border-zinc-700 rounded px-3 py-2 text-sm" required />
+          <input type="password" placeholder="Confirm password" value={confirm}
+            onChange={e => setConfirm(e.target.value)}
+            className="w-full bg-zinc-800 border border-zinc-700 rounded px-3 py-2 text-sm" required />
+          <div className="flex gap-2 pt-1">
+            <button type="button" onClick={onClose} className="flex-1 py-2 rounded bg-zinc-700 hover:bg-zinc-600 text-sm">Cancel</button>
+            <button type="submit" disabled={loading} className="flex-1 py-2 rounded bg-blue-600 hover:bg-blue-500 text-sm disabled:opacity-50">
+              {loading ? 'Setting…' : 'Set Password'}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  )
+}
 
 export const Route = createFileRoute('/users')({
   beforeLoad: () => {
@@ -16,6 +64,7 @@ export const Route = createFileRoute('/users')({
 
 function UsersPage() {
   const [users, setUsers] = useState<string[]>([])
+  const [setPwUser, setSetPwUser] = useState<string | null>(null)
 
   async function load() {
     try {
@@ -90,6 +139,7 @@ function UsersPage() {
                   <td className="px-4 py-3 flex justify-end gap-2">
                     <button onClick={() => enableUser(u)} title="Enable" className="p-1.5 rounded hover:bg-zinc-800 text-green-400"><CheckCircle size={14} /></button>
                     <button onClick={() => disableUser(u)} title="Disable" className="p-1.5 rounded hover:bg-zinc-800 text-yellow-400"><XCircle size={14} /></button>
+                    <button onClick={() => setSetPwUser(u)} title="Set Password" className="p-1.5 rounded hover:bg-zinc-800 text-blue-400"><KeyRound size={14} /></button>
                     <button onClick={() => deleteUser(u)} title="Delete" className="p-1.5 rounded hover:bg-zinc-800 text-red-400"><Trash2 size={14} /></button>
                   </td>
                 </tr>
@@ -98,6 +148,7 @@ function UsersPage() {
           </table>
         </div>
       </div>
+      {setPwUser && <SetPasswordModal username={setPwUser} onClose={() => setSetPwUser(null)} />}
     </Layout>
   )
 }

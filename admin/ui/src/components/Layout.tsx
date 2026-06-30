@@ -1,10 +1,11 @@
+import { useState } from 'react'
 import { Link, useNavigate, useRouterState } from '@tanstack/react-router'
 import { useAuth } from '@/store/auth'
 import { cn } from '@/lib/utils'
 import { apiFetch } from '@/lib/api'
 import {
   LayoutDashboard, Users, Package, Puzzle, Map,
-  ScrollText, Terminal, ShieldUser, LogOut
+  ScrollText, Terminal, ShieldUser, LogOut, KeyRound
 } from 'lucide-react'
 
 const navItems = [
@@ -21,11 +22,91 @@ const superAdminItems = [
   { to: '/admin-users', label: 'Admin Users', icon: ShieldUser },
 ]
 
+function passwordStrength(p: string): { score: number; label: string; color: string } {
+  let score = 0
+  if (p.length >= 12) score++
+  if (p.length >= 16) score++
+  if (/[A-Z]/.test(p)) score++
+  if (/[a-z]/.test(p)) score++
+  if (/\d/.test(p)) score++
+  if (/[^A-Za-z0-9]/.test(p)) score++
+  if (score <= 2) return { score, label: 'Weak', color: 'bg-red-500' }
+  if (score <= 4) return { score, label: 'Fair', color: 'bg-yellow-500' }
+  if (score === 5) return { score, label: 'Good', color: 'bg-blue-500' }
+  return { score, label: 'Strong', color: 'bg-green-500' }
+}
+
+function ChangePasswordModal({ onClose }: { onClose: () => void }) {
+  const [current, setCurrent] = useState('')
+  const [next, setNext] = useState('')
+  const [confirm, setConfirm] = useState('')
+  const [error, setError] = useState('')
+  const [ok, setOk] = useState(false)
+  const strength = passwordStrength(next)
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault()
+    setError('')
+    if (next !== confirm) { setError('Passwords do not match'); return }
+    if (next.length < 12) { setError('New password must be at least 12 characters'); return }
+    try {
+      await apiFetch('/admin-users/me/change-password', {
+        method: 'POST',
+        body: JSON.stringify({ current_password: current, new_password: next }),
+      })
+      setOk(true)
+    } catch (err: any) {
+      setError(err.message ?? 'Failed')
+    }
+  }
+
+  return (
+    <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50">
+      <div className="bg-zinc-900 border border-zinc-700 rounded-lg p-6 w-full max-w-sm">
+        <h2 className="text-lg font-semibold mb-4">Change Password</h2>
+        {ok ? (
+          <div className="space-y-4">
+            <p className="text-green-400 text-sm">Password changed successfully.</p>
+            <button onClick={onClose} className="w-full py-2 rounded bg-zinc-700 hover:bg-zinc-600 text-sm">Close</button>
+          </div>
+        ) : (
+          <form onSubmit={handleSubmit} className="space-y-3">
+            <input type="password" placeholder="Current password" value={current} onChange={e => setCurrent(e.target.value)}
+              className="w-full bg-zinc-800 border border-zinc-700 rounded px-3 py-2 text-sm" required />
+            <div className="space-y-1">
+              <input type="password" placeholder="New password (min 12 chars)" value={next} onChange={e => setNext(e.target.value)}
+                className="w-full bg-zinc-800 border border-zinc-700 rounded px-3 py-2 text-sm" required />
+              {next.length > 0 && (
+                <div className="space-y-1">
+                  <div className="flex gap-1 h-1">
+                    {[1,2,3,4,5,6].map(i => (
+                      <div key={i} className={`flex-1 rounded-full ${i <= strength.score ? strength.color : 'bg-zinc-700'}`} />
+                    ))}
+                  </div>
+                  <p className="text-xs text-zinc-400">{strength.label} · must have uppercase, lowercase, digit, special char</p>
+                </div>
+              )}
+            </div>
+            <input type="password" placeholder="Confirm new password" value={confirm} onChange={e => setConfirm(e.target.value)}
+              className="w-full bg-zinc-800 border border-zinc-700 rounded px-3 py-2 text-sm" required />
+            {error && <p className="text-red-400 text-xs">{error}</p>}
+            <div className="flex gap-2 pt-1">
+              <button type="button" onClick={onClose} className="flex-1 py-2 rounded bg-zinc-700 hover:bg-zinc-600 text-sm">Cancel</button>
+              <button type="submit" className="flex-1 py-2 rounded bg-blue-600 hover:bg-blue-500 text-sm">Change</button>
+            </div>
+          </form>
+        )}
+      </div>
+    </div>
+  )
+}
+
 export function Layout({ children }: { children: React.ReactNode }) {
   const { role, clear } = useAuth()
   const navigate = useNavigate()
   const routerState = useRouterState()
   const current = routerState.location.pathname
+  const [showChangePw, setShowChangePw] = useState(false)
 
   async function handleLogout() {
     await apiFetch('/auth/logout', { method: 'POST' })
@@ -58,7 +139,14 @@ export function Layout({ children }: { children: React.ReactNode }) {
             </Link>
           ))}
         </nav>
-        <div className="p-2 border-t border-zinc-800">
+        <div className="p-2 border-t border-zinc-800 space-y-1">
+          <button
+            onClick={() => setShowChangePw(true)}
+            className="flex items-center gap-3 w-full px-3 py-2 rounded-md text-sm text-zinc-400 hover:text-white hover:bg-zinc-800/50 transition-colors"
+          >
+            <KeyRound size={16} />
+            Change Password
+          </button>
           <button
             onClick={handleLogout}
             className="flex items-center gap-3 w-full px-3 py-2 rounded-md text-sm text-zinc-400 hover:text-white hover:bg-zinc-800/50 transition-colors"
@@ -69,6 +157,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
         </div>
       </aside>
       <main className="flex-1 overflow-auto">{children}</main>
+      {showChangePw && <ChangePasswordModal onClose={() => setShowChangePw(false)} />}
     </div>
   )
 }

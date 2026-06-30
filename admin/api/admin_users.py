@@ -9,6 +9,7 @@ from sqlalchemy import select, delete
 from .db import get_db
 from .models import AdminUser, InviteLink, RefreshToken
 from .deps import require_role, write_audit, pwd_ctx
+from .password_policy import validate_password
 
 router = APIRouter(prefix="/api/admin-users", tags=["admin-users"])
 _superadmin = require_role("superadmin")
@@ -33,6 +34,11 @@ class InviteRequest(BaseModel):
     role: str
 
 
+class ChangePasswordRequest(BaseModel):
+    current_password: str
+    new_password: str
+
+
 @router.get("")
 async def list_users(db: AsyncSession = Depends(get_db), actor=Depends(_superadmin)):
     result = await db.execute(select(AdminUser))
@@ -50,8 +56,7 @@ async def create_user(body: CreateUserRequest, db: AsyncSession = Depends(get_db
     existing = await db.execute(select(AdminUser).where(AdminUser.username == body.username))
     if existing.scalar_one_or_none():
         raise HTTPException(status_code=409, detail="Username already exists")
-    if len(body.password) < 12:
-        raise HTTPException(status_code=400, detail="Password must be at least 12 characters")
+    await validate_password(body.password)
     user = AdminUser(
         username=body.username,
         password_hash=pwd_ctx.hash(body.password),
@@ -77,8 +82,7 @@ async def patch_user(user_id: str, body: PatchUserRequest, db: AsyncSession = De
             raise HTTPException(status_code=400, detail=f"role must be one of {VALID_ROLES}")
         user.role = body.role
     if body.password:
-        if len(body.password) < 12:
-            raise HTTPException(status_code=400, detail="Password must be at least 12 characters")
+        await validate_password(body.password)
         user.password_hash = pwd_ctx.hash(body.password)
     if body.is_active is not None:
         user.is_active = body.is_active
@@ -100,6 +104,21 @@ async def deactivate_user(user_id: str, db: AsyncSession = Depends(get_db), acto
     await db.commit()
     await write_audit(db, actor.id, "delete_admin_user", user_id)
     return {"status": "deleted"}
+
+
+@router.post("/me/change-password")
+async def change_own_password(
+    body: ChangePasswordRequest,
+    db: AsyncSession = Depends(get_db),
+    actor: AdminUser = Depends(require_role("admin", "superadmin")),
+):
+    if not pwd_ctx.verify(body.current_password, actor.password_hash):
+        raise HTTPException(status_code=400, detail="Current password is incorrect")
+    await validate_password(body.new_password)
+    actor.password_hash = pwd_ctx.hash(body.new_password)
+    await db.commit()
+    await write_audit(db, actor.id, "change_own_password", actor.username)
+    return {"status": "ok"}
 
 
 @router.post("/invite", status_code=201)

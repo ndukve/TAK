@@ -7,6 +7,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from .db import get_db
 from .deps import require_role, write_audit
 from .docker_exec import run_in_container
+from .password_policy import validate_password
 
 router = APIRouter(prefix="/api/users", tags=["users"])
 _admin = require_role("admin", "superadmin")
@@ -26,6 +27,11 @@ def _validate_username(username: str) -> str:
 
 class UsernameRequest(BaseModel):
     username: str
+
+
+class SetPasswordRequest(BaseModel):
+    username: str
+    password: str
 
 
 @router.get("")
@@ -59,6 +65,20 @@ async def make_package(body: UsernameRequest, db: AsyncSession = Depends(get_db)
         raise HTTPException(status_code=500, detail=out)
     await write_audit(db, actor.id, "make_package", username)
     return {"status": "ok", "download_url": f"http://{SERVER_ADDR}:8888/{username}.zip"}
+
+
+@router.post("/set-password")
+async def set_tak_password(body: SetPasswordRequest, db: AsyncSession = Depends(get_db), actor=Depends(_admin)):
+    username = _validate_username(body.username)
+    await validate_password(body.password)
+    code, out = await run_in_container(
+        ["java", "-jar", "utils/UserManager.jar", "usermod", "-u", username, "-p", body.password],
+        workdir="/opt/tak",
+    )
+    if code != 0:
+        raise HTTPException(status_code=500, detail=out)
+    await write_audit(db, actor.id, "set_tak_password", username)
+    return {"status": "ok"}
 
 
 @router.post("/enable")
