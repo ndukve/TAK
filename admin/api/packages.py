@@ -143,6 +143,8 @@ async def delete_map(provider: str, filename: str, db: AsyncSession = Depends(ge
     safe_provider = os.path.basename(provider)
     safe_filename = os.path.basename(filename)
     path = os.path.join(MAPS_DIR, safe_provider, safe_filename)
+    if not os.path.realpath(path).startswith(os.path.realpath(MAPS_DIR) + os.sep):
+        raise HTTPException(status_code=403, detail="Invalid path")
     if not os.path.isfile(path):
         raise HTTPException(status_code=404, detail="Map not found")
     os.remove(path)

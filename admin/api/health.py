@@ -38,7 +38,7 @@ def _get_states() -> list[dict]:
 
 @router.get("")
 async def get_health(_=Depends(require_role("admin", "superadmin"))):
-    loop = asyncio.get_event_loop()
+    loop = asyncio.get_running_loop()
     states = await loop.run_in_executor(None, _get_states)
     return {"services": states}
 
@@ -51,7 +51,7 @@ async def health_stream(ws: WebSocket, token: str = Query(...)):
     await ws.accept()
     try:
         while True:
-            loop = asyncio.get_event_loop()
+            loop = asyncio.get_running_loop()
             states = await loop.run_in_executor(None, _get_states)
             await ws.send_text(json.dumps({"services": states}))
             await asyncio.sleep(5)

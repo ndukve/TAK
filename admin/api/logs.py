@@ -47,7 +47,7 @@ async def log_stream(ws: WebSocket, service: str = Query(...), token: str = Quer
         return
 
     log_gen = container.logs(stream=True, follow=True, tail=100)
-    loop = asyncio.get_event_loop()
+    loop = asyncio.get_running_loop()
     try:
         while True:
             line = await loop.run_in_executor(None, next, log_gen, None)

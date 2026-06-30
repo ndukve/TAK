@@ -18,7 +18,7 @@ async def shell_ws(ws: WebSocket, t: str = Query(...)):
 
     await ws.accept()
 
-    loop = asyncio.get_event_loop()
+    loop = asyncio.get_running_loop()
     try:
         container = _client.containers.get(CONTAINER_NAME)
     except DockerException as e:

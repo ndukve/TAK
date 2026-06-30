@@ -4,16 +4,16 @@ from datetime import datetime, timedelta, timezone
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select
+from sqlalchemy import select, delete
 
 from .db import get_db
-from .models import AdminUser, InviteLink
+from .models import AdminUser, InviteLink, RefreshToken
 from .deps import require_role, write_audit, pwd_ctx
 
 router = APIRouter(prefix="/api/admin-users", tags=["admin-users"])
 _superadmin = require_role("superadmin")
 
-VALID_ROLES = {"superadmin", "admin", "readonly"}
+VALID_ROLES = {"superadmin", "admin"}
 INVITE_EXPIRE_HOURS = 24
 
 
@@ -37,10 +37,10 @@ class InviteRequest(BaseModel):
 async def list_users(db: AsyncSession = Depends(get_db), actor=Depends(_superadmin)):
     result = await db.execute(select(AdminUser))
     users = result.scalars().all()
-    return [
+    return {"users": [
         {"id": u.id, "username": u.username, "role": u.role, "is_active": u.is_active, "created_at": u.created_at}
         for u in users
-    ]
+    ]}
 
 
 @router.post("", status_code=201)
@@ -70,6 +70,8 @@ async def patch_user(user_id: str, body: PatchUserRequest, db: AsyncSession = De
     user = result.scalar_one_or_none()
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
+    if body.role and body.role != user.role and user.id == actor.id:
+        raise HTTPException(status_code=400, detail="Cannot change your own role")
     if body.role:
         if body.role not in VALID_ROLES:
             raise HTTPException(status_code=400, detail=f"role must be one of {VALID_ROLES}")
@@ -92,11 +94,12 @@ async def deactivate_user(user_id: str, db: AsyncSession = Depends(get_db), acto
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
     if user.id == actor.id:
-        raise HTTPException(status_code=400, detail="Cannot deactivate yourself")
-    user.is_active = False
+        raise HTTPException(status_code=400, detail="Cannot delete yourself")
+    await db.execute(delete(RefreshToken).where(RefreshToken.user_id == user.id))
+    await db.delete(user)
     await db.commit()
-    await write_audit(db, actor.id, "deactivate_admin_user", user_id)
-    return {"status": "deactivated"}
+    await write_audit(db, actor.id, "delete_admin_user", user_id)
+    return {"status": "deleted"}
 
 
 @router.post("/invite", status_code=201)

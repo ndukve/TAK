@@ -17,7 +17,7 @@ async def run_in_container(
     Scoped strictly to CONTAINER_NAME — no other container can be targeted.
     Pass env vars via `env` dict instead of shell interpolation to prevent injection.
     """
-    loop = asyncio.get_event_loop()
+    loop = asyncio.get_running_loop()
 
     def _exec():
         try:
