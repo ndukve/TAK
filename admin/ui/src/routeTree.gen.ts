@@ -18,8 +18,6 @@ import { Route as LogsRouteImport } from './routes/logs'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as AdminUsersRouteImport } from './routes/admin-users'
 import { Route as IndexRouteImport } from './routes/index'
-import { Route as UsersNewRouteImport } from './routes/users.new'
-import { Route as AdminUsersNewRouteImport } from './routes/admin-users.new'
 
 const UsersRoute = UsersRouteImport.update({
   id: '/users',
@@ -66,56 +64,40 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
-const UsersNewRoute = UsersNewRouteImport.update({
-  id: '/new',
-  path: '/new',
-  getParentRoute: () => UsersRoute,
-} as any)
-const AdminUsersNewRoute = AdminUsersNewRouteImport.update({
-  id: '/new',
-  path: '/new',
-  getParentRoute: () => AdminUsersRoute,
-} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
-  '/admin-users': typeof AdminUsersRouteWithChildren
+  '/admin-users': typeof AdminUsersRoute
   '/login': typeof LoginRoute
   '/logs': typeof LogsRoute
   '/maps': typeof MapsRoute
   '/packages': typeof PackagesRoute
   '/plugins': typeof PluginsRoute
   '/shell': typeof ShellRoute
-  '/users': typeof UsersRouteWithChildren
-  '/admin-users/new': typeof AdminUsersNewRoute
-  '/users/new': typeof UsersNewRoute
+  '/users': typeof UsersRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
-  '/admin-users': typeof AdminUsersRouteWithChildren
+  '/admin-users': typeof AdminUsersRoute
   '/login': typeof LoginRoute
   '/logs': typeof LogsRoute
   '/maps': typeof MapsRoute
   '/packages': typeof PackagesRoute
   '/plugins': typeof PluginsRoute
   '/shell': typeof ShellRoute
-  '/users': typeof UsersRouteWithChildren
-  '/admin-users/new': typeof AdminUsersNewRoute
-  '/users/new': typeof UsersNewRoute
+  '/users': typeof UsersRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
-  '/admin-users': typeof AdminUsersRouteWithChildren
+  '/admin-users': typeof AdminUsersRoute
   '/login': typeof LoginRoute
   '/logs': typeof LogsRoute
   '/maps': typeof MapsRoute
   '/packages': typeof PackagesRoute
   '/plugins': typeof PluginsRoute
   '/shell': typeof ShellRoute
-  '/users': typeof UsersRouteWithChildren
-  '/admin-users/new': typeof AdminUsersNewRoute
-  '/users/new': typeof UsersNewRoute
+  '/users': typeof UsersRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -129,8 +111,6 @@ export interface FileRouteTypes {
     | '/plugins'
     | '/shell'
     | '/users'
-    | '/admin-users/new'
-    | '/users/new'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -142,8 +122,6 @@ export interface FileRouteTypes {
     | '/plugins'
     | '/shell'
     | '/users'
-    | '/admin-users/new'
-    | '/users/new'
   id:
     | '__root__'
     | '/'
@@ -155,20 +133,18 @@ export interface FileRouteTypes {
     | '/plugins'
     | '/shell'
     | '/users'
-    | '/admin-users/new'
-    | '/users/new'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
-  AdminUsersRoute: typeof AdminUsersRouteWithChildren
+  AdminUsersRoute: typeof AdminUsersRoute
   LoginRoute: typeof LoginRoute
   LogsRoute: typeof LogsRoute
   MapsRoute: typeof MapsRoute
   PackagesRoute: typeof PackagesRoute
   PluginsRoute: typeof PluginsRoute
   ShellRoute: typeof ShellRoute
-  UsersRoute: typeof UsersRouteWithChildren
+  UsersRoute: typeof UsersRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -236,55 +212,19 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/users/new': {
-      id: '/users/new'
-      path: '/new'
-      fullPath: '/users/new'
-      preLoaderRoute: typeof UsersNewRouteImport
-      parentRoute: typeof UsersRoute
-    }
-    '/admin-users/new': {
-      id: '/admin-users/new'
-      path: '/new'
-      fullPath: '/admin-users/new'
-      preLoaderRoute: typeof AdminUsersNewRouteImport
-      parentRoute: typeof AdminUsersRoute
-    }
   }
 }
 
-interface AdminUsersRouteChildren {
-  AdminUsersNewRoute: typeof AdminUsersNewRoute
-}
-
-const AdminUsersRouteChildren: AdminUsersRouteChildren = {
-  AdminUsersNewRoute: AdminUsersNewRoute,
-}
-
-const AdminUsersRouteWithChildren = AdminUsersRoute._addFileChildren(
-  AdminUsersRouteChildren,
-)
-
-interface UsersRouteChildren {
-  UsersNewRoute: typeof UsersNewRoute
-}
-
-const UsersRouteChildren: UsersRouteChildren = {
-  UsersNewRoute: UsersNewRoute,
-}
-
-const UsersRouteWithChildren = UsersRoute._addFileChildren(UsersRouteChildren)
-
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
-  AdminUsersRoute: AdminUsersRouteWithChildren,
+  AdminUsersRoute: AdminUsersRoute,
   LoginRoute: LoginRoute,
   LogsRoute: LogsRoute,
   MapsRoute: MapsRoute,
   PackagesRoute: PackagesRoute,
   PluginsRoute: PluginsRoute,
   ShellRoute: ShellRoute,
-  UsersRoute: UsersRouteWithChildren,
+  UsersRoute: UsersRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
