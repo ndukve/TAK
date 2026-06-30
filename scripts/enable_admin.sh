@@ -1,21 +1,22 @@
 #!/usr/bin/env -S /bin/bash
 
+G='\033[0;32m' R='\033[0;31m' C='\033[0;36m' NC='\033[0m'
+ok()   { printf "${G}  ✓${NC}  %s\n" "$*"; }
+fail() { printf "${R}  ✗${NC}  %s\n" "$*" >&2; exit 1; }
+info() { printf "${C}  →${NC}  %s\n" "$*"; }
+
 set -e
 
 TR=/opt/tak
-
 CONFIG=${TR}/data/CoreConfig.xml
 
 cd ${TR}
-
 . ./setenv.sh
 
-echo "enable_admin: Waiting for TAK server"
-
+info "Waiting for TAK server"
 WAITFORIT_TIMEOUT=2 /usr/bin/wait-for-it.sh localhost:8089 -- true
 
-echo "enable_admin: Making sure ${ADMIN_CERT_NAME} user is in place"
-
-set -x
-
-TAKCL_CORECONFIG_PATH="${CONFIG}" java -jar /opt/tak/utils/UserManager.jar certmod -A "/opt/tak/data/certs/files/${ADMIN_CERT_NAME}.pem"
+info "Granting admin rights to ${ADMIN_CERT_NAME}"
+TAKCL_CORECONFIG_PATH="${CONFIG}" java -jar /opt/tak/utils/UserManager.jar \
+    certmod -A "/opt/tak/data/certs/files/${ADMIN_CERT_NAME}.pem"
+ok "${ADMIN_CERT_NAME} has admin rights"
