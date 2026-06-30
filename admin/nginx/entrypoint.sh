@@ -1,5 +1,6 @@
 #!/bin/sh
 set -e
+apk add --no-cache openssl >/dev/null 2>&1
 mkdir -p /etc/nginx/ssl
 if [ ! -f /etc/nginx/ssl/cert.pem ]; then
     openssl req -x509 -nodes -newkey rsa:2048 -days 3650 \
