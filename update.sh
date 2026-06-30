@@ -36,6 +36,12 @@ backfill_var "ADMIN_SECRET_KEY"  "$(openssl rand -hex 32)"
 backfill_var "ADMIN_FIRST_USER"  "admin"
 backfill_var "ADMIN_FIRST_PASS"  "$(openssl rand -base64 16 | tr -d '/+=' | head -c 20)"
 
+info "Ensuring admin database exists..."
+docker compose exec -T takdb psql -U "${POSTGRES_USER:-martiuser}" \
+  -c "CREATE DATABASE admin;" 2>/dev/null \
+  && ok "admin database created" \
+  || ok "admin database already exists"
+
 info "Rebuilding image..."
 docker compose --env-file "$ENV_FILE" build --quiet
 ok "Image rebuilt"
