@@ -38,7 +38,7 @@ add-user:
 gen-device-cert:
 	@[ -n "$(USERNAME)" ] || { echo "Usage: make gen-device-cert USERNAME=alice"; exit 1; }
 	@[ -f $(ENV_FILE) ] || { echo "Run './install.sh' first"; exit 1; }
-	$(eval DC := $(shell docker info &>/dev/null 2>&1 && echo "docker compose" || echo "sudo docker compose"))
+	$(eval DC := $(shell docker info >/dev/null 2>&1 && echo "docker compose" || echo "sudo docker compose"))
 	$(DC) --env-file $(ENV_FILE) exec \
 		-e CLIENT_CERT_NAME="$(USERNAME)" \
 		takserver_config bash /opt/scripts/gen_client_cert.sh
@@ -49,7 +49,7 @@ gen-device-cert:
 make-package:
 	@[ -n "$(USERNAME)" ] || { echo "Usage: make make-package USERNAME=alice"; exit 1; }
 	@[ -f $(ENV_FILE) ] || { echo "Run './install.sh' first"; exit 1; }
-	$(eval DC := $(shell docker info &>/dev/null 2>&1 && echo "docker compose" || echo "sudo docker compose"))
+	$(eval DC := $(shell docker info >/dev/null 2>&1 && echo "docker compose" || echo "sudo docker compose"))
 	$(eval ADDR := $(shell grep '^TAK_SERVER_ADDRESS=' $(ENV_FILE) | cut -d= -f2))
 	$(DC) --env-file $(ENV_FILE) exec \
 		-e CLIENT_CERT_NAME="$(USERNAME)" \
@@ -67,7 +67,7 @@ gen-cert: gen-device-cert make-package
 enable-user:
 	@[ -n "$(USERNAME)" ] || { echo "Usage: make enable-user USERNAME=alice"; exit 1; }
 	@[ -f $(ENV_FILE) ] || { echo "Run './install.sh' first"; exit 1; }
-	$(eval DC := $(shell docker info &>/dev/null 2>&1 && echo "docker compose" || echo "sudo docker compose"))
+	$(eval DC := $(shell docker info >/dev/null 2>&1 && echo "docker compose" || echo "sudo docker compose"))
 	$(DC) --env-file $(ENV_FILE) exec \
 		-e USER_CERT_NAME="$(USERNAME)" \
 		takserver_config bash /opt/scripts/enable_user.sh
