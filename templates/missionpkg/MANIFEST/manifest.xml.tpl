@@ -1,7 +1,7 @@
 <MissionPackageManifest version="2">
 <Configuration>
-<Parameter name="uid" value="{{print .Env.TAK_SERVER_NAME "-DEFAULT" | strings.Slug}}"/>
-<Parameter name="name" value="{{.Env.TAK_SERVER_NAME}}"/>
+<Parameter name="uid" value="{{ (.Env.TAK_SERVER_NAME | default "TAK Server") | strings.Slug }}-DEFAULT"/>
+<Parameter name="name" value="{{ .Env.TAK_SERVER_NAME | default "TAK Server" }}"/>
 <Parameter name="onReceiveDelete" value="false"/>
 </Configuration>
 <Contents>
