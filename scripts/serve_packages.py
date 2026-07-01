@@ -8,7 +8,13 @@ Routes:
   /plugins/<file>     plugin download (APK / ZIP)
   /maps/              ATAK map source XMLs (MOBAC format)
   /maps/<dir>/<file>  individual map source XML download
+
+Auth: HTTP Basic Auth. Set PKG_SERVER_PASS in environment (or takserver.env).
+      If PKG_SERVER_PASS is unset, server starts but logs a warning.
 """
+import base64
+import hashlib
+import hmac
 import http.server
 import io
 import os
@@ -23,6 +29,10 @@ PKG_DIR    = os.path.join(DATA_ROOT, "certs/files/clientpkgs")
 PLUGIN_DIR = os.path.join(DATA_ROOT, "plugins")
 MAPS_DIR   = "/opt/tak/maps"
 
+# Basic Auth — username is always "tak", password from env
+_PKG_PASS  = os.environ.get("PKG_SERVER_PASS", "").strip()
+_AUTH_USER = "tak"
+
 MIME = {
     ".p12":  "application/x-pkcs12",
     ".zip":  "application/zip",
@@ -33,9 +43,34 @@ MIME = {
 FORCE_DOWNLOAD = {".zip", ".p12", ".apk", ".xml"}
 
 
+def _check_auth(auth_header: str | None) -> bool:
+    if not _PKG_PASS:
+        return True  # no password configured — open (warn at startup)
+    if not auth_header or not auth_header.startswith("Basic "):
+        return False
+    try:
+        decoded = base64.b64decode(auth_header[6:]).decode("utf-8", errors="replace")
+        user, _, password = decoded.partition(":")
+    except Exception:
+        return False
+    user_ok = hmac.compare_digest(user, _AUTH_USER)
+    pass_ok = hmac.compare_digest(
+        hashlib.sha256(password.encode()).digest(),
+        hashlib.sha256(_PKG_PASS.encode()).digest(),
+    )
+    return user_ok and pass_ok
+
+
 class TAKHandler(http.server.BaseHTTPRequestHandler):
 
     def do_GET(self):
+        if not _check_auth(self.headers.get("Authorization")):
+            self.send_response(401)
+            self.send_header("WWW-Authenticate", 'Basic realm="TAK Package Server"')
+            self.send_header("Content-Length", "0")
+            self.end_headers()
+            return
+
         path = urllib.parse.unquote(self.path.split("?")[0])
 
         if path in ("/plugins", "/plugins/"):
@@ -182,7 +217,13 @@ def _size(path: str) -> str:
         return "?"
 
 
-print(f"\nTAK package + plugin server → http://{BIND}:{PORT}/")
+if not _PKG_PASS:
+    print("  WARNING: PKG_SERVER_PASS not set — package server is open to all!")
+    print("  Add PKG_SERVER_PASS=<password> to takserver.env to enable auth.\n")
+else:
+    print(f"  Auth: username='tak'  password=<PKG_SERVER_PASS from env>\n")
+
+print(f"TAK package + plugin server → http://{BIND}:{PORT}/")
 print(f"  User packages : http://<server>:8888/<callsign>.zip")
 print(f"  Plugin repo   : http://<server>:8888/plugins/")
 print(f"  Map sources   : http://<server>:8888/maps/")
