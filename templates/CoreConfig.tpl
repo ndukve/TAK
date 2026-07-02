@@ -15,7 +15,7 @@ xsi:schemaLocation="/opt/tak/CoreConfig.xsd">
 <connector port="8443" _name="https" enableWebtak="{{getenv "WEBTAK_ENABLE" "false"}}" enableNonAdminUI="false" />
 </network>
 {{if getenv "LDAP_BIND_PASSWORD" ""}}
-<auth default="ldap" x509groups="true" x509addAnonymous="false">
+<auth default="ldap" x509groups="true" x509addAnonymous="true">
 <File location="/opt/tak/data/UserAuthenticationFile.xml"/>
 <ldap url="{{getenv "LDAP_URL" "ldap://openldap:1389"}}"
 updateinterval="60"
@@ -31,7 +31,7 @@ groupprefix="CN=tak_"
 />
 </auth>
 {{else}}
-<auth x509groups="true" x509addAnonymous="false">
+<auth x509groups="true" x509addAnonymous="true">
 <File location="/opt/tak/data/UserAuthenticationFile.xml"/>
 </auth>
 {{end}}
