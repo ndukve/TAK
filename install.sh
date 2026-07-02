@@ -139,10 +139,9 @@ printf "\n"
 # ── Reinstall fast path: reuse existing config, skip onboarding ─────────────────
 if [ "${TAK_REINSTALL:-}" = "1" ] && [ -f "$ENV_FILE" ]; then
     ok "Reinstall detected — reusing existing takserver.env"
-    set -a
-    # shellcheck disable=SC1090
-    . "$ENV_FILE"
-    set +a
+    TAK_SERVER_ADDRESS=$(grep '^TAK_SERVER_ADDRESS=' "$ENV_FILE" | cut -d= -f2-)
+    POSTGRES_USER=$(grep '^POSTGRES_USER=' "$ENV_FILE" | cut -d= -f2-)
+    POSTGRES_DB=$(grep '^POSTGRES_DB=' "$ENV_FILE" | cut -d= -f2-)
     _TOTAL=3
     step "System Setup"
     if ! command -v docker &>/dev/null; then
