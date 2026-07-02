@@ -54,7 +54,6 @@ if [ "$_OLD_HEAD" != "$(git rev-parse HEAD)" ]; then
     git --no-pager diff --stat "$_OLD_HEAD" HEAD
     printf "\n"
 else
-    dim() { printf "${DIM}     %s${NC}\n" "$*"; }
     dim "No changes — already up to date."
 fi
 
