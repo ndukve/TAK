@@ -11,6 +11,7 @@ R='\033[0;31m' G='\033[0;32m' C='\033[0;36m' W='\033[1;37m' DIM='\033[2m' NC='\0
 ok()   { printf "${G}  ✓${NC}  %s\n" "$*"; }
 fail() { printf "${R}  ✗${NC}  %s\n" "$*"; exit 1; }
 info() { printf "${C}  →${NC}  %s\n" "$*"; }
+dim()  { printf "${DIM}     %s${NC}\n" "$*"; }
 
 _SP_PID=""; _SP_START=0
 _SP_FRAMES=("⠋" "⠙" "⠹" "⠸" "⠼" "⠴" "⠦" "⠧" "⠇" "⠏")
@@ -42,10 +43,20 @@ cd "$SCRIPT_DIR"
 
 # ── Pull ──────────────────────────────────────────────────────────────────────
 BRANCH="$(git rev-parse --abbrev-ref HEAD)"
+[ "$BRANCH" = "HEAD" ] && fail "Repo is in detached HEAD state — run: git checkout main"
+_OLD_HEAD="$(git rev-parse HEAD)"
 spin_start "Fetching latest changes (branch: $BRANCH)"
 git fetch origin "$BRANCH" 2>/dev/null || { spin_stop ""; fail "git fetch failed — check network/remote"; }
 git reset --hard "origin/$BRANCH" 2>/dev/null || { spin_stop ""; fail "git reset failed"; }
 spin_stop "Up to date: $(git log -1 --format='%h %s')"
+
+if [ "$_OLD_HEAD" != "$(git rev-parse HEAD)" ]; then
+    git --no-pager diff --stat "$_OLD_HEAD" HEAD
+    printf "\n"
+else
+    dim() { printf "${DIM}     %s${NC}\n" "$*"; }
+    dim "No changes — already up to date."
+fi
 
 # ── Backfill env vars ─────────────────────────────────────────────────────────
 info "Checking for missing env vars..."
@@ -62,16 +73,22 @@ backfill "ADMIN_FIRST_PASS" "$(openssl rand -base64 16 | tr -d '/+=' | head -c 2
 
 # ── Admin DB ──────────────────────────────────────────────────────────────────
 info "Ensuring admin database exists..."
-PGUSER=$(grep '^POSTGRES_USER=' "$ENV_FILE" | cut -d= -f2 || echo "martiuser")
+PGUSER=$(grep '^POSTGRES_USER=' "$ENV_FILE" | cut -d= -f2)
+PGUSER="${PGUSER:-martiuser}"
 docker compose exec -T takdb psql -U "$PGUSER" \
     -c "CREATE DATABASE admin;" 2>/dev/null \
     && ok "admin database created" \
     || ok "admin database already exists"
 
 # ── Rebuild ───────────────────────────────────────────────────────────────────
+_BUILD_LOG=$(mktemp)
 spin_start "Building updated image"
-docker compose --env-file "$ENV_FILE" build --quiet
+if ! docker compose --env-file "$ENV_FILE" build > "$_BUILD_LOG" 2>&1; then
+    spin_stop ""
+    fail "Build failed — last 40 lines:\n$(tail -40 "$_BUILD_LOG")"
+fi
 spin_stop "Image built"
+rm -f "$_BUILD_LOG"
 
 spin_start "Restarting containers"
 docker compose --env-file "$ENV_FILE" down --remove-orphans
