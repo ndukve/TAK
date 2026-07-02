@@ -5,39 +5,13 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 ENV_FILE="$SCRIPT_DIR/takserver.env"
-
-# ── Style ─────────────────────────────────────────────────────────────────────
-R='\033[0;31m' G='\033[0;32m' C='\033[0;36m' W='\033[1;37m' DIM='\033[2m' NC='\033[0m'
-ok()   { printf "${G}  ✓${NC}  %s\n" "$*"; }
-fail() { printf "${R}  ✗${NC}  %s\n" "$*"; exit 1; }
-info() { printf "${C}  →${NC}  %s\n" "$*"; }
-dim()  { printf "${DIM}     %s${NC}\n" "$*"; }
-
-_SP_PID=""; _SP_START=0
-_SP_FRAMES=("⠋" "⠙" "⠹" "⠸" "⠼" "⠴" "⠦" "⠧" "⠇" "⠏")
-spin_start() {
-    _SP_START=$(date +%s)
-    ( local i=0
-      while true; do
-          printf "\r  ${C}%s${NC}  %s  ${DIM}%ds${NC}" \
-              "${_SP_FRAMES[$((i % ${#_SP_FRAMES[@]}))]}" "$1" "$(( $(date +%s) - _SP_START ))"
-          sleep 0.1; i=$(( i + 1 ))
-      done ) &
-    _SP_PID=$!
-}
-spin_stop() {
-    [ -n "$_SP_PID" ] && { kill "$_SP_PID" 2>/dev/null; wait "$_SP_PID" 2>/dev/null; _SP_PID=""; }
-    printf "\r\033[K"
-    ok "$1 ${DIM}($(( $(date +%s) - _SP_START ))s)${NC}"
-}
-trap '[ -n "$_SP_PID" ] && kill "$_SP_PID" 2>/dev/null; printf "\r\033[K"' EXIT
+WT_BACKTITLE="TAK Server Update"
+# shellcheck source=scripts/_tui.sh
+. "$SCRIPT_DIR/scripts/_tui.sh"
 
 # ── Preflight ─────────────────────────────────────────────────────────────────
 [ -f "$ENV_FILE" ] || fail "takserver.env not found — run ./install.sh first"
 [ -d "$SCRIPT_DIR/.git" ] || fail "Not a git repo — clone via git, not manual download"
-
-printf "\n  ${W}TAK Server — Update${NC}\n"
-printf "  %s\n\n" "$(printf '─%.0s' {1..48})"
 
 cd "$SCRIPT_DIR"
 
@@ -45,12 +19,17 @@ cd "$SCRIPT_DIR"
 BRANCH="$(git rev-parse --abbrev-ref HEAD)"
 [ "$BRANCH" = "HEAD" ] && fail "Repo is in detached HEAD state — run: git checkout main"
 _OLD_HEAD="$(git rev-parse HEAD)"
-spin_start "Fetching latest changes (branch: $BRANCH)"
-git fetch origin "$BRANCH" 2>/dev/null || { spin_stop ""; fail "git fetch failed — check network/remote"; }
-git reset --hard "origin/$BRANCH" 2>/dev/null || { spin_stop ""; fail "git reset failed"; }
-spin_stop "Up to date: $(git log -1 --format='%h %s')"
 
-if [ "$_OLD_HEAD" != "$(git rev-parse HEAD)" ]; then
+whiptail --backtitle "$WT_BACKTITLE" --title "Update" --infobox "Fetching latest changes (branch: $BRANCH)..." 8 60
+git fetch origin "$BRANCH" 2>/dev/null || fail "git fetch failed — check network/remote"
+git reset --hard "origin/$BRANCH" 2>/dev/null || fail "git reset failed"
+_NEW_HEAD="$(git rev-parse HEAD)"
+
+clear
+printf "\n  ${W}TAK Server — Update${NC}\n"
+printf "  %s\n\n" "$(printf '─%.0s' {1..48})"
+ok "Up to date: $(git log -1 --format='%h %s')"
+if [ "$_OLD_HEAD" != "$_NEW_HEAD" ]; then
     git --no-pager diff --stat "$_OLD_HEAD" HEAD
     printf "\n"
 else
@@ -80,20 +59,15 @@ docker compose exec -T takdb psql -U "$PGUSER" \
     || ok "admin database already exists"
 
 # ── Rebuild ───────────────────────────────────────────────────────────────────
-_BUILD_LOG=$(mktemp)
-spin_start "Building updated image"
-if ! docker compose --env-file "$ENV_FILE" build > "$_BUILD_LOG" 2>&1; then
-    spin_stop ""
-    fail "Build failed — last 40 lines:\n$(tail -40 "$_BUILD_LOG")"
-fi
-spin_stop "Image built"
-rm -f "$_BUILD_LOG"
+run_with_gauge "Update" "Building updated image..." -- \
+    docker compose --env-file "$ENV_FILE" build \
+    || fail "Build failed (see output above)."
 
-spin_start "Restarting containers"
-docker compose --env-file "$ENV_FILE" down --remove-orphans
-docker compose --env-file "$ENV_FILE" up -d
-spin_stop "Containers restarted"
+run_with_gauge "Update" "Restarting containers..." -- bash -c \
+    "docker compose --env-file '$ENV_FILE' down --remove-orphans && docker compose --env-file '$ENV_FILE' up -d" \
+    || fail "Container restart failed (see output above)."
 
+clear
 # ── Done ──────────────────────────────────────────────────────────────────────
 printf "\n"
 printf "  ${G}┌────────────────────────────────────────────────┐${NC}\n"

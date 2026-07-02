@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# TAK Server — interactive installer
+# TAK Server — interactive installer (full-screen TUI)
 set -euo pipefail
 
 REPO_URL="https://github.com/ndukve/TAK.git"
@@ -23,290 +23,153 @@ ENV_FILE="$SCRIPT_DIR/takserver.env"
 [ -t 0 ] || exec < /dev/tty 2>/dev/null || true
 [[ $EUID -ne 0 ]] && { echo "  Re-running with sudo..."; exec sudo TAK_REINSTALL="${TAK_REINSTALL:-}" bash "$SCRIPT_DIR/install.sh"; }
 
-# ── Colours ───────────────────────────────────────────────────────────────────
-R='\033[0;31m' G='\033[0;32m' Y='\033[1;33m' C='\033[0;36m'
-B='\033[0;34m' W='\033[1;37m' DIM='\033[2m' NC='\033[0m'
-
-ok()      { printf "${G}  ✓${NC}  %s\n" "$*"; }
-fail()    { printf "${R}  ✗${NC}  %s\n" "$*"; exit 1; }
-warn()    { printf "${Y}  !${NC}  %s\n" "$*"; }
-info()    { printf "${C}  →${NC}  %s\n" "$*"; }
-dim()     { printf "${DIM}     %s${NC}\n" "$*"; }
-
-_STEP=0; _TOTAL=7
-step() {
-    _STEP=$(( _STEP + 1 ))
-    printf "\n${W}  [%d/%d]${NC}  ${W}%s${NC}\n" "$_STEP" "$_TOTAL" "$*"
-    printf "  %s\n" "$(printf '─%.0s' {1..56})"
-}
-
-# ── Spinner ───────────────────────────────────────────────────────────────────
-_SP_PID=""; _SP_START=0
-_SP_FRAMES=("⠋" "⠙" "⠹" "⠸" "⠼" "⠴" "⠦" "⠧" "⠇" "⠏")
-
-spin_start() {
-    local msg="$1"
-    _SP_START=$(date +%s)
-    (
-        local i=0
-        while true; do
-            local elapsed=$(( $(date +%s) - _SP_START ))
-            printf "\r  ${C}%s${NC}  %s  ${DIM}%ds${NC}" \
-                "${_SP_FRAMES[$((i % ${#_SP_FRAMES[@]}))]}" "$msg" "$elapsed"
-            sleep 0.1
-            i=$(( i + 1 ))
-        done
-    ) &
-    _SP_PID=$!
-}
-
-spin_stop() {
-    local label="$1"
-    if [ -n "$_SP_PID" ]; then
-        kill "$_SP_PID" 2>/dev/null || true
-        wait "$_SP_PID" 2>/dev/null || true
-        _SP_PID=""
-    fi
-    local elapsed=$(( $(date +%s) - _SP_START ))
-    printf "\r\033[K"
-    ok "$label ${DIM}(${elapsed}s)${NC}"
-}
-
-trap '[ -n "$_SP_PID" ] && kill "$_SP_PID" 2>/dev/null; printf "\r\033[K"' EXIT
-
-# ── Prompt helpers ────────────────────────────────────────────────────────────
-ask() {
-    local _var="$1" _q="$2" _default="${3:-}" _ans
-    if [ -n "$_default" ]; then
-        printf "     ${W}%s${NC} ${DIM}[%s]${NC}: " "$_q" "$_default"
-        read -r _ans
-        printf -v "$_var" '%s' "${_ans:-$_default}"
-    else
-        while true; do
-            printf "     ${W}%s${NC}: " "$_q"
-            read -r _ans
-            [ -n "$_ans" ] && break
-            printf "     ${R}required${NC}\n"
-        done
-        printf -v "$_var" '%s' "$_ans"
-    fi
-}
-
-ask_secret() {
-    local _var="$1" _q="$2" _ans
-    while true; do
-        printf "     ${W}%s${NC}: " "$_q"
-        read -rsp "" _ans; echo
-        [ -n "$_ans" ] && break
-        printf "     ${R}required${NC}\n"
-    done
-    printf -v "$_var" '%s' "$_ans"
-}
-
-pick() {
-    # pick VARNAME "prompt" option1 option2 ...
-    local _var="$1" _q="$2"; shift 2
-    local _opts=("$@") _i _ans
-    printf "     ${W}%s${NC}\n" "$_q"
-    for _i in "${!_opts[@]}"; do
-        printf "       ${C}%d)${NC} %s\n" "$(( _i + 1 ))" "${_opts[$_i]}"
-    done
-    while true; do
-        printf "     ${W}→${NC} [1-%d]: " "${#_opts[@]}"
-        read -r _ans
-        [[ "$_ans" =~ ^[0-9]+$ ]] && (( _ans >= 1 && _ans <= ${#_opts[@]} )) && break
-        printf "     ${R}Enter a number between 1 and %d${NC}\n" "${#_opts[@]}"
-    done
-    printf -v "$_var" '%s' "${_opts[$(( _ans - 1 ))]}"
-}
+WT_BACKTITLE="TAK Server Installer"
+# shellcheck source=scripts/_tui.sh
+. "$SCRIPT_DIR/scripts/_tui.sh"
 
 gen_hex() { openssl rand -hex "${1:-16}"; }
 
-# ── Banner ────────────────────────────────────────────────────────────────────
-clear
-printf "\n"
-printf "${W}  ████████╗ █████╗ ██╗  ██╗${NC}\n"
-printf "${W}     ██╔══╝██╔══██╗██║ ██╔╝${NC}\n"
-printf "${W}     ██║   ███████║█████╔╝ ${NC}\n"
-printf "${W}     ██║   ██╔══██║██╔═██╗ ${NC}\n"
-printf "${W}     ██║   ██║  ██║██║  ██╗${NC}\n"
-printf "${W}     ╚═╝   ╚═╝  ╚═╝╚═╝  ╚═╝${NC}  ${DIM}Server Installer${NC}\n"
-printf "\n"
-printf "  Deploys the official Java TAK Server in Docker.\n"
-printf "  ${DIM}Press Enter to accept defaults shown in [brackets].${NC}\n"
-printf "\n"
-
 # ── Reinstall fast path: reuse existing config, skip onboarding ─────────────────
 if [ "${TAK_REINSTALL:-}" = "1" ] && [ -f "$ENV_FILE" ]; then
-    ok "Reinstall detected — reusing existing takserver.env"
     TAK_SERVER_ADDRESS=$(grep '^TAK_SERVER_ADDRESS=' "$ENV_FILE" | cut -d= -f2-)
     POSTGRES_USER=$(grep '^POSTGRES_USER=' "$ENV_FILE" | cut -d= -f2-)
     POSTGRES_DB=$(grep '^POSTGRES_DB=' "$ENV_FILE" | cut -d= -f2-)
-    _TOTAL=3
-    step "System Setup"
+
     if ! command -v docker &>/dev/null; then
-        spin_start "Installing Docker"
-        curl -fsSL https://get.docker.com | sh >/dev/null 2>&1
-        systemctl enable --now docker >/dev/null 2>&1
-        spin_stop "Docker installed"
-    else
-        ok "Docker $(docker --version | awk '{print $3}' | tr -d ,) already installed"
+        run_with_gauge "System Setup" "Installing Docker..." -- bash -c \
+            "curl -fsSL https://get.docker.com | sh && systemctl enable --now docker" \
+            || fail "Docker installation failed (see output above)."
     fi
 
-    step "Building & Starting"
     cd "$SCRIPT_DIR"
     docker compose --env-file "$ENV_FILE" down --remove-orphans 2>/dev/null || true
 
-    _BUILD_LOG=$(mktemp)
-    spin_start "Building TAK Server image (this takes a few minutes)"
-    if ! docker compose --env-file "$ENV_FILE" build > "$_BUILD_LOG" 2>&1; then
-        spin_stop ""
-        fail "Build failed — last 40 lines:\n$(tail -40 "$_BUILD_LOG")"
-    fi
-    spin_stop "Image built"
-    rm -f "$_BUILD_LOG"
+    run_with_gauge "Build" "Building TAK Server image (this can take a few minutes)..." -- \
+        docker compose --env-file "$ENV_FILE" build \
+        || fail "Image build failed (see output above)."
 
-    spin_start "Starting containers"
-    docker compose --env-file "$ENV_FILE" up -d
-    spin_stop "Containers started"
+    run_with_gauge "Start" "Starting containers..." -- \
+        docker compose --env-file "$ENV_FILE" up -d \
+        || fail "Container startup failed (see output above)."
 
-    info "Waiting for database..."
-    until docker compose --env-file "$ENV_FILE" exec -T takdb pg_isready -U "${POSTGRES_USER:-martiuser}" -d "${POSTGRES_DB:-cot}" >/dev/null 2>&1; do
+    whiptail --backtitle "$WT_BACKTITLE" --title "Database" --infobox "Waiting for database..." 8 50
+    until docker compose --env-file "$ENV_FILE" exec -T takdb pg_isready \
+        -U "${POSTGRES_USER:-martiuser}" -d "${POSTGRES_DB:-cot}" >/dev/null 2>&1; do
         sleep 3
     done
-    ok "Database ready"
 
-    step "Done"
+    wt_msg "Reinstall Complete" "TAK Server is starting up.\n\nSSL CoT     : ${TAK_SERVER_ADDRESS}:8089\nHTTPS API   : https://${TAK_SERVER_ADDRESS}:8443\nPackages    : http://${TAK_SERVER_ADDRESS}:8888/\nAdmin panel : https://${TAK_SERVER_ADDRESS}:8889/" 14 72
+
+    clear
     printf "\n"
     printf "  ${G}┌─────────────────────────────────────────────────┐${NC}\n"
     printf "  ${G}│${NC}          ${W}TAK Server is starting up${NC}               ${G}│${NC}\n"
     printf "  ${G}└─────────────────────────────────────────────────┘${NC}\n"
     printf "\n"
-    printf "  ${DIM}%-18s${NC}  %s\n" "SSL CoT"       "${TAK_SERVER_ADDRESS}:8089"
-    printf "  ${DIM}%-18s${NC}  %s\n" "HTTPS API"     "https://${TAK_SERVER_ADDRESS}:8443"
-    printf "  ${DIM}%-18s${NC}  %s\n" "Packages"      "http://${TAK_SERVER_ADDRESS}:8888/"
-    printf "  ${DIM}%-18s${NC}  %s\n" "Admin panel"   "https://${TAK_SERVER_ADDRESS}:8889/"
-    printf "\n"
-    printf "  ${DIM}Logs:${NC}       docker compose logs -f\n"
+    printf "  ${DIM}%-18s${NC}  %s\n" "SSL CoT"     "${TAK_SERVER_ADDRESS}:8089"
+    printf "  ${DIM}%-18s${NC}  %s\n" "HTTPS API"   "https://${TAK_SERVER_ADDRESS}:8443"
+    printf "  ${DIM}%-18s${NC}  %s\n" "Packages"    "http://${TAK_SERVER_ADDRESS}:8888/"
+    printf "  ${DIM}%-18s${NC}  %s\n" "Admin panel" "https://${TAK_SERVER_ADDRESS}:8889/"
     printf "\n"
     exit 0
 fi
 
-# ── [1/7] Networking ──────────────────────────────────────────────────────────
-step "Networking"
+# ── Welcome ───────────────────────────────────────────────────────────────────
+wt_msg "Welcome" "TAK Server Installer\n\nThis deploys the official Java TAK Server in Docker, along with an admin panel and package server.\n\nUse Tab / arrow keys to move between fields, Enter to confirm." 14 72
 
+# ── [1/7] Networking ──────────────────────────────────────────────────────────
 TAK_SERVER_ADDRESS=""
 _NB_IP=$(ip addr show wt0 2>/dev/null | awk '/inet / {print $2}' | cut -d/ -f1 | head -1) || true
 _TS_IP=$(ip addr show tailscale0 2>/dev/null | awk '/inet / {print $2}' | cut -d/ -f1 | head -1) || true
 
 if [ -n "$_NB_IP" ] && [ -n "$_TS_IP" ]; then
-    ok "NetBird: $_NB_IP"
-    ok "Tailscale: $_TS_IP"
-    pick _VPN "Select VPN to use:" "NetBird ($_NB_IP)" "Tailscale ($_TS_IP)"
-    [[ "$_VPN" == Tailscale* ]] && TAK_SERVER_ADDRESS="$_TS_IP" || TAK_SERVER_ADDRESS="$_NB_IP"
+    wt_menu _VPN_TAG "Networking [1/7]" "Both NetBird and Tailscale are active. Select which one remote devices should use:" \
+        netbird "NetBird ($_NB_IP)" \
+        tailscale "Tailscale ($_TS_IP)"
+    [ "$_VPN_TAG" = "tailscale" ] && TAK_SERVER_ADDRESS="$_TS_IP" || TAK_SERVER_ADDRESS="$_NB_IP"
 elif [ -n "$_NB_IP" ]; then
     TAK_SERVER_ADDRESS="$_NB_IP"
-    ok "NetBird detected — $_NB_IP"
 elif [ -n "$_TS_IP" ]; then
     TAK_SERVER_ADDRESS="$_TS_IP"
-    ok "Tailscale detected — $_TS_IP"
 else
-    warn "No VPN detected."
-    pick _VPN_ACTION "How should remote devices reach this server?" \
-        "Install NetBird (recommended)" \
-        "Install Tailscale" \
-        "Enter IP/hostname manually"
+    wt_menu _VPN_ACTION "Networking [1/7]" "No VPN detected. How should remote devices reach this server?" \
+        netbird "Install NetBird (recommended)" \
+        tailscale "Install Tailscale" \
+        manual "Enter IP/hostname manually"
 
     case "$_VPN_ACTION" in
-        "Install NetBird"*)
-            ask_secret VPN_KEY "NetBird setup key (app.netbird.io → Keys)"
-            spin_start "Installing NetBird"
-            curl -fsSL https://pkgs.netbird.io/install.sh | sh >/dev/null 2>&1
-            spin_stop "NetBird installed"
-            spin_start "Connecting to NetBird"
-            netbird up --setup-key="$VPN_KEY" >/dev/null 2>&1 \
-                || { spin_stop ""; fail "NetBird connection failed — check your setup key"; }
-            sleep 5
+        netbird)
+            wt_password VPN_KEY "NetBird" "NetBird setup key (app.netbird.io → Keys):"
+            run_with_gauge "NetBird" "Installing NetBird..." -- bash -c \
+                "curl -fsSL https://pkgs.netbird.io/install.sh | sh" \
+                || fail "NetBird installation failed (see output above)."
+            run_with_gauge "NetBird" "Connecting to NetBird..." -- \
+                netbird up --setup-key="$VPN_KEY" \
+                || fail "NetBird connection failed — check your setup key."
+            sleep 3
             TAK_SERVER_ADDRESS=$(ip addr show wt0 2>/dev/null | awk '/inet / {print $2}' | cut -d/ -f1 | head -1)
-            [ -n "$TAK_SERVER_ADDRESS" ] || fail "Could not read wt0 IP after connecting"
-            spin_stop "NetBird connected — $TAK_SERVER_ADDRESS"
+            [ -n "$TAK_SERVER_ADDRESS" ] || fail "Could not read wt0 IP after connecting."
             ;;
-        "Install Tailscale"*)
-            ask_secret VPN_KEY "Tailscale auth key (login.tailscale.com → Settings → Keys)"
-            spin_start "Installing Tailscale"
-            curl -fsSL https://tailscale.com/install.sh | sh >/dev/null 2>&1
-            spin_stop "Tailscale installed"
-            spin_start "Connecting to Tailscale"
-            tailscale up --authkey="$VPN_KEY" >/dev/null 2>&1 \
-                || { spin_stop ""; fail "Tailscale connection failed — check your auth key"; }
-            sleep 5
+        tailscale)
+            wt_password VPN_KEY "Tailscale" "Tailscale auth key (login.tailscale.com → Settings → Keys):"
+            run_with_gauge "Tailscale" "Installing Tailscale..." -- bash -c \
+                "curl -fsSL https://tailscale.com/install.sh | sh" \
+                || fail "Tailscale installation failed (see output above)."
+            run_with_gauge "Tailscale" "Connecting to Tailscale..." -- \
+                tailscale up --authkey="$VPN_KEY" \
+                || fail "Tailscale connection failed — check your auth key."
+            sleep 3
             TAK_SERVER_ADDRESS=$(ip addr show tailscale0 2>/dev/null | awk '/inet / {print $2}' | cut -d/ -f1 | head -1)
-            [ -n "$TAK_SERVER_ADDRESS" ] || fail "Could not read tailscale0 IP after connecting"
-            spin_stop "Tailscale connected — $TAK_SERVER_ADDRESS"
+            [ -n "$TAK_SERVER_ADDRESS" ] || fail "Could not read tailscale0 IP after connecting."
             ;;
-        *)
-            ask TAK_SERVER_ADDRESS "Server IP or hostname" ""
+        manual)
+            wt_input_required TAK_SERVER_ADDRESS "Networking [1/7]" "Server IP or hostname:"
             ;;
     esac
 fi
-ok "Server address: $TAK_SERVER_ADDRESS"
 
 # ── [2/7] Certificate metadata ────────────────────────────────────────────────
-step "Certificate Metadata"
-dim "Used to generate the server and client TLS certificates."
-ask COUNTRY             "Country code (2 letters)" "US"
-ask STATE               "State / Province"         "Florida"
-ask CITY                "City"                     "Tampa"
-ask ORGANIZATION        "Organization"             "TAK Server"
-ask ORGANIZATIONAL_UNIT "Organizational unit"      "Ops"
+wt_input COUNTRY             "Certificate Metadata [2/7]" "Country code (2 letters):"  "US"
+wt_input STATE               "Certificate Metadata [2/7]" "State / Province:"          "Florida"
+wt_input CITY                "Certificate Metadata [2/7]" "City:"                      "Tampa"
+wt_input ORGANIZATION        "Certificate Metadata [2/7]" "Organization:"              "TAK Server"
+wt_input ORGANIZATIONAL_UNIT "Certificate Metadata [2/7]" "Organizational unit:"       "Ops"
 
 # ── [3/7] Admin panel ─────────────────────────────────────────────────────────
-step "Admin Panel"
-ask ADMIN_FIRST_USER "Admin username" "admin"
-dim "Password must be at least 12 characters."
+wt_input ADMIN_FIRST_USER "Admin Panel [3/7]" "Admin username:" "admin"
 while true; do
-    ask_secret ADMIN_FIRST_PASS "Admin password"
+    wt_password ADMIN_FIRST_PASS "Admin Panel [3/7]" "Admin password (minimum 12 characters):"
     [ ${#ADMIN_FIRST_PASS} -ge 12 ] && break
-    warn "Password too short — minimum 12 characters."
+    wt_msg "Password too short" "Minimum 12 characters required." 8 50
 done
 
-# ── [4/7] Confirm ─────────────────────────────────────────────────────────────
-step "Review"
-printf "\n"
-printf "  ${DIM}%-24s${NC} %s\n" "Server address"   "$TAK_SERVER_ADDRESS"
-printf "  ${DIM}%-24s${NC} %s\n" "Country"           "$COUNTRY"
-printf "  ${DIM}%-24s${NC} %s\n" "State"             "$STATE"
-printf "  ${DIM}%-24s${NC} %s\n" "City"              "$CITY"
-printf "  ${DIM}%-24s${NC} %s\n" "Organization"      "$ORGANIZATION"
-printf "  ${DIM}%-24s${NC} %s\n" "Org unit"          "$ORGANIZATIONAL_UNIT"
-printf "  ${DIM}%-24s${NC} %s\n" "Admin user"        "$ADMIN_FIRST_USER"
-printf "  ${DIM}%-24s${NC} %s\n" "Admin password"    "(set)"
-printf "  ${DIM}%-24s${NC} %s\n" "DB/cert passwords" "(auto-generated)"
-printf "\n"
-printf "     Proceed with installation? [Y/n]: "
-read -r _CONFIRM
-[[ "${_CONFIRM:-Y}" =~ ^[Yy] ]] || { echo "  Aborted."; exit 0; }
+# ── [4/7] Review ──────────────────────────────────────────────────────────────
+_SUMMARY="Server address    : ${TAK_SERVER_ADDRESS}
+Country           : ${COUNTRY}
+State             : ${STATE}
+City              : ${CITY}
+Organization      : ${ORGANIZATION}
+Org unit          : ${ORGANIZATIONAL_UNIT}
+Admin user        : ${ADMIN_FIRST_USER}
+Admin password    : (set)
+DB/cert passwords : (auto-generated)
+
+Proceed with installation?"
+wt_yesno "Review [4/7]" "$_SUMMARY" 18 72 || { clear; echo "Aborted."; exit 0; }
 
 # ── [5/7] System setup ────────────────────────────────────────────────────────
-step "System Setup"
-
 if ! getent hosts debian.org >/dev/null 2>&1; then
-    warn "DNS not resolving — adding fallback 1.1.1.1"
     echo "nameserver 1.1.1.1" >> /etc/resolv.conf
     getent hosts debian.org >/dev/null 2>&1 || fail "DNS still broken — fix /etc/resolv.conf and retry"
-    ok "DNS fallback working"
 fi
 
 if ! command -v docker &>/dev/null; then
-    spin_start "Installing Docker"
-    curl -fsSL https://get.docker.com | sh >/dev/null 2>&1
-    systemctl enable --now docker >/dev/null 2>&1
-    spin_stop "Docker installed"
-else
-    ok "Docker $(docker --version | awk '{print $3}' | tr -d ,) already installed"
+    run_with_gauge "System Setup [5/7]" "Installing Docker..." -- bash -c \
+        "curl -fsSL https://get.docker.com | sh && systemctl enable --now docker" \
+        || fail "Docker installation failed (see output above)."
 fi
 
-[ -n "${SUDO_USER:-}" ] && { usermod -aG docker "$SUDO_USER"; ok "Added $SUDO_USER to docker group"; }
+[ -n "${SUDO_USER:-}" ] && usermod -aG docker "$SUDO_USER"
 
 for kv in "net.ipv4.tcp_keepalive_time=60" "net.ipv4.tcp_keepalive_intvl=10" "net.ipv4.tcp_keepalive_probes=6"; do
     key="${kv%%=*}"; val="${kv##*=}"
@@ -315,11 +178,8 @@ for kv in "net.ipv4.tcp_keepalive_time=60" "net.ipv4.tcp_keepalive_intvl=10" "ne
         || echo "${key}=${val}" >> /etc/sysctl.conf
 done
 sysctl -p >/dev/null 2>&1
-ok "TCP keepalive configured (60s/10s/6)"
 
 # ── [6/7] Write config ────────────────────────────────────────────────────────
-step "Writing Configuration"
-
 POSTGRES_PASSWORD=$(gen_hex 16)
 ADMIN_CERT_PASS=$(gen_hex 16)
 TAKSERVER_CERT_PASS=$(gen_hex 16)
@@ -359,37 +219,28 @@ ADMIN_SECRET_KEY=${ADMIN_SECRET_KEY}
 ADMIN_FIRST_USER=${ADMIN_FIRST_USER}
 ADMIN_FIRST_PASS=${ADMIN_FIRST_PASS}
 ENVEOF
-ok "takserver.env written"
 
 # ── [7/7] Build & start ───────────────────────────────────────────────────────
-step "Building & Starting"
-
 cd "$SCRIPT_DIR"
 docker compose --env-file "$ENV_FILE" down --remove-orphans 2>/dev/null || true
 
-_BUILD_LOG=$(mktemp)
-spin_start "Building TAK Server image (this takes a few minutes)"
-if ! docker compose --env-file "$ENV_FILE" build > "$_BUILD_LOG" 2>&1; then
-    spin_stop ""
-    fail "Build failed — last 40 lines:\n$(tail -40 "$_BUILD_LOG")"
-fi
-spin_stop "Image built"
-rm -f "$_BUILD_LOG"
+run_with_gauge "Build [7/7]" "Building TAK Server image (this can take a few minutes)..." -- \
+    docker compose --env-file "$ENV_FILE" build \
+    || fail "Image build failed (see output above)."
 
-spin_start "Starting containers"
-docker compose --env-file "$ENV_FILE" up -d
-spin_stop "Containers started"
+run_with_gauge "Start [7/7]" "Starting containers..." -- \
+    docker compose --env-file "$ENV_FILE" up -d \
+    || fail "Container startup failed (see output above)."
 
-info "Waiting for database..."
+whiptail --backtitle "$WT_BACKTITLE" --title "Database" --infobox "Waiting for database..." 8 50
 until docker compose --env-file "$ENV_FILE" exec -T takdb pg_isready -U martiuser -d cot >/dev/null 2>&1; do
     sleep 3
 done
-ok "Database ready"
 
-ok "Initialization running in background (certs + DB schema, ~2 min)"
-dim "Monitor: docker compose logs -f takserver_initialization"
+wt_msg "Installation Complete" "TAK Server is starting up.\n\nSSL CoT     : ${TAK_SERVER_ADDRESS}:8089\nHTTPS API   : https://${TAK_SERVER_ADDRESS}:8443\nPackages    : http://${TAK_SERVER_ADDRESS}:8888/\nAdmin panel : https://${TAK_SERVER_ADDRESS}:8889/\n\nAdmin user     : ${ADMIN_FIRST_USER}\nAdmin password : ${ADMIN_FIRST_PASS}" 18 72
 
-# ── Done ─────────────────────────────────────────────────────────────────────
+# ── Done (plain-text summary stays in scrollback) ────────────────────────────
+clear
 printf "\n"
 printf "  ${G}┌─────────────────────────────────────────────────┐${NC}\n"
 printf "  ${G}│${NC}          ${W}TAK Server is starting up${NC}               ${G}│${NC}\n"
@@ -400,7 +251,7 @@ printf "  ${DIM}%-18s${NC}  %s\n" "HTTPS API"     "https://${TAK_SERVER_ADDRESS}
 printf "  ${DIM}%-18s${NC}  %s\n" "Packages"      "http://${TAK_SERVER_ADDRESS}:8888/"
 printf "  ${DIM}%-18s${NC}  %s\n" "Admin panel"   "https://${TAK_SERVER_ADDRESS}:8889/"
 printf "\n"
-printf "  ${DIM}%-18s${NC}  ${W}%s${NC}\n" "Admin user"    "$ADMIN_FIRST_USER"
+printf "  ${DIM}%-18s${NC}  ${W}%s${NC}\n" "Admin user"     "$ADMIN_FIRST_USER"
 printf "  ${DIM}%-18s${NC}  ${W}%s${NC}\n" "Admin password" "$ADMIN_FIRST_PASS"
 printf "\n"
 printf "  ${DIM}Add users:${NC}  make add-user USERNAME=callsign\n"
