@@ -21,7 +21,7 @@ fi
 
 ENV_FILE="$SCRIPT_DIR/takserver.env"
 [ -t 0 ] || exec < /dev/tty 2>/dev/null || true
-[[ $EUID -ne 0 ]] && { echo "  Re-running with sudo..."; exec sudo bash "$SCRIPT_DIR/install.sh"; }
+[[ $EUID -ne 0 ]] && { echo "  Re-running with sudo..."; exec sudo TAK_REINSTALL="${TAK_REINSTALL:-}" bash "$SCRIPT_DIR/install.sh"; }
 
 # ── Colours ───────────────────────────────────────────────────────────────────
 R='\033[0;31m' G='\033[0;32m' Y='\033[1;33m' C='\033[0;36m'
@@ -135,6 +135,63 @@ printf "\n"
 printf "  Deploys the official Java TAK Server in Docker.\n"
 printf "  ${DIM}Press Enter to accept defaults shown in [brackets].${NC}\n"
 printf "\n"
+
+# ── Reinstall fast path: reuse existing config, skip onboarding ─────────────────
+if [ "${TAK_REINSTALL:-}" = "1" ] && [ -f "$ENV_FILE" ]; then
+    ok "Reinstall detected — reusing existing takserver.env"
+    set -a
+    # shellcheck disable=SC1090
+    . "$ENV_FILE"
+    set +a
+    _TOTAL=3
+    step "System Setup"
+    if ! command -v docker &>/dev/null; then
+        spin_start "Installing Docker"
+        curl -fsSL https://get.docker.com | sh >/dev/null 2>&1
+        systemctl enable --now docker >/dev/null 2>&1
+        spin_stop "Docker installed"
+    else
+        ok "Docker $(docker --version | awk '{print $3}' | tr -d ,) already installed"
+    fi
+
+    step "Building & Starting"
+    cd "$SCRIPT_DIR"
+    docker compose --env-file "$ENV_FILE" down --remove-orphans 2>/dev/null || true
+
+    _BUILD_LOG=$(mktemp)
+    spin_start "Building TAK Server image (this takes a few minutes)"
+    if ! docker compose --env-file "$ENV_FILE" build > "$_BUILD_LOG" 2>&1; then
+        spin_stop ""
+        fail "Build failed — last 40 lines:\n$(tail -40 "$_BUILD_LOG")"
+    fi
+    spin_stop "Image built"
+    rm -f "$_BUILD_LOG"
+
+    spin_start "Starting containers"
+    docker compose --env-file "$ENV_FILE" up -d
+    spin_stop "Containers started"
+
+    info "Waiting for database..."
+    until docker compose --env-file "$ENV_FILE" exec -T takdb pg_isready -U "${POSTGRES_USER:-martiuser}" -d "${POSTGRES_DB:-cot}" >/dev/null 2>&1; do
+        sleep 3
+    done
+    ok "Database ready"
+
+    step "Done"
+    printf "\n"
+    printf "  ${G}┌─────────────────────────────────────────────────┐${NC}\n"
+    printf "  ${G}│${NC}          ${W}TAK Server is starting up${NC}               ${G}│${NC}\n"
+    printf "  ${G}└─────────────────────────────────────────────────┘${NC}\n"
+    printf "\n"
+    printf "  ${DIM}%-18s${NC}  %s\n" "SSL CoT"       "${TAK_SERVER_ADDRESS}:8089"
+    printf "  ${DIM}%-18s${NC}  %s\n" "HTTPS API"     "https://${TAK_SERVER_ADDRESS}:8443"
+    printf "  ${DIM}%-18s${NC}  %s\n" "Packages"      "http://${TAK_SERVER_ADDRESS}:8888/"
+    printf "  ${DIM}%-18s${NC}  %s\n" "Admin panel"   "https://${TAK_SERVER_ADDRESS}:8889/"
+    printf "\n"
+    printf "  ${DIM}Logs:${NC}       docker compose logs -f\n"
+    printf "\n"
+    exit 0
+fi
 
 # ── [1/7] Networking ──────────────────────────────────────────────────────────
 step "Networking"
@@ -309,11 +366,16 @@ ok "takserver.env written"
 step "Building & Starting"
 
 cd "$SCRIPT_DIR"
-docker compose --env-file "$ENV_FILE" down -v --remove-orphans 2>/dev/null || true
+docker compose --env-file "$ENV_FILE" down --remove-orphans 2>/dev/null || true
 
+_BUILD_LOG=$(mktemp)
 spin_start "Building TAK Server image (this takes a few minutes)"
-docker compose --env-file "$ENV_FILE" build --quiet
+if ! docker compose --env-file "$ENV_FILE" build > "$_BUILD_LOG" 2>&1; then
+    spin_stop ""
+    fail "Build failed — last 40 lines:\n$(tail -40 "$_BUILD_LOG")"
+fi
 spin_stop "Image built"
+rm -f "$_BUILD_LOG"
 
 spin_start "Starting containers"
 docker compose --env-file "$ENV_FILE" up -d

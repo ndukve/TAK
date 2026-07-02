@@ -55,4 +55,4 @@ spin_stop "Containers and images removed"
 
 # ── Reinstall ────────────────────────────────────────────────────────────────
 printf "\n"
-exec bash "$SCRIPT_DIR/install.sh"
+exec env TAK_REINSTALL=1 bash "$SCRIPT_DIR/install.sh"
