@@ -5,9 +5,8 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 ENV_FILE="$SCRIPT_DIR/takserver.env"
-WT_BACKTITLE="TAK Server — New User"
-# shellcheck source=scripts/_tui.sh
-. "$SCRIPT_DIR/scripts/_tui.sh"
+# shellcheck source=scripts/_spinner.sh
+. "$SCRIPT_DIR/scripts/_spinner.sh"
 
 [ -f "$ENV_FILE" ] || fail "takserver.env not found — run ./install.sh first"
 
@@ -15,9 +14,10 @@ WT_BACKTITLE="TAK Server — New User"
 USERNAME="${1:-}"
 if [ -z "$USERNAME" ]; then
     while true; do
-        wt_input_required USERNAME "New TAK User" "Callsign (letters, numbers, hyphens, underscores):"
+        printf "  Callsign (letters, numbers, hyphens, underscores): "
+        read -r USERNAME
         [[ "$USERNAME" =~ ^[a-zA-Z0-9_-]+$ ]] && break
-        wt_msg "Invalid callsign" "Only letters, numbers, hyphens, and underscores are allowed." 8 60
+        printf "  ${R}Invalid — only letters, numbers, hyphens, underscores${NC}\n"
     done
 elif [[ ! "$USERNAME" =~ ^[a-zA-Z0-9_-]+$ ]]; then
     fail "Callsign must contain only letters, numbers, hyphens, underscores"
@@ -28,30 +28,29 @@ TAK_SERVER_ADDRESS=$(grep '^TAK_SERVER_ADDRESS=' "$ENV_FILE" | cut -d= -f2)
 DC="docker compose"
 docker info &>/dev/null 2>&1 || DC="sudo docker compose"
 
+banner "New User: $USERNAME"
+
 # ── Steps ─────────────────────────────────────────────────────────────────────
-run_with_gauge "New User: $USERNAME" "Generating device certificate..." -- \
+run_spin "Generating device certificate" "Certificate generated" \
     $DC --env-file "$ENV_FILE" exec -T \
         -e CLIENT_CERT_NAME="$USERNAME" \
         takserver_config bash /opt/scripts/gen_client_cert.sh \
     || fail "Certificate generation failed (see output above)."
 
-run_with_gauge "New User: $USERNAME" "Building data package..." -- \
+run_spin "Building data package" "Package built" \
     $DC --env-file "$ENV_FILE" exec -T \
         -e CLIENT_CERT_NAME="$USERNAME" \
         -e TAK_SERVER_ADDRESS="$TAK_SERVER_ADDRESS" \
         takserver_config bash /opt/scripts/make_pkg_zip.sh \
     || fail "Package build failed (see output above)."
 
-run_with_gauge "New User: $USERNAME" "Authorizing on server..." -- \
+run_spin "Authorizing on server" "Authorized" \
     $DC --env-file "$ENV_FILE" exec -T \
         -e USER_CERT_NAME="$USERNAME" \
         takserver_config bash /opt/scripts/enable_user.sh \
     || fail "Authorization failed (see output above)."
 
 # ── Summary ───────────────────────────────────────────────────────────────────
-wt_msg "$USERNAME is ready" "Download: http://${TAK_SERVER_ADDRESS}:8888/${USERNAME}.zip\n\nImport in TAK client:\n  iTAK  : Settings -> Network -> Servers -> + -> Upload Server Package\n  ATAK  : Hamburger -> Settings -> Network Prefs -> TAK Servers -> Import\n  WinTAK: Settings -> Network Prefs -> Server Connections -> Import" 18 74
-
-clear
 printf "\n"
 printf "  ${G}┌────────────────────────────────────────────────┐${NC}\n"
 printf "  ${G}│${NC}  ${W}%s${NC} is ready                              ${G}│${NC}\n" "$USERNAME"

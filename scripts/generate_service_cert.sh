@@ -6,9 +6,8 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "$0")/.." && pwd)"
 ENV_FILE="$SCRIPT_DIR/takserver.env"
-WT_BACKTITLE="TAK Server — Service Cert"
-# shellcheck source=_tui.sh
-. "$SCRIPT_DIR/scripts/_tui.sh"
+# shellcheck source=_spinner.sh
+. "$SCRIPT_DIR/scripts/_spinner.sh"
 
 [ -f "$ENV_FILE" ] || fail "takserver.env not found — run ./install.sh first"
 
@@ -16,9 +15,10 @@ WT_BACKTITLE="TAK Server — Service Cert"
 NAME="${1:-}"
 if [ -z "$NAME" ]; then
     while true; do
-        wt_input_required NAME "New Service Cert" "Service name (e.g. efdi-pod):"
+        printf "  Service name (e.g. efdi-pod): "
+        read -r NAME
         [[ "$NAME" =~ ^[a-zA-Z0-9_-]+$ ]] && break
-        wt_msg "Invalid name" "Only letters, numbers, hyphens, and underscores are allowed." 8 60
+        printf "  ${R}Invalid — only letters, numbers, hyphens, underscores${NC}\n"
     done
 elif [[ ! "$NAME" =~ ^[a-zA-Z0-9_-]+$ ]]; then
     fail "Name must contain only letters, numbers, hyphens, underscores"
@@ -28,17 +28,19 @@ TAK_SERVER_ADDRESS=$(grep '^TAK_SERVER_ADDRESS=' "$ENV_FILE" | cut -d= -f2)
 OUT_DIR="$SCRIPT_DIR/certs/$NAME"
 mkdir -p "$OUT_DIR"
 
+banner "Service Cert: $NAME"
+
 # ── Steps ─────────────────────────────────────────────────────────────────────
 # Uses gen_client_cert.sh (not make_client_zip.sh) because it persists the key's
 # encryption password to a .certpass file — needed below to decrypt the key for
 # non-interactive services (Python ssl, etc. can't handle an encrypted PEM key).
-run_with_gauge "$NAME" "Generating certificate..." -- \
+run_spin "Generating certificate" "Certificate generated" \
     docker compose --env-file "$ENV_FILE" exec -T \
         -e CLIENT_CERT_NAME="$NAME" \
         takserver_config bash /opt/scripts/gen_client_cert.sh \
     || fail "Certificate generation failed (see output above)."
 
-run_with_gauge "$NAME" "Authorizing on server..." -- \
+run_spin "Authorizing on server" "Authorized" \
     docker compose --env-file "$ENV_FILE" exec -T \
         -e USER_CERT_NAME="$NAME" \
         takserver_config bash /opt/scripts/enable_user.sh \
@@ -55,21 +57,18 @@ docker compose --env-file "$ENV_FILE" exec -T takserver_config bash -c '
 ' > "$OUT_DIR/key.pem"
 chmod 600 "$OUT_DIR/key.pem"
 EOF
-run_with_gauge "$NAME" "Exporting PEM files to host (decrypting key)..." -- bash "$_EXPORT_SCRIPT" \
+run_spin "Exporting PEM files (decrypting key)" "PEM files exported" bash "$_EXPORT_SCRIPT" \
     || { rm -f "$_EXPORT_SCRIPT"; fail "Export failed (see output above)."; }
 rm -f "$_EXPORT_SCRIPT"
 
 # ── Summary ───────────────────────────────────────────────────────────────────
-wt_msg "Service cert ready" "$OUT_DIR/\n\ncert.pem — client certificate\nkey.pem  — private key\nca.pem   — TAK Server CA\n\nmTLS (port 8089):\n  TAK_HOST=${TAK_SERVER_ADDRESS}  TAK_PORT=8089  TAK_TLS=1\n  TAK_CERT=${OUT_DIR}/cert.pem\n  TAK_KEY=${OUT_DIR}/key.pem\n  TAK_CA=${OUT_DIR}/ca.pem\n\nPlaintext (port 8087):\n  TAK_HOST=${TAK_SERVER_ADDRESS}  TAK_PORT=8087" 22 76
-
-clear
 printf "\n"
 printf "  ${G}┌────────────────────────────────────────────────┐${NC}\n"
 printf "  ${G}│${NC}  ${W}Service cert ready:${NC} %-28s${G}│${NC}\n" "$OUT_DIR/"
 printf "  ${G}└────────────────────────────────────────────────┘${NC}\n"
 printf "\n"
 printf "  ${DIM}cert.pem${NC}  — client certificate\n"
-printf "  ${DIM}key.pem${NC}   — private key\n"
+printf "  ${DIM}key.pem${NC}   — private key (decrypted, chmod 600)\n"
 printf "  ${DIM}ca.pem${NC}    — TAK Server CA (trust anchor)\n"
 printf "\n"
 printf "  ${W}mTLS (port 8089):${NC}\n"

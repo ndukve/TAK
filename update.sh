@@ -5,14 +5,14 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 ENV_FILE="$SCRIPT_DIR/takserver.env"
-WT_BACKTITLE="TAK Server Update"
-# shellcheck source=scripts/_tui.sh
-. "$SCRIPT_DIR/scripts/_tui.sh"
+# shellcheck source=scripts/_spinner.sh
+. "$SCRIPT_DIR/scripts/_spinner.sh"
 
 # ── Preflight ─────────────────────────────────────────────────────────────────
 [ -f "$ENV_FILE" ] || fail "takserver.env not found — run ./install.sh first"
 [ -d "$SCRIPT_DIR/.git" ] || fail "Not a git repo — clone via git, not manual download"
 
+banner "Update"
 cd "$SCRIPT_DIR"
 
 # ── Pull ──────────────────────────────────────────────────────────────────────
@@ -20,16 +20,12 @@ BRANCH="$(git rev-parse --abbrev-ref HEAD)"
 [ "$BRANCH" = "HEAD" ] && fail "Repo is in detached HEAD state — run: git checkout main"
 _OLD_HEAD="$(git rev-parse HEAD)"
 
-whiptail --backtitle "$WT_BACKTITLE" --title "Update" --infobox "Fetching latest changes (branch: $BRANCH)..." 8 60
-git fetch origin "$BRANCH" 2>/dev/null || fail "git fetch failed — check network/remote"
-git reset --hard "origin/$BRANCH" 2>/dev/null || fail "git reset failed"
-_NEW_HEAD="$(git rev-parse HEAD)"
+spin_start "Fetching latest changes (branch: $BRANCH)"
+git fetch origin "$BRANCH" 2>/dev/null || { spin_stop ""; fail "git fetch failed — check network/remote"; }
+git reset --hard "origin/$BRANCH" 2>/dev/null || { spin_stop ""; fail "git reset failed"; }
+spin_stop "Up to date: $(git log -1 --format='%h %s')"
 
-clear
-printf "\n  ${W}TAK Server — Update${NC}\n"
-printf "  %s\n\n" "$(printf '─%.0s' {1..48})"
-ok "Up to date: $(git log -1 --format='%h %s')"
-if [ "$_OLD_HEAD" != "$_NEW_HEAD" ]; then
+if [ "$_OLD_HEAD" != "$(git rev-parse HEAD)" ]; then
     git --no-pager diff --stat "$_OLD_HEAD" HEAD
     printf "\n"
 else
@@ -59,15 +55,14 @@ docker compose exec -T takdb psql -U "$PGUSER" \
     || ok "admin database already exists"
 
 # ── Rebuild ───────────────────────────────────────────────────────────────────
-run_with_gauge "Update" "Building updated image..." -- \
+run_spin "Building updated image" "Image built" \
     docker compose --env-file "$ENV_FILE" build \
     || fail "Build failed (see output above)."
 
-run_with_gauge "Update" "Restarting containers..." -- bash -c \
+run_spin "Restarting containers" "Containers restarted" bash -c \
     "docker compose --env-file '$ENV_FILE' down --remove-orphans && docker compose --env-file '$ENV_FILE' up -d" \
     || fail "Container restart failed (see output above)."
 
-clear
 # ── Done ──────────────────────────────────────────────────────────────────────
 printf "\n"
 printf "  ${G}┌────────────────────────────────────────────────┐${NC}\n"

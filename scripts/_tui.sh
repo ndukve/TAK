@@ -14,28 +14,28 @@ if ! command -v whiptail &>/dev/null; then
     apt-get update -qq && apt-get install -y -qq whiptail
 fi
 
-# Classic blue installer palette (Debian-installer / bsdinstall style)
+# Dark-grey installer palette
 export NEWT_COLORS='
-root=white,blue
-window=white,blue
-border=white,blue
-title=yellow,blue
+root=white,gray
+window=white,gray
+border=white,gray
+title=yellow,gray
 button=black,cyan
 actbutton=white,red
 checkbox=black,cyan
 actcheckbox=white,cyan
 entry=black,cyan
-label=white,blue
+label=white,gray
 listbox=black,cyan
 actlistbox=white,cyan
 textbox=black,cyan
 acttextbox=white,cyan
-helpline=white,blue
-roottext=white,blue
+helpline=white,gray
+roottext=white,gray
 emptyscale=,cyan
-fullscale=,blue
-disentry=white,blue
-disabledbutton=black,blue
+fullscale=,gray
+disentry=white,gray
+disabledbutton=black,gray
 '
 
 WT_BACKTITLE="${WT_BACKTITLE:-TAK Server}"
