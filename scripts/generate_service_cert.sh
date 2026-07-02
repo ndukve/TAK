@@ -29,11 +29,13 @@ OUT_DIR="$SCRIPT_DIR/certs/$NAME"
 mkdir -p "$OUT_DIR"
 
 # ── Steps ─────────────────────────────────────────────────────────────────────
-run_with_gauge "$NAME" "Generating certificate and data package..." -- \
+# Uses gen_client_cert.sh (not make_client_zip.sh) because it persists the key's
+# encryption password to a .certpass file — needed below to decrypt the key for
+# non-interactive services (Python ssl, etc. can't handle an encrypted PEM key).
+run_with_gauge "$NAME" "Generating certificate..." -- \
     docker compose --env-file "$ENV_FILE" exec -T \
         -e CLIENT_CERT_NAME="$NAME" \
-        -e TAK_SERVER_ADDRESS="$TAK_SERVER_ADDRESS" \
-        takserver_config bash /opt/scripts/make_client_zip.sh \
+        takserver_config bash /opt/scripts/gen_client_cert.sh \
     || fail "Certificate generation failed (see output above)."
 
 run_with_gauge "$NAME" "Authorizing on server..." -- \
@@ -46,11 +48,14 @@ _EXPORT_SCRIPT=$(mktemp)
 cat > "$_EXPORT_SCRIPT" <<EOF
 set -e
 docker compose --env-file "$ENV_FILE" exec -T takserver_config bash -c "cat /opt/tak/data/certs/files/${NAME}.pem" > "$OUT_DIR/cert.pem"
-docker compose --env-file "$ENV_FILE" exec -T takserver_config bash -c "cat /opt/tak/data/certs/files/${NAME}.key" > "$OUT_DIR/key.pem"
 docker compose --env-file "$ENV_FILE" exec -T takserver_config bash -c "cat /opt/tak/data/certs/files/ca.pem" > "$OUT_DIR/ca.pem"
+docker compose --env-file "$ENV_FILE" exec -T takserver_config bash -c '
+    PASS=\$(cat /opt/tak/data/certs/files/${NAME}.certpass)
+    openssl pkey -in /opt/tak/data/certs/files/${NAME}.key -passin pass:"\$PASS"
+' > "$OUT_DIR/key.pem"
 chmod 600 "$OUT_DIR/key.pem"
 EOF
-run_with_gauge "$NAME" "Exporting PEM files to host..." -- bash "$_EXPORT_SCRIPT" \
+run_with_gauge "$NAME" "Exporting PEM files to host (decrypting key)..." -- bash "$_EXPORT_SCRIPT" \
     || { rm -f "$_EXPORT_SCRIPT"; fail "Export failed (see output above)."; }
 rm -f "$_EXPORT_SCRIPT"
 
