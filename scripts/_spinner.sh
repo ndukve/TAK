@@ -24,7 +24,7 @@ spin_start() {
 spin_stop() {
     [ -n "$_SP_PID" ] && { kill "$_SP_PID" 2>/dev/null; wait "$_SP_PID" 2>/dev/null; _SP_PID=""; }
     printf "\r\033[K"
-    ok "$1 ${DIM}($(( $(date +%s) - _SP_START ))s)${NC}"
+    printf "${G}  ✓${NC}  %s  ${DIM}(%ds)${NC}\n" "$1" "$(( $(date +%s) - _SP_START ))"
 }
 trap '[ -n "$_SP_PID" ] && kill "$_SP_PID" 2>/dev/null; printf "\r\033[K"' EXIT
 

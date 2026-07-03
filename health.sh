@@ -45,9 +45,10 @@ _STALE=()
 if [ "${#_STALE[@]}" -gt 0 ]; then
     warn "Stale build cache detected (${_STALE[*]}) — forcing a clean rebuild"
     export GIT_COMMIT
-    run_spin "Rebuilding without cache (${_STALE[*]})" "Clean rebuild done" \
-        $_DC build --no-cache "${_STALE[@]}" \
+    info "Rebuilding without cache (${_STALE[*]})..."
+    $_DC build --no-cache "${_STALE[@]}" \
         || fail "Clean rebuild failed (see output above)."
+    ok "Clean rebuild done"
 
     _ADMIN_IMG="$($_DC images -q admin 2>/dev/null)"
     for svc in "${_STALE[@]}"; do
@@ -57,9 +58,10 @@ if [ "${#_STALE[@]}" -gt 0 ]; then
     done
     ok "Clean rebuild now matches ${GIT_COMMIT:0:7}"
 
-    run_spin "Restarting containers" "Containers restarted" bash -c \
-        "$_DC down --remove-orphans && $_DC up -d" \
+    info "Restarting containers..."
+    $_DC down --remove-orphans && $_DC up -d \
         || fail "Container restart failed (see output above)."
+    ok "Containers restarted"
 else
     ok "Deployed images already match ${GIT_COMMIT:0:7}"
 fi

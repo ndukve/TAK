@@ -60,13 +60,16 @@ docker compose exec -T takdb psql -U "$PGUSER" \
 # ── Rebuild ───────────────────────────────────────────────────────────────────
 export GIT_COMMIT="$(git rev-parse HEAD)"
 
-run_spin "Building updated image" "Image built" \
-    docker compose --env-file "$ENV_FILE" build \
+info "Building updated image..."
+docker compose --env-file "$ENV_FILE" build \
     || fail "Build failed (see output above)."
+ok "Image built"
 
-run_spin "Restarting containers" "Containers restarted" bash -c \
-    "docker compose --env-file '$ENV_FILE' down --remove-orphans && docker compose --env-file '$ENV_FILE' up -d" \
+info "Restarting containers..."
+docker compose --env-file "$ENV_FILE" down --remove-orphans \
+    && docker compose --env-file "$ENV_FILE" up -d \
     || fail "Container restart failed (see output above)."
+ok "Containers restarted"
 
 # ── Self-test, with automatic self-heal on failure ────────────────────────────
 # A quick functional check right after the normal build — see scripts/_selftest.sh.
