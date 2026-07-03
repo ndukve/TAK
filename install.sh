@@ -44,6 +44,7 @@ if [ "${TAK_REINSTALL:-}" = "1" ] && [ -f "$ENV_FILE" ]; then
     cd "$SCRIPT_DIR"
     docker compose --env-file "$ENV_FILE" down --remove-orphans 2>/dev/null || true
 
+    export GIT_COMMIT="$(git rev-parse HEAD 2>/dev/null || echo unknown)"
     run_with_gauge "Build" "Building TAK Server image (this can take a few minutes)..." -- \
         docker compose --env-file "$ENV_FILE" build \
         || fail "Image build failed (see output above)."
@@ -224,6 +225,7 @@ ENVEOF
 cd "$SCRIPT_DIR"
 docker compose --env-file "$ENV_FILE" down --remove-orphans 2>/dev/null || true
 
+export GIT_COMMIT="$(git rev-parse HEAD 2>/dev/null || echo unknown)"
 run_with_gauge "Build [7/7]" "Building TAK Server image (this can take a few minutes)..." -- \
     docker compose --env-file "$ENV_FILE" build \
     || fail "Image build failed (see output above)."

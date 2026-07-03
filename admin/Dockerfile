@@ -7,6 +7,8 @@ COPY ui/ .
 RUN pnpm build
 
 FROM python:3.11-slim
+ARG GIT_COMMIT=unknown
+LABEL org.opencontainers.image.revision="$GIT_COMMIT"
 WORKDIR /app
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt

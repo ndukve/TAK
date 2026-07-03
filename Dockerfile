@@ -53,4 +53,6 @@ COPY templates /opt/templates
 
 # ── Stage 4: runtime image ───────────────────────────────────────────────────
 FROM install AS run
+ARG GIT_COMMIT=unknown
+LABEL org.opencontainers.image.revision="$GIT_COMMIT"
 ENTRYPOINT ["/usr/bin/tini", "--", "/entrypoint.sh"]

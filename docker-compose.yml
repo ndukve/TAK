@@ -36,7 +36,10 @@ services:
   # ── First-run initialisation (certs + DB schema) ───────────────────────────
   takserver_initialization:
     <<: *tak-base
-    build: .
+    build:
+      context: .
+      args:
+        GIT_COMMIT: ${GIT_COMMIT:-unknown}
     command: ["/bin/bash", "/opt/scripts/firstrun.sh"]
     depends_on:
       takdb:
@@ -128,7 +131,10 @@ services:
 
   # ── Admin panel (internal only — accessed via admin_proxy) ───────────────
   admin:
-    build: ./admin
+    build:
+      context: ./admin
+      args:
+        GIT_COMMIT: ${GIT_COMMIT:-unknown}
     env_file: takserver.env
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
