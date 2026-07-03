@@ -42,6 +42,16 @@ spin_stop "Up to date: $(git log -1 --format='%h %s')"
 if [ "$_OLD_HEAD" != "$(git rev-parse HEAD)" ]; then
     git --no-pager diff --stat "$_OLD_HEAD" HEAD
     printf "\n"
+    # update.sh just rewrote itself on disk (git reset --hard touches every
+    # tracked file, this script included). Bash reads a running script
+    # incrementally from disk by byte offset — continuing to execute the
+    # rest of THIS process after the underlying file changed size/content
+    # reads from a now-meaningless offset and corrupts execution partway
+    # through, with no clean error (this has been silently breaking every
+    # update that changes update.sh itself). Re-exec fresh from the new
+    # file instead of limping along on stale buffered content.
+    info "update.sh changed — restarting from the updated version..."
+    exec bash "$SCRIPT_DIR/update.sh" "$@"
 else
     dim "No changes — already up to date."
 fi
