@@ -17,9 +17,12 @@ export const Route = createFileRoute('/users')({
 type Step = 'form' | 'gen-cert' | 'make-package' | 'enable' | 'done'
 
 function NewUserModal({ onClose, onCreated }: { onClose: () => void; onCreated: () => void }) {
-  const [username, setUsername] = useState('')
+  const [callsign, setCallsign] = useState('')
+  const [clientType, setClientType] = useState<'ATAK' | 'WinTAK' | 'iTAK'>('iTAK')
   const [step, setStep] = useState<Step>('form')
   const [downloadUrl, setDownloadUrl] = useState('')
+
+  const username = callsign.trim() ? `${callsign}-${clientType}` : ''
 
   const steps: { id: Step; label: string }[] = [
     { id: 'gen-cert', label: 'Generate device certificate' },
@@ -56,12 +59,23 @@ function NewUserModal({ onClose, onCreated }: { onClose: () => void; onCreated: 
           <form onSubmit={handleCreate} className="space-y-4">
             <div className="space-y-1">
               <label className="text-sm text-zinc-300">Callsign</label>
-              <input type="text" value={username}
-                onChange={e => setUsername(e.target.value.replace(/[^a-zA-Z0-9_-]/g, ''))}
-                placeholder="e.g. alpha-1" required
+              <input type="text" value={callsign}
+                onChange={e => setCallsign(e.target.value.replace(/[^a-zA-Z0-9_-]/g, ''))}
+                placeholder="e.g. alpha1" required
                 className="w-full px-3 py-2 rounded-md bg-zinc-800 border border-zinc-700 text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
               <p className="text-xs text-zinc-500">Letters, numbers, hyphens, underscores only.</p>
             </div>
+            <div className="space-y-1">
+              <label className="text-sm text-zinc-300">Client</label>
+              <select value={clientType} onChange={e => setClientType(e.target.value as any)}
+                className="w-full px-3 py-2 rounded-md bg-zinc-800 border border-zinc-700 text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+                <option value="iTAK">iTAK (iOS)</option>
+                <option value="ATAK">ATAK (Android)</option>
+                <option value="WinTAK">WinTAK (Windows)</option>
+              </select>
+              <p className="text-xs text-zinc-500">iTAK uses a different package layout than ATAK/WinTAK — pick the right one.</p>
+            </div>
+            {username && <p className="text-xs text-zinc-500">Package name: <span className="font-mono text-zinc-300">{username}</span></p>}
             <div className="flex gap-2">
               <button type="button" onClick={onClose} className="flex-1 py-2 rounded bg-zinc-700 hover:bg-zinc-600 text-sm">Cancel</button>
               <button type="submit" disabled={!username.trim()}

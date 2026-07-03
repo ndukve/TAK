@@ -3,6 +3,7 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
+from starlette.types import Scope
 
 from .db import engine, Base, ensure_database
 from . import models  # noqa: F401 — ensures models register with Base
@@ -42,6 +43,19 @@ app.include_router(packages_router)
 app.include_router(logs_router)
 app.include_router(shell_router)
 
+class SPAStaticFiles(StaticFiles):
+    """Fall back to index.html for unknown paths (e.g. /logs, /users) so the
+    client-side router can take over on direct navigation, refresh, or the
+    browser back/forward buttons — otherwise Starlette's default 404 for a
+    missing static file shows up as a raw JSON error page."""
+
+    async def get_response(self, path: str, scope: Scope):
+        response = await super().get_response(path, scope)
+        if response.status_code == 404:
+            response = await super().get_response("index.html", scope)
+        return response
+
+
 STATIC_DIR = "/app/static"
 if os.path.isdir(STATIC_DIR):
-    app.mount("/", StaticFiles(directory=STATIC_DIR, html=True), name="static")
+    app.mount("/", SPAStaticFiles(directory=STATIC_DIR, html=True), name="static")

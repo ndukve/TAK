@@ -17,11 +17,26 @@ CLIENTPKGS = f"{TAK_DATA}/clientpkgs"
 SERVER_ADDR = os.environ.get("TAK_SERVER_ADDRESS", "localhost")
 
 _USERNAME_RE = re.compile(r'^[A-Za-z0-9_-]+$')
+_NEW_USERNAME_RE = re.compile(r'^[A-Za-z0-9_-]+-(ATAK|WinTAK|iTAK)$')
 
 
 def _validate_username(username: str) -> str:
+    """For operations on an already-registered user (enable/disable/delete/etc).
+    Looser check — older users created before the client-type suffix convention
+    won't have one and must still be manageable."""
     if not _USERNAME_RE.fullmatch(username):
         raise HTTPException(status_code=400, detail="Username must be alphanumeric (hyphens/underscores allowed)")
+    return username
+
+
+def _validate_new_username(username: str) -> str:
+    """For creating a new user — requires a client-type suffix so the package
+    builder knows which zip layout to produce (iTAK's differs from ATAK/WinTAK)."""
+    if not _NEW_USERNAME_RE.fullmatch(username):
+        raise HTTPException(
+            status_code=400,
+            detail="Username must end in -ATAK, -WinTAK, or -iTAK (e.g. alpha1-iTAK)",
+        )
     return username
 
 
@@ -43,7 +58,7 @@ async def list_users(_=Depends(_admin)):
 
 @router.post("/gen-cert", status_code=201)
 async def gen_cert(body: UsernameRequest, db: AsyncSession = Depends(get_db), actor=Depends(_admin)):
-    username = _validate_username(body.username)
+    username = _validate_new_username(body.username)
     code, out = await run_in_container(
         ["bash", "/opt/scripts/gen_client_cert.sh"],
         env={"CLIENT_CERT_NAME": username},
@@ -56,7 +71,7 @@ async def gen_cert(body: UsernameRequest, db: AsyncSession = Depends(get_db), ac
 
 @router.post("/make-package", status_code=201)
 async def make_package(body: UsernameRequest, db: AsyncSession = Depends(get_db), actor=Depends(_admin)):
-    username = _validate_username(body.username)
+    username = _validate_new_username(body.username)
     code, out = await run_in_container(
         ["bash", "/opt/scripts/make_pkg_zip.sh"],
         env={"CLIENT_CERT_NAME": username, "TAK_SERVER_ADDRESS": SERVER_ADDR},

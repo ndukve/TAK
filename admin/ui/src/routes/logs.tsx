@@ -24,6 +24,25 @@ const SERVICES = [
   'admin',
 ]
 
+// Docker --timestamps prefixes each line with an RFC3339Nano UTC timestamp,
+// e.g. "2026-07-02T11:40:25.123456789Z message". Reformat to the viewer's
+// local time as "YYYY-MM-DD HH:MM:SS TZ  message".
+const TS_RE = /^(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2})(?:\.\d+)?Z (.*)$/s
+
+function formatLogLine(raw: string): string {
+  const m = raw.match(TS_RE)
+  if (!m) return raw
+  const [, isoSec, rest] = m
+  const date = new Date(isoSec + 'Z')
+  if (Number.isNaN(date.getTime())) return raw
+  const pad = (n: number) => String(n).padStart(2, '0')
+  const stamp = `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())} ` +
+    `${pad(date.getHours())}:${pad(date.getMinutes())}:${pad(date.getSeconds())}`
+  const tz = new Intl.DateTimeFormat('en-US', { timeZoneName: 'short' })
+    .formatToParts(date).find((p) => p.type === 'timeZoneName')?.value ?? ''
+  return `${stamp} ${tz}  ${rest}`
+}
+
 function LogsPage() {
   const [service, setService] = useState('takserver_config')
   const termRef = useRef<HTMLDivElement>(null)
@@ -43,24 +62,34 @@ function LogsPage() {
     term.open(termRef.current)
     fit.fit()
 
-    const proto = window.location.protocol === 'https:' ? 'wss' : 'ws'
-    const ws = new WebSocket(
-      `${proto}://${window.location.host}/api/logs?service=${service}&token=${token}`
-    )
-    wsRef.current = ws
+    let closedByUs = false
+    let reconnectTimer: ReturnType<typeof setTimeout> | null = null
 
-    ws.onmessage = (e) => term.writeln(e.data)
-    ws.onerror = () => term.writeln('\r\n[connection error]')
-    ws.onclose = (e) => {
-      if (e.code === 4401) {
-        term.writeln('\r\n[unauthorized — token invalid]')
-      } else {
-        term.writeln('\r\n[disconnected]')
+    const connect = () => {
+      const proto = window.location.protocol === 'https:' ? 'wss' : 'ws'
+      const ws = new WebSocket(
+        `${proto}://${window.location.host}/api/logs?service=${service}&token=${token}`
+      )
+      wsRef.current = ws
+
+      ws.onmessage = (e) => term.writeln(formatLogLine(e.data))
+      ws.onerror = () => term.writeln('\r\n[connection error]')
+      ws.onclose = (e) => {
+        if (closedByUs) return
+        if (e.code === 4401) {
+          term.writeln('\r\n[unauthorized — token invalid]')
+          return
+        }
+        term.writeln('\r\n[disconnected — reconnecting in 2s]')
+        reconnectTimer = setTimeout(connect, 2000)
       }
     }
+    connect()
 
     return () => {
-      ws.close()
+      closedByUs = true
+      if (reconnectTimer) clearTimeout(reconnectTimer)
+      wsRef.current?.close()
       term.dispose()
     }
   }, [service, token])

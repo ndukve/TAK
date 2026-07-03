@@ -41,7 +41,11 @@ async def shell_ws(ws: WebSocket, t: str = Query(...)):
     sock = container.client.api.exec_start(exec_id["Id"], socket=True, tty=True)
     raw_sock = sock._sock
 
-    raw_sock.setblocking(False)
+    # Must stay blocking — recv()/sendall() run inside run_in_executor threads,
+    # which is the correct way to do blocking I/O from asyncio. A non-blocking
+    # socket makes recv() raise BlockingIOError almost immediately (no data is
+    # ever queued yet), which the except-clause below silently treats as EOF —
+    # killing the container output loop right after connecting.
 
     async def read_container():
         while True:

@@ -1,6 +1,11 @@
 #!/usr/bin/env bash
 # Generate a TAK client data package.
-# Usage: ./generate_user.sh [callsign]   (prompts interactively if omitted)
+# Usage: ./generate_user.sh [callsign-ATAK|callsign-WinTAK|callsign-iTAK]
+#        (prompts interactively if omitted)
+#
+# The client type suffix is required — it tells the package builder which
+# zip layout to use. iTAK needs a different (flat) layout than ATAK/WinTAK's
+# Mission Package format; see scripts/make_pkg_zip.sh for details.
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
@@ -10,17 +15,19 @@ ENV_FILE="$SCRIPT_DIR/takserver.env"
 
 [ -f "$ENV_FILE" ] || fail "takserver.env not found — run ./install.sh first"
 
+_NAME_RE='^[a-zA-Z0-9_-]+-(ATAK|WinTAK|iTAK)$'
+
 # ── Callsign ──────────────────────────────────────────────────────────────────
 USERNAME="${1:-}"
 if [ -z "$USERNAME" ]; then
     while true; do
-        printf "  Callsign (letters, numbers, hyphens, underscores): "
+        printf "  Callsign, ending in -ATAK, -WinTAK, or -iTAK (e.g. alpha1-iTAK): "
         read -r USERNAME
-        [[ "$USERNAME" =~ ^[a-zA-Z0-9_-]+$ ]] && break
-        printf "  ${R}Invalid — only letters, numbers, hyphens, underscores${NC}\n"
+        [[ "$USERNAME" =~ $_NAME_RE ]] && break
+        printf "  ${R}Invalid — must end in -ATAK, -WinTAK, or -iTAK${NC}\n"
     done
-elif [[ ! "$USERNAME" =~ ^[a-zA-Z0-9_-]+$ ]]; then
-    fail "Callsign must contain only letters, numbers, hyphens, underscores"
+elif [[ ! "$USERNAME" =~ $_NAME_RE ]]; then
+    fail "Callsign must end in -ATAK, -WinTAK, or -iTAK (e.g. alpha1-iTAK)"
 fi
 
 TAK_SERVER_ADDRESS=$(grep '^TAK_SERVER_ADDRESS=' "$ENV_FILE" | cut -d= -f2)
