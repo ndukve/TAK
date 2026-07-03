@@ -23,8 +23,8 @@ BRANCH="$(git rev-parse --abbrev-ref HEAD)"
 _OLD_HEAD="$(git rev-parse HEAD)"
 
 spin_start "Fetching latest changes (branch: $BRANCH)"
-git fetch origin "$BRANCH" 2>/dev/null || { spin_stop ""; fail "git fetch failed — check network/remote"; }
-git reset --hard "origin/$BRANCH" 2>/dev/null || { spin_stop ""; fail "git reset failed"; }
+git fetch origin "$BRANCH" >/dev/null 2>&1 || { spin_stop ""; fail "git fetch failed — check network/remote"; }
+git reset --hard "origin/$BRANCH" >/dev/null 2>&1 || { spin_stop ""; fail "git reset failed"; }
 spin_stop "Up to date: $(git log -1 --format='%h %s')"
 
 if [ "$_OLD_HEAD" != "$(git rev-parse HEAD)" ]; then
