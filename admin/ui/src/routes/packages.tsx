@@ -1,7 +1,7 @@
 import { createFileRoute, redirect } from '@tanstack/react-router'
 import { useEffect, useRef, useState } from 'react'
 import { Layout } from '@/components/Layout'
-import { apiJson, apiFetch } from '@/lib/api'
+import { apiJson, apiFetch, downloadFile } from '@/lib/api'
 import { useAuth } from '@/store/auth'
 import { toast } from 'sonner'
 import { Download, Trash2, Upload } from 'lucide-react'
@@ -67,6 +67,14 @@ function PackagesPage() {
     } finally {
       setUploading(false)
       if (fileRef.current) fileRef.current.value = ''
+    }
+  }
+
+  async function handleDownload(pkg: Package) {
+    try {
+      await downloadFile(`/api/packages/${encodeURIComponent(pkg.name)}/download`, pkg.filename)
+    } catch (e: any) {
+      toast.error(e.message)
     }
   }
 
@@ -136,15 +144,13 @@ function PackagesPage() {
                     <td className="px-4 py-3 text-zinc-400">{p.size}</td>
                     <td className="px-4 py-3">
                       <div className="flex justify-end gap-1">
-                        <a
-                          href={`/api/packages/${encodeURIComponent(p.name)}/download`}
-                          onClick={e => e.stopPropagation()}
-                          download
+                        <button
+                          onClick={e => { e.stopPropagation(); handleDownload(p) }}
                           className="p-1.5 rounded hover:bg-zinc-800 text-accent-ring"
                           title="Download"
                         >
                           <Download size={14} />
-                        </a>
+                        </button>
                         <button
                           onClick={e => { e.stopPropagation(); handleDelete(p) }}
                           className="p-1.5 rounded hover:bg-zinc-800 text-red-400"
@@ -166,9 +172,9 @@ function PackagesPage() {
                 <p className="text-sm font-medium text-zinc-300 text-center break-all">{selected.name}</p>
                 <p className="text-xs text-zinc-400 text-center break-all">{selected.filename}</p>
                 <p className="text-xs text-zinc-500 text-center break-all">{selected.size}</p>
-                <a href={`/api/packages/${encodeURIComponent(selected.name)}/download`} download className="text-xs text-accent-ring hover:underline break-all text-center">
+                <button onClick={() => handleDownload(selected)} className="text-xs text-accent-ring hover:underline break-all text-center">
                   Download
-                </a>
+                </button>
                 {role !== 'field' && (
                   <button
                     onClick={() => handleCreateFieldLogin(selected)}

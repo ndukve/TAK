@@ -1,7 +1,7 @@
 import { createFileRoute, redirect } from '@tanstack/react-router'
 import { useEffect, useState } from 'react'
 import { Layout } from '@/components/Layout'
-import { apiJson, apiFetch } from '@/lib/api'
+import { apiJson, apiFetch, downloadFile } from '@/lib/api'
 import { useAuth } from '@/store/auth'
 import { toast } from 'sonner'
 import { UserPlus, Trash2, CheckCircle, XCircle, KeyRound, Download, RefreshCw } from 'lucide-react'
@@ -21,7 +21,7 @@ function NewUserModal({ onClose, onCreated }: { onClose: () => void; onCreated: 
   const [callsign, setCallsign] = useState('')
   const [clientType, setClientType] = useState<'ATAK' | 'WinTAK' | 'iTAK'>('iTAK')
   const [step, setStep] = useState<Step>('form')
-  const [downloadUrl, setDownloadUrl] = useState('')
+  const [packageReady, setPackageReady] = useState(false)
   const [fieldAccount, setFieldAccount] = useState<{ username: string; password: string } | null>(null)
 
   const username = callsign.trim() ? `${callsign}-${clientType}` : ''
@@ -41,7 +41,7 @@ function NewUserModal({ onClose, onCreated }: { onClose: () => void; onCreated: 
       await apiJson('/api/users/gen-cert', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ username }) })
       setStep('make-package')
       const pkg = await apiJson<any>('/api/users/make-package', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ username }) })
-      setDownloadUrl(`/api/packages/${encodeURIComponent(username)}/download`)
+      setPackageReady(true)
       if (pkg.field_account_created) {
         setFieldAccount({ username: pkg.field_username, password: pkg.field_account_password })
       }
@@ -112,11 +112,11 @@ function NewUserModal({ onClose, onCreated }: { onClose: () => void; onCreated: 
               <CheckCircle size={18} />
               <span className="font-medium">{username} is ready</span>
             </div>
-            {downloadUrl && (
-              <a href={downloadUrl}
+            {packageReady && (
+              <button onClick={() => downloadFile(`/api/packages/${encodeURIComponent(username)}/download`, `${username}.zip`).catch((e: any) => toast.error(e.message))}
                 className="inline-block px-4 py-2 bg-zinc-800 hover:bg-zinc-700 text-white text-sm rounded-md transition-colors">
                 Download data package
-              </a>
+              </button>
             )}
             {fieldAccount && (
               <div className="p-3 rounded-lg border border-yellow-700/50 bg-yellow-900/20 text-sm space-y-1">
@@ -244,6 +244,14 @@ function UsersPage() {
     } catch (e: any) { toast.error(e.message) }
   }
 
+  async function downloadPackage(username: string) {
+    try {
+      await downloadFile(`/api/packages/${encodeURIComponent(username)}/download`, `${username}.zip`)
+    } catch (e: any) {
+      toast.error(e.message)
+    }
+  }
+
   async function disableUser(username: string) {
     try {
       await apiJson('/api/users/disable', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ username }) })
@@ -312,7 +320,7 @@ function UsersPage() {
                     }
                   </td>
                   <td className="px-4 py-3 flex justify-end gap-2">
-                    <a href={`/api/packages/${encodeURIComponent(u.username)}/download`} download title="Download package" className="p-1.5 rounded hover:bg-zinc-800 text-accent-ring"><Download size={14} /></a>
+                    <button onClick={() => downloadPackage(u.username)} title="Download package" className="p-1.5 rounded hover:bg-zinc-800 text-accent-ring"><Download size={14} /></button>
                     <button onClick={() => enableUser(u.username)} title="Enable" className="p-1.5 rounded hover:bg-zinc-800 text-green-400"><CheckCircle size={14} /></button>
                     <button onClick={() => disableUser(u.username)} title="Disable" className="p-1.5 rounded hover:bg-zinc-800 text-yellow-400"><XCircle size={14} /></button>
                     <button onClick={() => setSetPwUser(u.username)} title="Set Password" className="p-1.5 rounded hover:bg-zinc-800 text-accent-ring"><KeyRound size={14} /></button>

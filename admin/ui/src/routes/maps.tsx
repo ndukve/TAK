@@ -1,7 +1,7 @@
 import { createFileRoute, redirect } from '@tanstack/react-router'
 import { useEffect, useRef, useState } from 'react'
 import { Layout } from '@/components/Layout'
-import { apiJson, apiFetch } from '@/lib/api'
+import { apiJson, apiFetch, downloadFile } from '@/lib/api'
 import { useAuth } from '@/store/auth'
 import { toast } from 'sonner'
 import { Trash2, Upload, Copy, Check, Download } from 'lucide-react'
@@ -83,6 +83,14 @@ function MapsPage() {
     }
   }
 
+  async function handleDownload(m: MapSource) {
+    try {
+      await downloadFile(`/api/maps/${encodeURIComponent(m.provider)}/${encodeURIComponent(m.filename)}/download`, m.filename)
+    } catch (e: any) {
+      toast.error(e.message)
+    }
+  }
+
   async function handleDelete(m: MapSource) {
     if (!confirm(`Delete "${m.provider}/${m.filename}"? This cannot be undone.`)) return
     try {
@@ -154,14 +162,13 @@ function MapsPage() {
                   <td className="px-4 py-3">{m.sha256 ? <CopyHash hash={m.sha256} /> : <span className="text-zinc-600 text-xs">—</span>}</td>
                   <td className="px-4 py-3">
                     <div className="flex justify-end gap-1">
-                      <a
-                        href={`/api/maps/${encodeURIComponent(m.provider)}/${encodeURIComponent(m.filename)}/download`}
-                        download
+                      <button
+                        onClick={() => handleDownload(m)}
                         className="p-1.5 rounded hover:bg-zinc-800 text-accent-ring"
                         title="Download"
                       >
                         <Download size={14} />
-                      </a>
+                      </button>
                       <button
                         onClick={() => handleDelete(m)}
                         className="p-1.5 rounded hover:bg-zinc-800 text-red-400"
