@@ -22,7 +22,7 @@ spin_start() {
     _SP_PID=$!
 }
 spin_stop() {
-    [ -n "$_SP_PID" ] && { kill "$_SP_PID" 2>/dev/null; wait "$_SP_PID" 2>/dev/null; _SP_PID=""; }
+    [ -n "$_SP_PID" ] && { kill "$_SP_PID" 2>/dev/null; wait "$_SP_PID" 2>/dev/null || true; _SP_PID=""; }
     printf "\r\033[K"
     printf "${G}  ✓${NC}  %s  ${DIM}(%ds)${NC}\n" "$1" "$(( $(date +%s) - _SP_START ))"
 }
