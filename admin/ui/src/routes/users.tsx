@@ -4,7 +4,7 @@ import { Layout } from '@/components/Layout'
 import { apiJson, apiFetch } from '@/lib/api'
 import { useAuth } from '@/store/auth'
 import { toast } from 'sonner'
-import { UserPlus, Trash2, CheckCircle, XCircle, KeyRound } from 'lucide-react'
+import { UserPlus, Trash2, CheckCircle, XCircle, KeyRound, Download, RefreshCw } from 'lucide-react'
 
 export const Route = createFileRoute('/users')({
   beforeLoad: () => {
@@ -184,14 +184,23 @@ function SetPasswordModal({ username, onClose }: { username: string; onClose: ()
   )
 }
 
+interface TakUser {
+  username: string
+  has_field_account: boolean
+  field_username: string
+}
+
 function UsersPage() {
-  const [users, setUsers] = useState<string[]>([])
+  const [users, setUsers] = useState<TakUser[]>([])
   const [showNew, setShowNew] = useState(false)
   const [setPwUser, setSetPwUser] = useState<string | null>(null)
+  const [syncing, setSyncing] = useState(false)
+  const [fieldResult, setFieldResult] = useState<{ username: string; password: string | null; created: boolean } | null>(null)
+  const [syncedAccounts, setSyncedAccounts] = useState<{ username: string; password: string }[]>([])
 
   async function load() {
     try {
-      const data = await apiJson<{ users: string[] }>('/api/users')
+      const data = await apiJson<{ users: TakUser[] }>('/api/users')
       setUsers(data.users)
     } catch (e: any) {
       toast.error(e.message)
@@ -199,6 +208,34 @@ function UsersPage() {
   }
 
   useEffect(() => { load() }, [])
+
+  async function createFieldLogin(username: string) {
+    try {
+      const res = await apiJson<any>(`/api/users/create-field-login/${encodeURIComponent(username)}`, { method: 'POST' })
+      setFieldResult({ username: res.field_username, password: res.field_account_password, created: res.field_account_created })
+      load()
+    } catch (e: any) {
+      toast.error(e.message)
+    }
+  }
+
+  async function syncAccounts() {
+    setSyncing(true)
+    try {
+      const res = await apiJson<{ created: { username: string; password: string }[] }>('/api/users/backfill-field-accounts', { method: 'POST' })
+      setSyncedAccounts(res.created)
+      if (res.created.length === 0) {
+        toast.success('All packages already have field accounts')
+      } else {
+        toast.success(`Created ${res.created.length} field account(s) — shown below, save now`)
+      }
+      load()
+    } catch (e: any) {
+      toast.error(e.message)
+    } finally {
+      setSyncing(false)
+    }
+  }
 
   async function enableUser(username: string) {
     try {
@@ -232,31 +269,54 @@ function UsersPage() {
       <div className="p-6">
         <div className="flex items-center justify-between mb-6">
           <h1 className="text-xl font-semibold">TAK Users</h1>
-          <button onClick={() => setShowNew(true)}
-            className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white text-sm rounded-md transition-colors">
-            <UserPlus size={14} /> New User
-          </button>
+          <div className="flex items-center gap-2">
+            <button onClick={syncAccounts} disabled={syncing}
+              className="flex items-center gap-2 px-4 py-2 bg-zinc-800 hover:bg-zinc-700 disabled:opacity-50 text-white text-sm rounded-md transition-colors">
+              <RefreshCw size={14} className={syncing ? 'animate-spin' : ''} /> {syncing ? 'Syncing…' : 'Sync Accounts'}
+            </button>
+            <button onClick={() => setShowNew(true)}
+              className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white text-sm rounded-md transition-colors">
+              <UserPlus size={14} /> New User
+            </button>
+          </div>
         </div>
-        <div className="rounded-lg border border-zinc-800 overflow-hidden">
-          <table className="w-full text-sm">
+        {(fieldResult || syncedAccounts.length > 0) && (
+          <div className="mb-6 p-3 rounded-lg border border-yellow-700/50 bg-yellow-900/20 text-sm space-y-1">
+            <p className="text-yellow-200">Field login(s) created — shown once, save now:</p>
+            {fieldResult?.created && <p className="font-mono text-zinc-200">{fieldResult.username}: {fieldResult.password}</p>}
+            {syncedAccounts.map(a => (
+              <p key={a.username} className="font-mono text-zinc-200">{a.username}: {a.password}</p>
+            ))}
+          </div>
+        )}
+        <div className="rounded-lg border border-zinc-800 overflow-x-auto">
+          <table className="w-full text-sm min-w-[560px]">
             <thead className="bg-zinc-900 text-zinc-400">
               <tr>
                 <th className="px-4 py-3 text-left font-medium">Callsign</th>
+                <th className="px-4 py-3 text-left font-medium">Web Login</th>
                 <th className="px-4 py-3 text-right font-medium">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-zinc-800">
               {users.length === 0 && (
-                <tr><td colSpan={2} className="px-4 py-8 text-center text-zinc-500">No users yet — create one</td></tr>
+                <tr><td colSpan={3} className="px-4 py-8 text-center text-zinc-500">No users yet — create one</td></tr>
               )}
               {users.map(u => (
-                <tr key={u} className="bg-zinc-950 hover:bg-zinc-900/50">
-                  <td className="px-4 py-3 font-mono">{u}</td>
+                <tr key={u.username} className="bg-zinc-950 hover:bg-zinc-900/50">
+                  <td className="px-4 py-3 font-mono">{u.username}</td>
+                  <td className="px-4 py-3">
+                    {u.has_field_account
+                      ? <span className="text-xs px-2 py-0.5 rounded-full font-medium text-green-400 bg-green-400/10">active ({u.field_username})</span>
+                      : <button onClick={() => createFieldLogin(u.username)} className="text-xs px-2 py-1 rounded bg-zinc-800 hover:bg-zinc-700 text-zinc-300">Create login</button>
+                    }
+                  </td>
                   <td className="px-4 py-3 flex justify-end gap-2">
-                    <button onClick={() => enableUser(u)} title="Enable" className="p-1.5 rounded hover:bg-zinc-800 text-green-400"><CheckCircle size={14} /></button>
-                    <button onClick={() => disableUser(u)} title="Disable" className="p-1.5 rounded hover:bg-zinc-800 text-yellow-400"><XCircle size={14} /></button>
-                    <button onClick={() => setSetPwUser(u)} title="Set Password" className="p-1.5 rounded hover:bg-zinc-800 text-blue-400"><KeyRound size={14} /></button>
-                    <button onClick={() => deleteUser(u)} title="Delete" className="p-1.5 rounded hover:bg-zinc-800 text-red-400"><Trash2 size={14} /></button>
+                    <a href={`/api/packages/${encodeURIComponent(u.username)}/download`} download title="Download package" className="p-1.5 rounded hover:bg-zinc-800 text-blue-400"><Download size={14} /></a>
+                    <button onClick={() => enableUser(u.username)} title="Enable" className="p-1.5 rounded hover:bg-zinc-800 text-green-400"><CheckCircle size={14} /></button>
+                    <button onClick={() => disableUser(u.username)} title="Disable" className="p-1.5 rounded hover:bg-zinc-800 text-yellow-400"><XCircle size={14} /></button>
+                    <button onClick={() => setSetPwUser(u.username)} title="Set Password" className="p-1.5 rounded hover:bg-zinc-800 text-blue-400"><KeyRound size={14} /></button>
+                    <button onClick={() => deleteUser(u.username)} title="Delete" className="p-1.5 rounded hover:bg-zinc-800 text-red-400"><Trash2 size={14} /></button>
                   </td>
                 </tr>
               ))}

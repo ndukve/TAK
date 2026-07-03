@@ -41,7 +41,7 @@ function passwordStrength(p: string): { score: number; label: string; color: str
   return { score, label: 'Strong', color: 'bg-green-500' }
 }
 
-function ChangePasswordModal({ onClose }: { onClose: () => void }) {
+function ChangePasswordModal({ onClose, forced }: { onClose: () => void; forced?: boolean }) {
   const [current, setCurrent] = useState('')
   const [next, setNext] = useState('')
   const [confirm, setConfirm] = useState('')
@@ -55,10 +55,14 @@ function ChangePasswordModal({ onClose }: { onClose: () => void }) {
     if (next !== confirm) { setError('Passwords do not match'); return }
     if (next.length < 12) { setError('New password must be at least 12 characters'); return }
     try {
-      await apiFetch('/admin-users/me/change-password', {
+      const res = await apiFetch('/admin-users/me/change-password', {
         method: 'POST',
         body: JSON.stringify({ current_password: current, new_password: next }),
       })
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({ detail: res.statusText }))
+        throw new Error(err.detail ?? res.statusText)
+      }
       setOk(true)
     } catch (err: any) {
       setError(err.message ?? 'Failed')
@@ -69,6 +73,9 @@ function ChangePasswordModal({ onClose }: { onClose: () => void }) {
     <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-[60]">
       <div className="bg-zinc-900 border border-zinc-700 rounded-lg p-6 w-full max-w-sm">
         <h2 className="text-lg font-semibold mb-4">Change Password</h2>
+        {forced && !ok && (
+          <p className="text-xs text-yellow-400 mb-3">Your password has expired and must be changed before continuing.</p>
+        )}
         {ok ? (
           <div className="space-y-4">
             <p className="text-green-400 text-sm">Password changed successfully.</p>
@@ -96,7 +103,7 @@ function ChangePasswordModal({ onClose }: { onClose: () => void }) {
               className="w-full bg-zinc-800 border border-zinc-700 rounded px-3 py-2 text-sm" required />
             {error && <p className="text-red-400 text-xs">{error}</p>}
             <div className="flex gap-2 pt-1">
-              <button type="button" onClick={onClose} className="flex-1 py-2 rounded bg-zinc-700 hover:bg-zinc-600 text-sm">Cancel</button>
+              {!forced && <button type="button" onClick={onClose} className="flex-1 py-2 rounded bg-zinc-700 hover:bg-zinc-600 text-sm">Cancel</button>}
               <button type="submit" className="flex-1 py-2 rounded bg-blue-600 hover:bg-blue-500 text-sm">Change</button>
             </div>
           </form>
@@ -107,7 +114,7 @@ function ChangePasswordModal({ onClose }: { onClose: () => void }) {
 }
 
 export function Layout({ children }: { children: React.ReactNode }) {
-  const { role, clear } = useAuth()
+  const { role, clear, passwordExpired, setPasswordExpired } = useAuth()
   const navigate = useNavigate()
   const routerState = useRouterState()
   const current = routerState.location.pathname
@@ -181,6 +188,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
       </aside>
       <main className="flex-1 overflow-auto pt-14 md:pt-0">{children}</main>
       {showChangePw && <ChangePasswordModal onClose={() => setShowChangePw(false)} />}
+      {passwordExpired && <ChangePasswordModal forced onClose={() => setPasswordExpired(false)} />}
     </div>
   )
 }

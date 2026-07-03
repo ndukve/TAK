@@ -23,6 +23,7 @@ class AdminUser(Base):
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)
     failed_logins: Mapped[int] = mapped_column(default=0)
     locked_until: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    password_changed_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
 
     tokens: Mapped[list["RefreshToken"]] = relationship(back_populates="user")
 

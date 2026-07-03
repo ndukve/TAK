@@ -8,7 +8,7 @@ from sqlalchemy import select, delete
 
 from .db import get_db
 from .models import AdminUser, InviteLink, RefreshToken
-from .deps import require_role, write_audit, pwd_ctx
+from .deps import require_role, write_audit, pwd_ctx, get_current_user
 from .password_policy import validate_password
 
 router = APIRouter(prefix="/api/admin-users", tags=["admin-users"])
@@ -40,10 +40,8 @@ class ChangePasswordRequest(BaseModel):
 
 
 @router.get("")
-async def list_users(include_field: bool = False, db: AsyncSession = Depends(get_db), actor=Depends(_superadmin)):
-    query = select(AdminUser)
-    if not include_field:
-        query = query.where(AdminUser.role != "field")
+async def list_users(db: AsyncSession = Depends(get_db), actor=Depends(_superadmin)):
+    query = select(AdminUser).where(AdminUser.role != "field")
     result = await db.execute(query)
     users = result.scalars().all()
     return {"users": [
@@ -87,6 +85,7 @@ async def patch_user(user_id: str, body: PatchUserRequest, db: AsyncSession = De
     if body.password:
         await validate_password(body.password)
         user.password_hash = pwd_ctx.hash(body.password)
+        user.password_changed_at = datetime.now(timezone.utc)
     if body.is_active is not None:
         user.is_active = body.is_active
     await db.commit()
@@ -113,12 +112,16 @@ async def deactivate_user(user_id: str, db: AsyncSession = Depends(get_db), acto
 async def change_own_password(
     body: ChangePasswordRequest,
     db: AsyncSession = Depends(get_db),
-    actor: AdminUser = Depends(require_role("admin", "superadmin")),
+    actor: AdminUser = Depends(get_current_user),
 ):
+    # Deliberately get_current_user, not require_role/get_current_user_active —
+    # this must stay reachable for every role (including field) and even once
+    # the caller's password has expired, since it's the only way out of that state.
     if not pwd_ctx.verify(body.current_password, actor.password_hash):
         raise HTTPException(status_code=400, detail="Current password is incorrect")
     await validate_password(body.new_password)
     actor.password_hash = pwd_ctx.hash(body.new_password)
+    actor.password_changed_at = datetime.now(timezone.utc)
     await db.commit()
     await write_audit(db, actor.id, "change_own_password", actor.username)
     return {"status": "ok"}

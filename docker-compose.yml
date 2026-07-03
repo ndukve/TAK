@@ -159,6 +159,7 @@ services:
   # ── Admin TLS reverse proxy (port 8889 HTTPS) ────────────────────────────
   admin_proxy:
     image: nginx:alpine
+    env_file: takserver.env
     volumes:
       - ./admin/nginx/nginx.conf:/etc/nginx/conf.d/default.conf:ro
       - ./admin/nginx/entrypoint.sh:/entrypoint.sh:ro

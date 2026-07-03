@@ -29,6 +29,15 @@ export async function apiFetch(path: string, init: RequestInit = {}): Promise<Re
     res = await fetch(`${BASE}${path}`, { ...init, headers, credentials: 'include' })
   }
 
+  if (res.status === 403) {
+    try {
+      const body = await res.clone().json()
+      if (body.detail === 'password_expired') {
+        useAuth.getState().setPasswordExpired(true)
+      }
+    } catch {}
+  }
+
   return res
 }
 

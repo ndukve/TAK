@@ -81,10 +81,39 @@ class SetPasswordRequest(BaseModel):
 
 
 @router.get("")
-async def list_users(_=Depends(_admin)):
+async def list_users(db: AsyncSession = Depends(get_db), _=Depends(_admin)):
     code, out = await run_in_container(["bash", "-c", f"ls {CLIENTPKGS}/*.zip 2>/dev/null || true"])
     zips = [f.split("/")[-1].replace(".zip", "") for f in out.strip().splitlines() if f.endswith(".zip")]
-    return {"users": zips}
+
+    result = await db.execute(select(AdminUser.owned_callsign).where(AdminUser.role == "field"))
+    field_bases = {row[0] for row in result.all()}
+
+    return {"users": [
+        {
+            "username": z,
+            "has_field_account": _base_callsign(z) in field_bases,
+            "field_username": _base_callsign(z),
+        }
+        for z in zips
+    ]}
+
+
+@router.post("/backfill-field-accounts", status_code=201)
+async def backfill_field_accounts(db: AsyncSession = Depends(get_db), actor=Depends(_admin)):
+    """Create a field account for every existing package that doesn't have one
+    yet — covers packages made before field-account auto-creation existed."""
+    code, out = await run_in_container(["bash", "-c", f"ls {CLIENTPKGS}/*.zip 2>/dev/null || true"])
+    zips = [f.split("/")[-1].replace(".zip", "") for f in out.strip().splitlines() if f.endswith(".zip")]
+
+    bases = sorted({_base_callsign(z) for z in zips})
+    created_accounts = []
+    for base in bases:
+        created, password = await _ensure_field_account(db, base, actor.username)
+        if created:
+            await write_audit(db, actor.id, "create_field_account", base)
+            created_accounts.append({"username": base, "password": password})
+
+    return {"created": created_accounts}
 
 
 @router.post("/gen-cert", status_code=201)

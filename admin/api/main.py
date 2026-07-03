@@ -25,6 +25,9 @@ async def lifespan(app: FastAPI):
         await conn.execute(text(
             "ALTER TABLE admin_users ADD COLUMN IF NOT EXISTS owned_callsign VARCHAR(64)"
         ))
+        await conn.execute(text(
+            "ALTER TABLE admin_users ADD COLUMN IF NOT EXISTS password_changed_at TIMESTAMPTZ NOT NULL DEFAULT NOW()"
+        ))
     await _ensure_first_user()
     yield
 

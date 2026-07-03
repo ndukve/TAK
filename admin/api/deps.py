@@ -15,6 +15,7 @@ if not SECRET_KEY:
     raise RuntimeError("ADMIN_SECRET_KEY environment variable is required and must not be empty")
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 15
+PASSWORD_ROTATION_DAYS = 90
 
 pwd_ctx = CryptContext(schemes=["bcrypt"], deprecated="auto")
 bearer = HTTPBearer(auto_error=False)
@@ -48,8 +49,19 @@ async def get_current_user(
     return user
 
 
+async def get_current_user_active(user: AdminUser = Depends(get_current_user)) -> AdminUser:
+    """Same as get_current_user, but also enforces password rotation. The
+    change-password endpoint itself must depend on get_current_user directly
+    (not this) — otherwise an expired-password user could never reach the
+    one endpoint that lets them fix it."""
+    age = datetime.now(timezone.utc) - user.password_changed_at.replace(tzinfo=timezone.utc)
+    if age > timedelta(days=PASSWORD_ROTATION_DAYS):
+        raise HTTPException(status_code=403, detail="password_expired")
+    return user
+
+
 def require_role(*roles: str):
-    async def _check(user: AdminUser = Depends(get_current_user)) -> AdminUser:
+    async def _check(user: AdminUser = Depends(get_current_user_active)) -> AdminUser:
         if user.role not in roles:
             raise HTTPException(status_code=403, detail="Insufficient permissions")
         return user
