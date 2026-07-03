@@ -1,6 +1,7 @@
 import { createFileRoute, useNavigate } from '@tanstack/react-router'
 import { useState } from 'react'
 import { useAuth } from '@/store/auth'
+import { brand } from '@/brand'
 import { toast } from 'sonner'
 
 export const Route = createFileRoute('/login')({
@@ -30,7 +31,7 @@ function LoginPage() {
       }
       const { access_token } = await res.json()
       const payload = JSON.parse(atob(access_token.split('.')[1]))
-      setToken(access_token, payload.role)
+      setToken(access_token, payload.role, payload.username)
       navigate({ to: '/' })
     } catch (err: any) {
       toast.error(err.message)
@@ -43,7 +44,7 @@ function LoginPage() {
     <div className="min-h-screen flex items-center justify-center bg-zinc-950">
       <div className="w-full max-w-sm space-y-6 p-8 rounded-xl border border-zinc-800 bg-zinc-900">
         <div>
-          <h1 className="text-2xl font-bold text-white">TAK Admin</h1>
+          <h1 className="text-2xl font-bold text-white">{brand.orgName}</h1>
           <p className="text-sm text-zinc-400 mt-1">Sign in to manage your TAK server</p>
         </div>
         <form onSubmit={handleSubmit} className="space-y-4">
@@ -54,7 +55,7 @@ function LoginPage() {
               value={username}
               onChange={e => setUsername(e.target.value)}
               required
-              className="w-full px-3 py-2 rounded-md bg-zinc-800 border border-zinc-700 text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full px-3 py-2 rounded-md bg-zinc-800 border border-zinc-700 text-white text-sm focus:outline-none focus:ring-2 focus:ring-accent-ring"
             />
           </div>
           <div className="space-y-1">
@@ -64,13 +65,13 @@ function LoginPage() {
               value={password}
               onChange={e => setPassword(e.target.value)}
               required
-              className="w-full px-3 py-2 rounded-md bg-zinc-800 border border-zinc-700 text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full px-3 py-2 rounded-md bg-zinc-800 border border-zinc-700 text-white text-sm focus:outline-none focus:ring-2 focus:ring-accent-ring"
             />
           </div>
           <button
             type="submit"
             disabled={loading}
-            className="w-full py-2 rounded-md bg-blue-600 hover:bg-blue-500 text-white text-sm font-medium disabled:opacity-50 transition-colors"
+            className="w-full py-2 rounded-md bg-accent-fill hover:bg-accent-fill-hover text-accent-text text-sm font-medium disabled:opacity-50 transition-colors"
           >
             {loading ? 'Signing in…' : 'Sign in'}
           </button>

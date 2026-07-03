@@ -19,7 +19,7 @@ interface AdminUser { id: string; username: string; role: string; is_active: boo
 
 const ROLE_COLORS: Record<string, string> = {
   superadmin: 'text-purple-400 bg-purple-400/10',
-  admin: 'text-blue-400 bg-blue-400/10',
+  admin: 'text-accent-ring bg-accent-ring/10',
 }
 
 function NewAdminModal({ onClose, onCreated }: { onClose: () => void; onCreated: () => void }) {
@@ -55,12 +55,12 @@ function NewAdminModal({ onClose, onCreated }: { onClose: () => void; onCreated:
           <div className="space-y-1">
             <label className="text-sm text-zinc-300">Username</label>
             <input type="text" value={username} onChange={e => setUsername(e.target.value)} required
-              className="w-full px-3 py-2 rounded-md bg-zinc-800 border border-zinc-700 text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
+              className="w-full px-3 py-2 rounded-md bg-zinc-800 border border-zinc-700 text-white text-sm focus:outline-none focus:ring-2 focus:ring-accent-ring" />
           </div>
           <div className="space-y-1">
             <label className="text-sm text-zinc-300">Password (min 12 chars)</label>
             <input type="password" value={password} onChange={e => setPassword(e.target.value)} required
-              className="w-full px-3 py-2 rounded-md bg-zinc-800 border border-zinc-700 text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
+              className="w-full px-3 py-2 rounded-md bg-zinc-800 border border-zinc-700 text-white text-sm focus:outline-none focus:ring-2 focus:ring-accent-ring" />
           </div>
           <div className="space-y-1">
             <label className="text-sm text-zinc-300">Role</label>
@@ -73,7 +73,7 @@ function NewAdminModal({ onClose, onCreated }: { onClose: () => void; onCreated:
           <div className="flex gap-2 pt-1">
             <button type="button" onClick={onClose} className="flex-1 py-2 rounded bg-zinc-700 hover:bg-zinc-600 text-sm">Cancel</button>
             <button type="submit" disabled={loading}
-              className="flex-1 py-2 rounded bg-blue-600 hover:bg-blue-500 text-sm disabled:opacity-50">
+              className="flex-1 py-2 rounded bg-accent-fill hover:bg-accent-fill-hover text-accent-text text-sm disabled:opacity-50">
               {loading ? 'Creating…' : 'Create'}
             </button>
           </div>
@@ -128,7 +128,7 @@ function AdminUsersPage() {
           <h1 className="text-xl font-semibold">Admin Users</h1>
           <div className="flex items-center gap-4">
             <button onClick={() => setShowNew(true)}
-              className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white text-sm rounded-md transition-colors">
+              className="flex items-center gap-2 px-4 py-2 bg-accent-fill hover:bg-accent-fill-hover text-accent-text text-sm rounded-md transition-colors">
               <UserPlus size={14} /> New Admin
             </button>
           </div>

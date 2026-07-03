@@ -7,7 +7,7 @@ async function refreshToken(): Promise<string | null> {
   if (!res.ok) return null
   const data = await res.json()
   const payload = JSON.parse(atob(data.access_token.split('.')[1]))
-  useAuth.getState().setToken(data.access_token, payload.role)
+  useAuth.getState().setToken(data.access_token, payload.role, payload.username)
   return data.access_token
 }
 

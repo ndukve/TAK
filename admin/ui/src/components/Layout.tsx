@@ -3,6 +3,7 @@ import { Link, useNavigate, useRouterState } from '@tanstack/react-router'
 import { useAuth } from '@/store/auth'
 import { cn } from '@/lib/utils'
 import { apiFetch } from '@/lib/api'
+import { brand } from '@/brand'
 import {
   LayoutDashboard, Users, Package, Puzzle, Map,
   ScrollText, Terminal, ShieldUser, LogOut, KeyRound, Menu
@@ -104,7 +105,7 @@ function ChangePasswordModal({ onClose, forced }: { onClose: () => void; forced?
             {error && <p className="text-red-400 text-xs">{error}</p>}
             <div className="flex gap-2 pt-1">
               {!forced && <button type="button" onClick={onClose} className="flex-1 py-2 rounded bg-zinc-700 hover:bg-zinc-600 text-sm">Cancel</button>}
-              <button type="submit" className="flex-1 py-2 rounded bg-blue-600 hover:bg-blue-500 text-sm">Change</button>
+              <button type="submit" className="flex-1 py-2 rounded bg-accent-fill hover:bg-accent-fill-hover text-accent-text text-sm">Change</button>
             </div>
           </form>
         )}
@@ -114,7 +115,7 @@ function ChangePasswordModal({ onClose, forced }: { onClose: () => void; forced?
 }
 
 export function Layout({ children }: { children: React.ReactNode }) {
-  const { role, clear, passwordExpired, setPasswordExpired } = useAuth()
+  const { role, username, clear, passwordExpired, setPasswordExpired } = useAuth()
   const navigate = useNavigate()
   const routerState = useRouterState()
   const current = routerState.location.pathname
@@ -127,9 +128,8 @@ export function Layout({ children }: { children: React.ReactNode }) {
     navigate({ to: '/login' })
   }
 
-  const items = role === 'field' ? fieldItems
-    : role === 'superadmin' ? [...navItems, ...superAdminItems]
-    : navItems
+  const items = role === 'field' ? fieldItems : navItems
+  const adminItems = role === 'superadmin' ? superAdminItems : []
 
   return (
     <div className="flex h-screen bg-zinc-950 text-zinc-100">
@@ -149,7 +149,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
         sidebarOpen ? 'translate-x-0' : '-translate-x-full'
       )}>
         <div className="p-4 border-b border-zinc-800">
-          <span className="font-bold text-lg tracking-tight">TAK Admin</span>
+          <span className="font-bold text-lg tracking-tight">{brand.orgName}</span>
         </div>
         <nav className="flex-1 p-2 space-y-1">
           {items.map(({ to, label, icon: Icon }) => (
@@ -168,7 +168,37 @@ export function Layout({ children }: { children: React.ReactNode }) {
               {label}
             </Link>
           ))}
+          {adminItems.length > 0 && (
+            <>
+              <div className="pt-3 pb-1 px-3 text-[10px] font-semibold tracking-wider text-zinc-600 uppercase">Admin</div>
+              {adminItems.map(({ to, label, icon: Icon }) => (
+                <Link
+                  key={to}
+                  to={to}
+                  onClick={() => setSidebarOpen(false)}
+                  className={cn(
+                    'flex items-center gap-3 px-3 py-2 rounded-md text-sm transition-colors',
+                    current === to
+                      ? 'bg-zinc-800 text-white'
+                      : 'text-zinc-400 hover:text-white hover:bg-zinc-800/50'
+                  )}
+                >
+                  <Icon size={16} />
+                  {label}
+                </Link>
+              ))}
+            </>
+          )}
         </nav>
+        <div className="px-3 py-3 border-t border-zinc-800 flex items-center gap-2">
+          <div className="w-7 h-7 rounded-full bg-accent-fill text-accent-text flex items-center justify-center text-xs font-semibold shrink-0">
+            {(username ?? '?').slice(0, 2).toUpperCase()}
+          </div>
+          <div className="min-w-0">
+            <p className="text-sm text-zinc-200 truncate">{username}</p>
+            <p className="text-xs text-zinc-500">{role}</p>
+          </div>
+        </div>
         <div className="p-2 border-t border-zinc-800 space-y-1">
           <button
             onClick={() => setShowChangePw(true)}

@@ -102,12 +102,12 @@ function ShellPage() {
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="Your admin password"
                 required
-                className="w-full px-3 py-2 rounded-md bg-zinc-800 border border-zinc-700 text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full px-3 py-2 rounded-md bg-zinc-800 border border-zinc-700 text-white text-sm focus:outline-none focus:ring-2 focus:ring-accent-ring"
               />
               <button
                 type="submit"
                 disabled={loading}
-                className="w-full py-2 rounded-md bg-blue-600 hover:bg-blue-500 text-white text-sm font-medium disabled:opacity-50 transition-colors"
+                className="w-full py-2 rounded-md bg-accent-fill hover:bg-accent-fill-hover text-accent-text text-sm font-medium disabled:opacity-50 transition-colors"
               >
                 {loading ? 'Verifying…' : 'Unlock shell'}
               </button>

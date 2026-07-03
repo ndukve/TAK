@@ -67,13 +67,13 @@ function NewUserModal({ onClose, onCreated }: { onClose: () => void; onCreated: 
               <input type="text" value={callsign}
                 onChange={e => setCallsign(e.target.value.replace(/[^a-zA-Z0-9_-]/g, ''))}
                 placeholder="e.g. alpha1" required
-                className="w-full px-3 py-2 rounded-md bg-zinc-800 border border-zinc-700 text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                className="w-full px-3 py-2 rounded-md bg-zinc-800 border border-zinc-700 text-white text-sm focus:outline-none focus:ring-2 focus:ring-accent-ring" />
               <p className="text-xs text-zinc-500">Letters, numbers, hyphens, underscores only.</p>
             </div>
             <div className="space-y-1">
               <label className="text-sm text-zinc-300">Client</label>
               <select value={clientType} onChange={e => setClientType(e.target.value as any)}
-                className="w-full px-3 py-2 rounded-md bg-zinc-800 border border-zinc-700 text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+                className="w-full px-3 py-2 rounded-md bg-zinc-800 border border-zinc-700 text-white text-sm focus:outline-none focus:ring-2 focus:ring-accent-ring">
                 <option value="iTAK">iTAK (iOS)</option>
                 <option value="ATAK">ATAK (Android)</option>
                 <option value="WinTAK">WinTAK (Windows)</option>
@@ -84,7 +84,7 @@ function NewUserModal({ onClose, onCreated }: { onClose: () => void; onCreated: 
             <div className="flex gap-2">
               <button type="button" onClick={onClose} className="flex-1 py-2 rounded bg-zinc-700 hover:bg-zinc-600 text-sm">Cancel</button>
               <button type="submit" disabled={!username.trim()}
-                className="flex-1 py-2 rounded bg-blue-600 hover:bg-blue-500 text-sm disabled:opacity-50">Create</button>
+                className="flex-1 py-2 rounded bg-accent-fill hover:bg-accent-fill-hover text-accent-text text-sm disabled:opacity-50">Create</button>
             </div>
           </form>
         )}
@@ -97,8 +97,8 @@ function NewUserModal({ onClose, onCreated }: { onClose: () => void; onCreated: 
               const done = idx < currentIdx
               const active = s.id === step
               return (
-                <div key={s.id} className={`flex items-center gap-3 p-3 rounded-lg border ${active ? 'border-blue-500 bg-blue-500/10' : done ? 'border-zinc-700 bg-zinc-900' : 'border-zinc-800 opacity-40'}`}>
-                  {done ? <CheckCircle size={16} className="text-green-400 shrink-0" /> : <div className={`w-4 h-4 rounded-full border-2 shrink-0 ${active ? 'border-blue-400 animate-pulse' : 'border-zinc-600'}`} />}
+                <div key={s.id} className={`flex items-center gap-3 p-3 rounded-lg border ${active ? 'border-accent-fill bg-accent-fill/10' : done ? 'border-zinc-700 bg-zinc-900' : 'border-zinc-800 opacity-40'}`}>
+                  {done ? <CheckCircle size={16} className="text-green-400 shrink-0" /> : <div className={`w-4 h-4 rounded-full border-2 shrink-0 ${active ? 'border-accent-ring animate-pulse' : 'border-zinc-600'}`} />}
                   <span className="text-sm">{s.label}</span>
                 </div>
               )
@@ -174,7 +174,7 @@ function SetPasswordModal({ username, onClose }: { username: string; onClose: ()
             className="w-full bg-zinc-800 border border-zinc-700 rounded px-3 py-2 text-sm" required />
           <div className="flex gap-2 pt-1">
             <button type="button" onClick={onClose} className="flex-1 py-2 rounded bg-zinc-700 hover:bg-zinc-600 text-sm">Cancel</button>
-            <button type="submit" disabled={loading} className="flex-1 py-2 rounded bg-blue-600 hover:bg-blue-500 text-sm disabled:opacity-50">
+            <button type="submit" disabled={loading} className="flex-1 py-2 rounded bg-accent-fill hover:bg-accent-fill-hover text-accent-text text-sm disabled:opacity-50">
               {loading ? 'Setting…' : 'Set Password'}
             </button>
           </div>
@@ -275,7 +275,7 @@ function UsersPage() {
               <RefreshCw size={14} className={syncing ? 'animate-spin' : ''} /> {syncing ? 'Syncing…' : 'Sync Accounts'}
             </button>
             <button onClick={() => setShowNew(true)}
-              className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white text-sm rounded-md transition-colors">
+              className="flex items-center gap-2 px-4 py-2 bg-accent-fill hover:bg-accent-fill-hover text-accent-text text-sm rounded-md transition-colors">
               <UserPlus size={14} /> New User
             </button>
           </div>
@@ -312,10 +312,10 @@ function UsersPage() {
                     }
                   </td>
                   <td className="px-4 py-3 flex justify-end gap-2">
-                    <a href={`/api/packages/${encodeURIComponent(u.username)}/download`} download title="Download package" className="p-1.5 rounded hover:bg-zinc-800 text-blue-400"><Download size={14} /></a>
+                    <a href={`/api/packages/${encodeURIComponent(u.username)}/download`} download title="Download package" className="p-1.5 rounded hover:bg-zinc-800 text-accent-ring"><Download size={14} /></a>
                     <button onClick={() => enableUser(u.username)} title="Enable" className="p-1.5 rounded hover:bg-zinc-800 text-green-400"><CheckCircle size={14} /></button>
                     <button onClick={() => disableUser(u.username)} title="Disable" className="p-1.5 rounded hover:bg-zinc-800 text-yellow-400"><XCircle size={14} /></button>
-                    <button onClick={() => setSetPwUser(u.username)} title="Set Password" className="p-1.5 rounded hover:bg-zinc-800 text-blue-400"><KeyRound size={14} /></button>
+                    <button onClick={() => setSetPwUser(u.username)} title="Set Password" className="p-1.5 rounded hover:bg-zinc-800 text-accent-ring"><KeyRound size={14} /></button>
                     <button onClick={() => deleteUser(u.username)} title="Delete" className="p-1.5 rounded hover:bg-zinc-800 text-red-400"><Trash2 size={14} /></button>
                   </td>
                 </tr>

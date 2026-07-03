@@ -113,7 +113,7 @@ function MapsPage() {
           <button
             onClick={handleUploadClick}
             disabled={uploading}
-            className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-500 disabled:opacity-50 text-white text-sm rounded-md transition-colors"
+            className="flex items-center gap-2 px-4 py-2 bg-accent-fill hover:bg-accent-fill-hover disabled:opacity-50 text-accent-text text-sm rounded-md transition-colors"
           >
             <Upload size={14} />
             {uploading ? 'Uploading…' : 'Upload XML'}
@@ -157,7 +157,7 @@ function MapsPage() {
                       <a
                         href={`/api/maps/${encodeURIComponent(m.provider)}/${encodeURIComponent(m.filename)}/download`}
                         download
-                        className="p-1.5 rounded hover:bg-zinc-800 text-blue-400"
+                        className="p-1.5 rounded hover:bg-zinc-800 text-accent-ring"
                         title="Download"
                       >
                         <Download size={14} />

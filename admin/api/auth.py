@@ -46,7 +46,7 @@ async def login(body: LoginRequest, response: Response, db: AsyncSession = Depen
     user.locked_until = None
     await db.commit()
 
-    access_token = create_access_token({"sub": user.id, "role": user.role})
+    access_token = create_access_token({"sub": user.id, "role": user.role, "username": user.username})
 
     raw_refresh = secrets.token_urlsafe(32)
     token_hash = hashlib.sha256(raw_refresh.encode()).hexdigest()
@@ -81,7 +81,7 @@ async def refresh(refresh_token: str = Cookie(None), db: AsyncSession = Depends(
     if not user:
         raise HTTPException(status_code=401, detail="User inactive")
 
-    access_token = create_access_token({"sub": user.id, "role": user.role})
+    access_token = create_access_token({"sub": user.id, "role": user.role, "username": user.username})
     return TokenResponse(access_token=access_token)
 
 

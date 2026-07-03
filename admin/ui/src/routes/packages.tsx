@@ -94,7 +94,7 @@ function PackagesPage() {
           <button
             onClick={() => fileRef.current?.click()}
             disabled={uploading}
-            className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-500 disabled:opacity-50 text-white text-sm rounded-md transition-colors"
+            className="flex items-center gap-2 px-4 py-2 bg-accent-fill hover:bg-accent-fill-hover disabled:opacity-50 text-accent-text text-sm rounded-md transition-colors"
           >
             <Upload size={14} />
             {uploading ? 'Uploading…' : 'Upload Package'}
@@ -130,7 +130,7 @@ function PackagesPage() {
                   <tr
                     key={p.name}
                     onClick={() => { setSelected(p); setFieldResult(null) }}
-                    className={`bg-zinc-950 hover:bg-zinc-900/50 cursor-pointer ${selected?.name === p.name ? 'ring-1 ring-inset ring-blue-600' : ''}`}
+                    className={`bg-zinc-950 hover:bg-zinc-900/50 cursor-pointer ${selected?.name === p.name ? 'ring-1 ring-inset ring-accent-fill' : ''}`}
                   >
                     <td className="px-4 py-3 font-mono">{p.name}</td>
                     <td className="px-4 py-3 text-zinc-400">{p.size}</td>
@@ -140,7 +140,7 @@ function PackagesPage() {
                           href={`/api/packages/${encodeURIComponent(p.name)}/download`}
                           onClick={e => e.stopPropagation()}
                           download
-                          className="p-1.5 rounded hover:bg-zinc-800 text-blue-400"
+                          className="p-1.5 rounded hover:bg-zinc-800 text-accent-ring"
                           title="Download"
                         >
                           <Download size={14} />
@@ -166,7 +166,7 @@ function PackagesPage() {
                 <p className="text-sm font-medium text-zinc-300 text-center break-all">{selected.name}</p>
                 <p className="text-xs text-zinc-400 text-center break-all">{selected.filename}</p>
                 <p className="text-xs text-zinc-500 text-center break-all">{selected.size}</p>
-                <a href={`/api/packages/${encodeURIComponent(selected.name)}/download`} download className="text-xs text-blue-400 hover:underline break-all text-center">
+                <a href={`/api/packages/${encodeURIComponent(selected.name)}/download`} download className="text-xs text-accent-ring hover:underline break-all text-center">
                   Download
                 </a>
                 {role !== 'field' && (

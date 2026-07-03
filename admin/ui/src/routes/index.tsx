@@ -55,16 +55,24 @@ function ServiceCard({ service }: { service: ServiceState }) {
   const running = service.status === 'running'
   return (
     <div className="rounded-lg border border-zinc-800 bg-zinc-900 p-4">
-      <div className="flex items-center justify-between mb-2">
-        <span className="text-xs font-mono text-zinc-400">{service.name}</span>
-        {running
-          ? <CheckCircle size={14} className="text-green-500" />
-          : <XCircle size={14} className="text-red-500" />
-        }
+      <div className="flex items-start justify-between mb-3">
+        <span className="text-[10px] font-semibold tracking-wider text-zinc-500 uppercase">Service</span>
+        <div className={cn(
+          'w-7 h-7 rounded-md border flex items-center justify-center shrink-0',
+          running ? 'border-green-800 bg-green-500/10' : 'border-red-800 bg-red-500/10'
+        )}>
+          {running
+            ? <CheckCircle size={14} className="text-green-500" />
+            : <XCircle size={14} className="text-red-500" />
+          }
+        </div>
       </div>
-      <span className={cn('text-sm font-medium', running ? 'text-green-400' : 'text-red-400')}>
-        {service.status}
-      </span>
+      <p className="text-sm font-medium text-zinc-200 font-mono mb-2">{service.name}</p>
+      <div className="border-t border-zinc-800 pt-2">
+        <span className={cn('text-xs font-medium', running ? 'text-green-400' : 'text-red-400')}>
+          {service.status}
+        </span>
+      </div>
     </div>
   )
 }

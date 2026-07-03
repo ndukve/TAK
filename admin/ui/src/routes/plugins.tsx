@@ -89,7 +89,7 @@ function UploadModal({ onClose, onUploaded }: { onClose: () => void; onUploaded:
           <div className="flex gap-2">
             <button type="button" onClick={onClose} className="flex-1 py-2 rounded bg-zinc-700 hover:bg-zinc-600 text-sm">Cancel</button>
             <button type="submit" disabled={!file || uploading}
-              className="flex-1 py-2 rounded bg-blue-600 hover:bg-blue-500 disabled:opacity-50 text-sm">
+              className="flex-1 py-2 rounded bg-accent-fill hover:bg-accent-fill-hover text-accent-text disabled:opacity-50 text-sm">
               {uploading ? 'Uploading…' : 'Upload'}
             </button>
           </div>
@@ -135,7 +135,7 @@ function PluginsPage() {
         <div className="flex items-center justify-between mb-6">
           <h1 className="text-xl font-semibold">Plugins</h1>
           <button onClick={() => setShowUpload(true)}
-            className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white text-sm rounded-md transition-colors">
+            className="flex items-center gap-2 px-4 py-2 bg-accent-fill hover:bg-accent-fill-hover text-accent-text text-sm rounded-md transition-colors">
             <Upload size={14} /> Upload APK
           </button>
         </div>
