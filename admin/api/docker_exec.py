@@ -1,9 +1,18 @@
 import asyncio
+import re
 import docker
 from docker.errors import DockerException
 
 SERVICE_NAME = "takserver_config"
 _client = docker.from_env()
+
+_ANSI_RE = re.compile(r'\x1b\[[0-9;]*[a-zA-Z]')
+
+
+def _strip_ansi(text: str) -> str:
+    """Container scripts print colored output for terminal use; strip escape
+    codes before this reaches a web UI toast/error message."""
+    return _ANSI_RE.sub("", text)
 
 
 def _get_takserver_config():
@@ -26,9 +35,12 @@ async def run_in_container(
     def _exec():
         try:
             container = _get_takserver_config()
-            result = container.exec_run(cmd, demux=False, environment=env, workdir=workdir)
+            # Cert files are root-owned; without an explicit user the exec
+            # can silently fail to remove/read them depending on the image's
+            # default exec user.
+            result = container.exec_run(cmd, demux=False, environment=env, workdir=workdir, user="root")
             output = result.output.decode("utf-8", errors="replace") if result.output else ""
-            return result.exit_code, output
+            return result.exit_code, _strip_ansi(output)
         except DockerException as e:
             return 1, str(e)
 
