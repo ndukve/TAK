@@ -62,6 +62,14 @@ if [ "${#_STALE[@]}" -gt 0 ]; then
     $_DC up -d --remove-orphans \
         || fail "Container restart failed (see output above)."
     ok "Containers restarted"
+
+    # admin_proxy caches admin's resolved IP for the life of its worker —
+    # if only admin got recreated above, admin_proxy would keep 502ing
+    # against the old container's dead IP until it restarts itself.
+    info "Restarting admin_proxy (picks up admin's current address)..."
+    $_DC restart admin_proxy \
+        || fail "admin_proxy restart failed (see output above)."
+    ok "admin_proxy restarted"
 else
     ok "Deployed images already match ${GIT_COMMIT:0:7}"
 fi

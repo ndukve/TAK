@@ -95,6 +95,16 @@ docker compose --env-file "$ENV_FILE" up -d --remove-orphans \
     || fail "Container restart failed (see output above)."
 ok "Containers restarted"
 
+# admin_proxy (nginx) resolves the "admin" hostname once and holds that IP
+# for the life of its worker process. If only "admin" got recreated above,
+# admin_proxy would keep proxying to the old container's now-dead IP —
+# every request 502s until nginx itself restarts. Force that restart every
+# time so it always has a fresh resolution, regardless of what else changed.
+info "Restarting admin_proxy (picks up admin's current address)..."
+docker compose --env-file "$ENV_FILE" restart admin_proxy \
+    || fail "admin_proxy restart failed (see output above)."
+ok "admin_proxy restarted"
+
 # ── Self-test, with automatic self-heal on failure ────────────────────────────
 # A quick functional check right after the normal build — see scripts/_selftest.sh.
 # If it fails, that's a strong signal the build above silently reused stale
