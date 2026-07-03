@@ -5,7 +5,7 @@ import { cn } from '@/lib/utils'
 import { apiFetch } from '@/lib/api'
 import {
   LayoutDashboard, Users, Package, Puzzle, Map,
-  ScrollText, Terminal, ShieldUser, LogOut, KeyRound
+  ScrollText, Terminal, ShieldUser, LogOut, KeyRound, Menu
 } from 'lucide-react'
 
 const navItems = [
@@ -15,6 +15,11 @@ const navItems = [
   { to: '/plugins', label: 'Plugins', icon: Puzzle },
   { to: '/maps', label: 'Maps', icon: Map },
   { to: '/logs', label: 'Logs', icon: ScrollText },
+]
+
+const fieldItems = [
+  { to: '/packages', label: 'Packages', icon: Package },
+  { to: '/maps', label: 'Maps', icon: Map },
 ]
 
 const superAdminItems = [
@@ -61,7 +66,7 @@ function ChangePasswordModal({ onClose }: { onClose: () => void }) {
   }
 
   return (
-    <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50">
+    <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-[60]">
       <div className="bg-zinc-900 border border-zinc-700 rounded-lg p-6 w-full max-w-sm">
         <h2 className="text-lg font-semibold mb-4">Change Password</h2>
         {ok ? (
@@ -107,6 +112,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
   const routerState = useRouterState()
   const current = routerState.location.pathname
   const [showChangePw, setShowChangePw] = useState(false)
+  const [sidebarOpen, setSidebarOpen] = useState(false)
 
   async function handleLogout() {
     await apiFetch('/auth/logout', { method: 'POST' })
@@ -114,11 +120,27 @@ export function Layout({ children }: { children: React.ReactNode }) {
     navigate({ to: '/login' })
   }
 
-  const items = role === 'superadmin' ? [...navItems, ...superAdminItems] : navItems
+  const items = role === 'field' ? fieldItems
+    : role === 'superadmin' ? [...navItems, ...superAdminItems]
+    : navItems
 
   return (
     <div className="flex h-screen bg-zinc-950 text-zinc-100">
-      <aside className="w-56 flex-shrink-0 border-r border-zinc-800 flex flex-col">
+      <button
+        onClick={() => setSidebarOpen(v => !v)}
+        className="md:hidden fixed top-3 left-3 z-50 p-2 rounded-md bg-zinc-900 border border-zinc-800 text-zinc-300"
+        aria-label="Toggle menu"
+      >
+        <Menu size={18} />
+      </button>
+      {sidebarOpen && (
+        <div className="md:hidden fixed inset-0 bg-black/50 z-30" onClick={() => setSidebarOpen(false)} />
+      )}
+      <aside className={cn(
+        'w-56 flex-shrink-0 border-r border-zinc-800 flex flex-col',
+        'fixed inset-y-0 left-0 z-40 bg-zinc-950 transition-transform md:relative md:translate-x-0',
+        sidebarOpen ? 'translate-x-0' : '-translate-x-full'
+      )}>
         <div className="p-4 border-b border-zinc-800">
           <span className="font-bold text-lg tracking-tight">TAK Admin</span>
         </div>
@@ -127,6 +149,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
             <Link
               key={to}
               to={to}
+              onClick={() => setSidebarOpen(false)}
               className={cn(
                 'flex items-center gap-3 px-3 py-2 rounded-md text-sm transition-colors',
                 current === to
@@ -156,7 +179,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
           </button>
         </div>
       </aside>
-      <main className="flex-1 overflow-auto">{children}</main>
+      <main className="flex-1 overflow-auto pt-14 md:pt-0">{children}</main>
       {showChangePw && <ChangePasswordModal onClose={() => setShowChangePw(false)} />}
     </div>
   )

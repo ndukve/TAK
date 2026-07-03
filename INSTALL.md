@@ -91,36 +91,36 @@ Each user needs a data package (`.zip`) that contains:
 
 Both certificate files are required. The client cert authenticates the device to the server; the trust store authenticates the server to the device.
 
+**The callsign must end in `-ATAK`, `-WinTAK`, or `-iTAK`** — e.g. `Alpha1-iTAK`. This isn't cosmetic: iTAK's importer requires a different zip layout (cert files at the root) than ATAK/WinTAK's Mission Package format (nested under `content/`), and the suffix is how the package builder knows which one to produce. Using the wrong client type will import silently with no server entry appearing.
+
 ### Standard flow (generate + authorize in one step)
 
 ```bash
 cd ~/tak-server
-make add-user USERNAME=YourCallsign
+./generate_user.sh Alpha1-iTAK
 ```
+
+Run it with no argument and it will prompt you interactively for the callsign.
+
+Same thing from the admin panel: **Users → New User** — enter the callsign and pick the client type from the dropdown; it appends the suffix for you.
 
 ### Split flow (prepare ahead, authorize later)
 
-If you want to pre-generate packages without granting access yet — for example, staging kit before an operation — use the separate steps:
+If you want to pre-generate packages without granting access yet — for example, staging kit before an operation — use the underlying scripts directly:
 
 ```bash
-# Device certificate only (.p12 file, no package yet)
-make gen-device-cert USERNAME=YourCallsign
+docker compose exec -T -e CLIENT_CERT_NAME=Alpha1-iTAK takserver_config \
+    bash /opt/scripts/gen_client_cert.sh
 
-# Build the downloadable package from the existing cert
-make make-package USERNAME=YourCallsign
-
-# Or both at once (cert + package, still not authorized)
-make gen-cert USERNAME=YourCallsign
+docker compose exec -T -e CLIENT_CERT_NAME=Alpha1-iTAK -e TAK_SERVER_ADDRESS=<SERVER_IP> takserver_config \
+    bash /opt/scripts/make_pkg_zip.sh
 
 # Authorize when ready to grant access
-make enable-user USERNAME=YourCallsign
+docker compose exec -T -e USER_CERT_NAME=Alpha1-iTAK takserver_config \
+    bash /opt/scripts/enable_user.sh
 ```
 
-Once the package is ready, open a browser on the device and navigate to:
-
-```
-http://<SERVER_IP>:8888/YourCallsign.zip
-```
+Once the package is ready, download it from the admin panel at `https://<SERVER_IP>:8889` — **Packages** tab.
 
 Replace `<SERVER_IP>` with:
 - **Option A:** the server's LAN IP (e.g. `192.168.1.50`)
@@ -129,6 +129,8 @@ Replace `<SERVER_IP>` with:
 ```bash
 ip addr show wt0 | grep "inet " | awk '{print $2}' | cut -d/ -f1
 ```
+
+Generating a package through the admin panel also creates (or reuses) a login for that person: username is their base callsign (e.g. `Alpha1`, the suffix stripped), with a password shown once at creation time. Hand that password to the user out of band and they can log into the admin panel themselves from their phone or laptop, see only their own packages, and download them directly — no need for the operator to transfer the `.zip` by hand.
 
 ---
 
@@ -153,15 +155,15 @@ The server entry will appear automatically. Tap **Connect**.
 
 ## Map Sources
 
-40+ ATAK-compatible map sources (Bing, Google, ESRI, USGS, OpenTopo, OpenSeaMap, Estonia Maa-amet, Ukraine Visicom, and more) are served at `http://<SERVER_IP>:8888/maps/`.
+40+ ATAK-compatible map sources (Bing, Google, ESRI, USGS, OpenTopo, OpenSeaMap, Estonia Maa-amet, Ukraine Visicom, and more) are served from the admin panel's **Maps** tab at `https://<SERVER_IP>:8889/maps`.
 
 **Download all at once (recommended):**
-1. Navigate to `http://<SERVER_IP>:8888/maps/` and click **[Download All as ZIP]**
+1. Navigate to `https://<SERVER_IP>:8889/maps` and click **[Download All as ZIP]**
 2. Extract `tak-maps.zip` to a folder
 3. ATAK/WinTAK → hamburger → **Import Manager** → Import → select the extracted folder or individual XML files
 
 **Download individual sources:**
-1. Open browser on device → `http://<SERVER_IP>:8888/maps/`
+1. Open browser on device → `https://<SERVER_IP>:8889/maps`
 2. Tap any `.xml` to download
 3. ATAK/WinTAK → hamburger → **Import Manager** → select the file
 
@@ -173,7 +175,7 @@ ATAK plugins are APK files installed on Android devices — they do not go on th
 
 ### Uploading Plugins for Distribution
 
-Copy APKs to the server so team devices can download them at `http://<SERVER_IP>:8888/plugins/`:
+Copy APKs to the server so team devices can download them from the admin panel's **Plugins** tab at `https://<SERVER_IP>:8889/plugins`:
 
 ```bash
 cd ~/tak-server
@@ -187,7 +189,7 @@ make add-plugin APK=/path/to/ATAK-Plugin-hammer-1.2-...-release.apk
 make list-plugins
 ```
 
-On the Android device: open a browser → navigate to `http://<SERVER_IP>:8888/plugins/` → tap each file to sideload → ATAK → **Settings → Manage Plugins → Install from file**.
+On the Android device: open a browser → navigate to `https://<SERVER_IP>:8889/plugins` → tap each file to sideload → ATAK → **Settings → Manage Plugins → Install from file**.
 
 ---
 
@@ -198,7 +200,7 @@ Synchronises missions, map overlays, data packages, and files between all connec
 > **Server requirement:** None. The Mission API is built into TAK Server and runs automatically at `https://<server>:8443/Marti/api/missions`. No additional configuration required.
 
 **Install on device:**
-1. Download the DataSync APK from `http://<SERVER_IP>:8888/plugins/`
+1. Download the DataSync APK from the admin panel's **Plugins** tab at `https://<SERVER_IP>:8889/plugins`
 2. ATAK → **Settings → Manage Plugins → Install from file** → select the APK
 3. Restart ATAK if prompted
 4. DataSync appears in the ATAK toolbar (sync icon)
@@ -237,13 +239,44 @@ Structured tactical reporting — 9-line MEDEVAC, CAS (close air support), SALUT
 
 ---
 
+## Maintenance
+
+```bash
+cd ~/tak-server
+
+# Pull latest code, rebuild, restart — self-tests and auto-recovers after
+./update.sh
+
+# Check the deployment is healthy right now, without pulling/rebuilding —
+# safe to run anytime (e.g. from cron), and auto-recovers if something's wrong
+./health.sh
+
+# Force-remove all cert/package files for a user, regardless of current
+# state — use this if a user is stuck (e.g. "already exists" after deleting)
+./purge_user.sh <name>
+
+# Wipe containers/images and reinstall from scratch — keeps the database,
+# certificates, packages, and takserver.env
+./reinstall.sh
+```
+
+`update.sh` and `health.sh` both verify the deployed containers actually match the code that was pulled — not just that `git pull` succeeded. If Docker's build cache silently serves a stale layer (this can happen), they automatically force a clean rebuild and re-verify before declaring success, rather than leaving a broken deployment for you to debug by hand.
+
+If the admin panel itself is ever unreachable, two scripts at the repo root give you a break-glass fallback — they only need SSH/shell access to the server, not network access to port 8889. `./get_package.sh [name]` lists available packages with no argument, or downloads one to the current directory when given a name. `./admin_fallback.sh` opens an interactive menu covering the same read-only package and map browsing/downloading.
+
 ## Troubleshooting
 
 > **Can't download the package on the device**
-> Confirm the device can reach the server IP on port 8888. For Option A: check that the device is on the same Wi-Fi/LAN. For Option B: confirm the NetBird app shows **Connected**.
+> Confirm the device can reach the server IP on port 8889 (the admin panel). For Option A: check that the device is on the same Wi-Fi/LAN. For Option B: confirm the NetBird app shows **Connected**.
 
 > **Server appears but won't connect**
-> The package may have been generated with the wrong server IP. Delete the server entry, regenerate the package with `make add-user USERNAME=YourCallsign`, and re-import.
+> The package may have been generated with the wrong server IP. Delete the server entry, regenerate the package with `./generate_user.sh YourCallsign-iTAK` (or `-ATAK`/`-WinTAK`), and re-import.
+
+> **iTAK doesn't show the server after importing the package**
+> Make sure the callsign ends in `-iTAK`, not `-ATAK`/`-WinTAK` — iTAK needs its own package layout (see Step 4). Run `./health.sh` to confirm the package builder itself is working correctly.
+
+> **"Callsign already exists" when creating a user that you thought you deleted**
+> Run `./purge_user.sh <name>` to force-remove any leftover cert/package files, then create it again.
 
 > **Connection drops when the screen turns off**
 > Disable battery optimisation for the TAK app.

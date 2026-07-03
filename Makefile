@@ -26,7 +26,7 @@ update:
 # ── User management ───────────────────────────────────────────────────────────
 
 ## Generate client cert + data package AND authorize it on the server.
-## Usage: make add-user USERNAME=alice
+## Usage: make add-user USERNAME=alice-iTAK  (must end in -ATAK/-WinTAK/-iTAK)
 add-user:
 	@[ -n "$(USERNAME)" ] || { echo "Usage: make add-user USERNAME=alice"; exit 1; }
 	@[ -f $(ENV_FILE) ] || { echo "Run './install.sh' first"; exit 1; }
@@ -34,9 +34,10 @@ add-user:
 	./generate_user.sh $(USERNAME)
 
 ## Generate device cert (.p12) only — no package, not authorized yet.
-## Usage: make gen-device-cert USERNAME=alice
+## Usage: make gen-device-cert USERNAME=alice-iTAK  (must end in -ATAK/-WinTAK/-iTAK)
 gen-device-cert:
-	@[ -n "$(USERNAME)" ] || { echo "Usage: make gen-device-cert USERNAME=alice"; exit 1; }
+	@[ -n "$(USERNAME)" ] || { echo "Usage: make gen-device-cert USERNAME=alice-iTAK"; exit 1; }
+	@echo "$(USERNAME)" | grep -qE -- '-(ATAK|WinTAK|iTAK)$$' || { echo "USERNAME must end in -ATAK, -WinTAK, or -iTAK (e.g. alice-iTAK)"; exit 1; }
 	@[ -f $(ENV_FILE) ] || { echo "Run './install.sh' first"; exit 1; }
 	$(eval DC := $(shell docker info >/dev/null 2>&1 && echo "docker compose" || echo "sudo docker compose"))
 	$(DC) --env-file $(ENV_FILE) exec \
@@ -45,9 +46,10 @@ gen-device-cert:
 
 ## Build the downloadable data package from an existing device cert.
 ## Requires gen-device-cert to have run first.
-## Usage: make make-package USERNAME=alice
+## Usage: make make-package USERNAME=alice-iTAK  (must end in -ATAK/-WinTAK/-iTAK)
 make-package:
-	@[ -n "$(USERNAME)" ] || { echo "Usage: make make-package USERNAME=alice"; exit 1; }
+	@[ -n "$(USERNAME)" ] || { echo "Usage: make make-package USERNAME=alice-iTAK"; exit 1; }
+	@echo "$(USERNAME)" | grep -qE -- '-(ATAK|WinTAK|iTAK)$$' || { echo "USERNAME must end in -ATAK, -WinTAK, or -iTAK (e.g. alice-iTAK)"; exit 1; }
 	@[ -f $(ENV_FILE) ] || { echo "Run './install.sh' first"; exit 1; }
 	$(eval DC := $(shell docker info >/dev/null 2>&1 && echo "docker compose" || echo "sudo docker compose"))
 	$(eval ADDR := $(shell grep '^TAK_SERVER_ADDRESS=' $(ENV_FILE) | cut -d= -f2))
@@ -58,7 +60,7 @@ make-package:
 	@echo "Download: http://$(ADDR):8888/$(USERNAME).zip"
 
 ## Generate device cert + package, not yet authorized.
-## Usage: make gen-cert USERNAME=alice
+## Usage: make gen-cert USERNAME=alice-iTAK  (must end in -ATAK/-WinTAK/-iTAK)
 gen-cert: gen-device-cert make-package
 	@echo "Cert + package ready (not authorized). Run: make enable-user USERNAME=$(USERNAME)"
 

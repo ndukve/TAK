@@ -1,12 +1,15 @@
 import os
 import re
+import secrets
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from .db import get_db
-from .deps import require_role, write_audit
+from .deps import require_role, write_audit, pwd_ctx
 from .docker_exec import run_in_container
+from .models import AdminUser
 from .password_policy import validate_password
 
 router = APIRouter(prefix="/api/users", tags=["users"])
@@ -38,6 +41,34 @@ def _validate_new_username(username: str) -> str:
             detail="Username must end in -ATAK, -WinTAK, or -iTAK (e.g. alpha1-iTAK)",
         )
     return username
+
+
+def _base_callsign(username: str) -> str:
+    for suffix in ("-ATAK", "-WinTAK", "-iTAK"):
+        if username.endswith(suffix):
+            return username[: -len(suffix)]
+    return username
+
+
+async def _ensure_field_account(db: AsyncSession, base: str, created_by: str) -> tuple[bool, str | None]:
+    """Create a field-role account for this base callsign if one doesn't
+    already exist. Returns (created, password) — password is None when an
+    existing account was reused (nothing new to show)."""
+    existing = await db.execute(
+        select(AdminUser).where(AdminUser.role == "field", AdminUser.owned_callsign == base)
+    )
+    if existing.scalar_one_or_none() is not None:
+        return False, None
+    password = secrets.token_urlsafe(12)
+    db.add(AdminUser(
+        username=base,
+        password_hash=pwd_ctx.hash(password),
+        role="field",
+        owned_callsign=base,
+        created_by=created_by,
+    ))
+    await db.commit()
+    return True, password
 
 
 class UsernameRequest(BaseModel):
@@ -79,7 +110,31 @@ async def make_package(body: UsernameRequest, db: AsyncSession = Depends(get_db)
     if code != 0:
         raise HTTPException(status_code=500, detail=out)
     await write_audit(db, actor.id, "make_package", username)
-    return {"status": "ok", "download_url": f"http://{SERVER_ADDR}:8888/{username}.zip"}
+
+    base = _base_callsign(username)
+    created, password = await _ensure_field_account(db, base, actor.username)
+    if created:
+        await write_audit(db, actor.id, "create_field_account", base)
+
+    return {
+        "status": "ok",
+        "package_name": username,
+        "field_account_created": created,
+        "field_account_password": password,
+        "field_username": base,
+    }
+
+
+@router.post("/create-field-login/{username}", status_code=201)
+async def create_field_login(username: str, db: AsyncSession = Depends(get_db), actor=Depends(_admin)):
+    username = _validate_username(username)
+    if not os.path.isfile(os.path.join(CLIENTPKGS, f"{username}.zip")):
+        raise HTTPException(status_code=404, detail="No package with that name exists")
+    base = _base_callsign(username)
+    created, password = await _ensure_field_account(db, base, actor.username)
+    if created:
+        await write_audit(db, actor.id, "create_field_account", base)
+    return {"field_account_created": created, "field_account_password": password, "field_username": base}
 
 
 @router.post("/set-password")

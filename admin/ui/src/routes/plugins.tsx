@@ -8,8 +8,9 @@ import { Trash2, Upload, Copy, Check } from 'lucide-react'
 
 export const Route = createFileRoute('/plugins')({
   beforeLoad: () => {
-    const { token } = useAuth.getState()
+    const { token, role } = useAuth.getState()
     if (!token) throw redirect({ to: '/login' })
+    if (role === 'field') throw redirect({ to: '/packages' })
   },
   component: PluginsPage,
 })

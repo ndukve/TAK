@@ -18,14 +18,24 @@ interface Package {
   name: string
   filename: string
   size: string
-  url?: string
 }
 
 function PackagesPage() {
+  const { role } = useAuth()
   const [packages, setPackages] = useState<Package[]>([])
   const [selected, setSelected] = useState<Package | null>(null)
   const [uploading, setUploading] = useState(false)
   const fileRef = useRef<HTMLInputElement>(null)
+  const [fieldResult, setFieldResult] = useState<{ username: string; password: string | null; created: boolean } | null>(null)
+
+  async function handleCreateFieldLogin(pkg: Package) {
+    try {
+      const res = await apiJson<any>(`/api/users/create-field-login/${encodeURIComponent(pkg.name)}`, { method: 'POST' })
+      setFieldResult({ username: res.field_username, password: res.field_account_password, created: res.field_account_created })
+    } catch (e: any) {
+      toast.error(e.message)
+    }
+  }
 
   async function load() {
     try {
@@ -99,8 +109,8 @@ function PackagesPage() {
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-          <div className="lg:col-span-2 rounded-lg border border-zinc-800 overflow-hidden">
-            <table className="w-full text-sm">
+          <div className="lg:col-span-2 rounded-lg border border-zinc-800 overflow-x-auto">
+            <table className="w-full text-sm min-w-[480px]">
               <thead className="bg-zinc-900 text-zinc-400">
                 <tr>
                   <th className="px-4 py-3 text-left font-medium">Name</th>
@@ -119,24 +129,22 @@ function PackagesPage() {
                 {packages.map(p => (
                   <tr
                     key={p.name}
-                    onClick={() => setSelected(p)}
+                    onClick={() => { setSelected(p); setFieldResult(null) }}
                     className={`bg-zinc-950 hover:bg-zinc-900/50 cursor-pointer ${selected?.name === p.name ? 'ring-1 ring-inset ring-blue-600' : ''}`}
                   >
                     <td className="px-4 py-3 font-mono">{p.name}</td>
                     <td className="px-4 py-3 text-zinc-400">{p.size}</td>
                     <td className="px-4 py-3">
                       <div className="flex justify-end gap-1">
-                        {p.url && (
-                          <a
-                            href={p.url}
-                            onClick={e => e.stopPropagation()}
-                            download
-                            className="p-1.5 rounded hover:bg-zinc-800 text-blue-400"
-                            title="Download"
-                          >
-                            <Download size={14} />
-                          </a>
-                        )}
+                        <a
+                          href={`/api/packages/${encodeURIComponent(p.name)}/download`}
+                          onClick={e => e.stopPropagation()}
+                          download
+                          className="p-1.5 rounded hover:bg-zinc-800 text-blue-400"
+                          title="Download"
+                        >
+                          <Download size={14} />
+                        </a>
                         <button
                           onClick={e => { e.stopPropagation(); handleDelete(p) }}
                           className="p-1.5 rounded hover:bg-zinc-800 text-red-400"
@@ -158,10 +166,29 @@ function PackagesPage() {
                 <p className="text-sm font-medium text-zinc-300 text-center break-all">{selected.name}</p>
                 <p className="text-xs text-zinc-400 text-center break-all">{selected.filename}</p>
                 <p className="text-xs text-zinc-500 text-center break-all">{selected.size}</p>
-                {selected.url && (
-                  <a href={selected.url} download className="text-xs text-blue-400 hover:underline break-all text-center">
-                    {selected.url}
-                  </a>
+                <a href={`/api/packages/${encodeURIComponent(selected.name)}/download`} download className="text-xs text-blue-400 hover:underline break-all text-center">
+                  Download
+                </a>
+                {role !== 'field' && (
+                  <button
+                    onClick={() => handleCreateFieldLogin(selected)}
+                    className="text-xs px-3 py-1.5 rounded bg-zinc-800 hover:bg-zinc-700 text-zinc-300"
+                  >
+                    Create field login
+                  </button>
+                )}
+                {fieldResult && (
+                  <div className="p-2 rounded border border-yellow-700/50 bg-yellow-900/20 text-xs text-left space-y-1 w-full">
+                    {fieldResult.created ? (
+                      <>
+                        <p className="text-yellow-200">Field login created — shown once:</p>
+                        <p className="font-mono">user: {fieldResult.username}</p>
+                        <p className="font-mono">pass: {fieldResult.password}</p>
+                      </>
+                    ) : (
+                      <p className="text-zinc-400">Login already exists for "{fieldResult.username}" — no new password.</p>
+                    )}
+                  </div>
                 )}
               </>
             ) : (

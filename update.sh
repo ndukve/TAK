@@ -7,6 +7,8 @@ SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 ENV_FILE="$SCRIPT_DIR/takserver.env"
 # shellcheck source=scripts/_spinner.sh
 . "$SCRIPT_DIR/scripts/_spinner.sh"
+# shellcheck source=scripts/_selftest.sh
+. "$SCRIPT_DIR/scripts/_selftest.sh"
 
 # ── Preflight ─────────────────────────────────────────────────────────────────
 [ -f "$ENV_FILE" ] || fail "takserver.env not found — run ./install.sh first"
@@ -33,6 +35,7 @@ else
 fi
 
 # ── Backfill env vars ─────────────────────────────────────────────────────────
+chmod 600 "$ENV_FILE"
 info "Checking for missing env vars..."
 backfill() {
     local key="$1" val="$2"
@@ -55,48 +58,29 @@ docker compose exec -T takdb psql -U "$PGUSER" \
     || ok "admin database already exists"
 
 # ── Rebuild ───────────────────────────────────────────────────────────────────
-# Each image is built with a GIT_COMMIT build-arg baked in as an OCI revision
-# label. After building, we verify the label matches HEAD — if Docker's layer
-# cache silently reused a stale layer instead of picking up code changes (this
-# has happened in practice: files changed on disk, git pull succeeded, but the
-# built image kept running old code), a --no-cache rebuild is forced
-# automatically instead of leaving a broken deployment for a human to debug.
 export GIT_COMMIT="$(git rev-parse HEAD)"
-
-_deployed_commit() {
-    docker inspect --format '{{index .Config.Labels "org.opencontainers.image.revision"}}' "$1" 2>/dev/null
-}
 
 run_spin "Building updated image" "Image built" \
     docker compose --env-file "$ENV_FILE" build \
     || fail "Build failed (see output above)."
 
-info "Verifying deployed images match ${GIT_COMMIT:0:7}..."
-_ADMIN_IMG="$(docker compose --env-file "$ENV_FILE" images -q admin 2>/dev/null)"
-_STALE=()
-[ "$(_deployed_commit takserver:local)" = "$GIT_COMMIT" ] || _STALE+=("takserver_initialization")
-{ [ -n "$_ADMIN_IMG" ] && [ "$(_deployed_commit "$_ADMIN_IMG")" = "$GIT_COMMIT" ]; } || _STALE+=("admin")
-
-if [ "${#_STALE[@]}" -gt 0 ]; then
-    warn "Stale build cache detected (${_STALE[*]}) — forcing a clean rebuild"
-    run_spin "Rebuilding without cache (${_STALE[*]})" "Clean rebuild done" \
-        docker compose --env-file "$ENV_FILE" build --no-cache "${_STALE[@]}" \
-        || fail "Clean rebuild failed (see output above)."
-
-    _ADMIN_IMG="$(docker compose --env-file "$ENV_FILE" images -q admin 2>/dev/null)"
-    for svc in "${_STALE[@]}"; do
-        ref="takserver:local"; [ "$svc" = "admin" ] && ref="$_ADMIN_IMG"
-        [ "$(_deployed_commit "$ref")" = "$GIT_COMMIT" ] || \
-            fail "Rebuild still doesn't match ${GIT_COMMIT:0:7} for '${svc}' after --no-cache — this isn't a caching issue, check the Dockerfile/build context directly."
-    done
-    ok "Clean rebuild now matches ${GIT_COMMIT:0:7}"
-else
-    ok "Deployed images already match ${GIT_COMMIT:0:7}"
-fi
-
 run_spin "Restarting containers" "Containers restarted" bash -c \
     "docker compose --env-file '$ENV_FILE' down --remove-orphans && docker compose --env-file '$ENV_FILE' up -d" \
     || fail "Container restart failed (see output above)."
+
+# ── Self-test, with automatic self-heal on failure ────────────────────────────
+# A quick functional check right after the normal build — see scripts/_selftest.sh.
+# If it fails, that's a strong signal the build above silently reused stale
+# cache instead of picking up the code change (this has happened in practice).
+# Rather than leaving a broken deployment for a human to debug, automatically
+# escalate to health.sh, which forces a clean --no-cache rebuild and retests.
+# Only if health.sh ALSO can't fix it do we fail hard.
+printf "\n"
+if ! package_selftest; then
+    warn "Self-test failed — escalating to health.sh for automatic recovery"
+    printf "\n"
+    bash "$SCRIPT_DIR/health.sh" || fail "Health check failed — see output above."
+fi
 
 # ── Done ──────────────────────────────────────────────────────────────────────
 printf "\n"

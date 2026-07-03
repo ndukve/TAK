@@ -1,4 +1,5 @@
 import asyncio
+import socket
 import docker
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect, Query
 from docker.errors import DockerException
@@ -70,9 +71,27 @@ async def shell_ws(ws: WebSocket, t: str = Query(...)):
             except Exception:
                 break
 
-    await asyncio.gather(read_container(), read_client())
+    container_task = asyncio.create_task(read_container())
+    client_task = asyncio.create_task(read_client())
 
+    # Whichever side finishes first (e.g. the browser tab closes while the
+    # shell is idle at a bash prompt), close the socket immediately instead
+    # of waiting for both — recv() on an idle socket never returns on its
+    # own, which used to leak a thread from the shared default executor
+    # forever per abandoned session, eventually starving every other admin
+    # operation that runs through that same executor.
+    await asyncio.wait({container_task, client_task}, return_when=asyncio.FIRST_COMPLETED)
+
+    try:
+        raw_sock.shutdown(socket.SHUT_RDWR)
+    except Exception:
+        pass
     try:
         raw_sock.close()
     except Exception:
         pass
+
+    for task in (container_task, client_task):
+        if not task.done():
+            task.cancel()
+    await asyncio.gather(container_task, client_task, return_exceptions=True)

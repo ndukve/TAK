@@ -7,8 +7,15 @@ info() { printf "${C}  →${NC}  %s\n" "$*"; }
 
 set -e
 
-# Revoke then re-add without admin flag
-info "Revoking admin rights"
-/opt/scripts/delete_user.sh
-/opt/scripts/enable_user.sh
-ok "Admin rights removed"
+TR=/opt/tak
+CONFIG=${TR}/data/CoreConfig.xml
+
+[ -n "$ADMIN_CERT_NAME" ] || fail "ADMIN_CERT_NAME not set"
+
+cd ${TR}
+. ./setenv.sh
+
+info "Revoking admin rights for ${ADMIN_CERT_NAME}"
+TAKCL_CORECONFIG_PATH="${CONFIG}" java -jar /opt/tak/utils/UserManager.jar \
+    certmod -A -D "/opt/tak/data/certs/files/${ADMIN_CERT_NAME}.pem"
+ok "Admin rights removed for ${ADMIN_CERT_NAME}"

@@ -2,20 +2,30 @@ import hashlib
 import os
 import aiofiles
 from fastapi import APIRouter, Depends, Form, UploadFile, File, HTTPException
+from starlette.responses import FileResponse
 
 from .deps import require_role, write_audit, get_db
 from sqlalchemy.ext.asyncio import AsyncSession
 
 router = APIRouter(tags=["packages"])
 _admin = require_role("admin", "superadmin")
+_admin_or_field = require_role("admin", "superadmin", "field")
+
+
+def _base_callsign(filename: str) -> str:
+    """Strip the trailing -ATAK/-WinTAK/-iTAK suffix. 'Alpha1-iTAK.zip' -> 'Alpha1'."""
+    name = filename.rsplit(".", 1)[0]
+    for suffix in ("-ATAK", "-WinTAK", "-iTAK"):
+        if name.endswith(suffix):
+            return name[: -len(suffix)]
+    return name
 
 MAX_UPLOAD_BYTES = 100 * 1024 * 1024  # 100 MB
 
 TAK_DATA = "/opt/tak/data"
 PKGS_DIR = os.path.join(TAK_DATA, "certs/files/clientpkgs")
 PLUGINS_DIR = "/opt/tak/plugins"   # tak_plugins volume → /opt/tak/plugins in admin container
-MAPS_DIR = os.path.join(TAK_DATA, "maps")  # takserver_data volume → /opt/tak/data/maps
-PKG_SERVER_URL = os.environ.get("PKG_SERVER_URL", "").rstrip("/")
+MAPS_DIR = "/opt/tak/maps"  # host packages/tak-maps/ → bind-mounted read-write here
 
 
 def _sha256_stored(path: str) -> str | None:
@@ -49,17 +59,27 @@ def _size(path: str) -> str:
 
 
 @router.get("/api/packages")
-async def list_packages(_=Depends(_admin)):
+async def list_packages(actor=Depends(_admin_or_field)):
     if not os.path.isdir(PKGS_DIR):
         return {"packages": []}
     files = sorted(f for f in os.listdir(PKGS_DIR) if f.endswith(".zip"))
-    pkgs = []
-    for f in files:
-        entry = {"name": f.replace(".zip", ""), "filename": f, "size": _size(os.path.join(PKGS_DIR, f))}
-        if PKG_SERVER_URL:
-            entry["url"] = f"{PKG_SERVER_URL}/{f}"
-        pkgs.append(entry)
-    return {"packages": pkgs}
+    if actor.role == "field":
+        files = [f for f in files if _base_callsign(f) == actor.owned_callsign]
+    return {"packages": [
+        {"name": f.replace(".zip", ""), "filename": f, "size": _size(os.path.join(PKGS_DIR, f))}
+        for f in files
+    ]}
+
+
+@router.get("/api/packages/{name}/download")
+async def download_package(name: str, actor=Depends(_admin_or_field)):
+    safe_name = os.path.basename(name)
+    if actor.role == "field" and _base_callsign(safe_name) != actor.owned_callsign:
+        raise HTTPException(status_code=404, detail="Package not found")
+    path = os.path.join(PKGS_DIR, f"{safe_name}.zip")
+    if not os.path.isfile(path):
+        raise HTTPException(status_code=404, detail="Package not found")
+    return FileResponse(path, filename=f"{safe_name}.zip", media_type="application/zip")
 
 
 @router.post("/api/packages/upload", status_code=201)
@@ -94,6 +114,15 @@ async def list_plugins(_=Depends(_admin)):
         return {"plugins": []}
     files = sorted(f for f in os.listdir(PLUGINS_DIR) if f.endswith(".apk") or f.endswith(".zip"))
     return {"plugins": [{"filename": f, "size": _size(os.path.join(PLUGINS_DIR, f)), "sha256": _sha256_stored(os.path.join(PLUGINS_DIR, f))} for f in files]}
+
+
+@router.get("/api/plugins/{filename}/download")
+async def download_plugin(filename: str, _=Depends(_admin)):
+    safe_name = os.path.basename(filename)
+    path = os.path.join(PLUGINS_DIR, safe_name)
+    if not os.path.isfile(path):
+        raise HTTPException(status_code=404, detail="Plugin not found")
+    return FileResponse(path, filename=safe_name)
 
 
 @router.post("/api/plugins", status_code=201)
@@ -135,7 +164,7 @@ async def delete_plugin(filename: str, db: AsyncSession = Depends(get_db), actor
 
 
 @router.get("/api/maps")
-async def list_maps(_=Depends(_admin)):
+async def list_maps(_=Depends(_admin_or_field)):
     result = []
     if os.path.isdir(MAPS_DIR):
         for provider in sorted(os.listdir(MAPS_DIR)):
@@ -146,6 +175,18 @@ async def list_maps(_=Depends(_admin)):
                 fpath = os.path.join(pdir, fname)
                 result.append({"provider": provider, "filename": fname, "size": _size(fpath), "sha256": _sha256_stored(fpath)})
     return {"maps": result}
+
+
+@router.get("/api/maps/{provider}/{filename}/download")
+async def download_map(provider: str, filename: str, _=Depends(_admin_or_field)):
+    safe_provider = os.path.basename(provider)
+    safe_filename = os.path.basename(filename)
+    path = os.path.join(MAPS_DIR, safe_provider, safe_filename)
+    if not os.path.realpath(path).startswith(os.path.realpath(MAPS_DIR) + os.sep):
+        raise HTTPException(status_code=403, detail="Invalid path")
+    if not os.path.isfile(path):
+        raise HTTPException(status_code=404, detail="Map not found")
+    return FileResponse(path, filename=safe_filename, media_type="text/xml")
 
 
 @router.post("/api/maps", status_code=201)

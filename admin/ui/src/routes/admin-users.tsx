@@ -86,15 +86,16 @@ function NewAdminModal({ onClose, onCreated }: { onClose: () => void; onCreated:
 function AdminUsersPage() {
   const [users, setUsers] = useState<AdminUser[]>([])
   const [showNew, setShowNew] = useState(false)
+  const [showField, setShowField] = useState(false)
 
   async function load() {
     try {
-      const data = await apiJson<{ users: AdminUser[] }>('/api/admin-users')
+      const data = await apiJson<{ users: AdminUser[] }>(`/api/admin-users?include_field=${showField}`)
       setUsers(data.users)
     } catch (e: any) { toast.error(e.message) }
   }
 
-  useEffect(() => { load() }, [])
+  useEffect(() => { load() }, [showField])
 
   async function deleteUser(id: string, username: string) {
     if (!confirm(`Delete ${username}? This cannot be undone.`)) return
@@ -126,10 +127,16 @@ function AdminUsersPage() {
       <div className="p-6">
         <div className="flex items-center justify-between mb-6">
           <h1 className="text-xl font-semibold">Admin Users</h1>
-          <button onClick={() => setShowNew(true)}
-            className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white text-sm rounded-md transition-colors">
-            <UserPlus size={14} /> New Admin
-          </button>
+          <div className="flex items-center gap-4">
+            <label className="flex items-center gap-2 text-sm text-zinc-400">
+              <input type="checkbox" checked={showField} onChange={e => setShowField(e.target.checked)} />
+              Show field accounts
+            </label>
+            <button onClick={() => setShowNew(true)}
+              className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white text-sm rounded-md transition-colors">
+              <UserPlus size={14} /> New Admin
+            </button>
+          </div>
         </div>
         <div className="rounded-lg border border-zinc-800 overflow-hidden">
           <table className="w-full text-sm">

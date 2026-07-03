@@ -91,36 +91,36 @@ Kiekvienas vartotojas gauna duomenų paketą (`.zip`), kuriame yra:
 
 Abu sertifikatų failai būtini. Kliento sertifikatas autentifikuoja įrenginį serveriui; pasitikėjimo saugykla — serverį įrenginiui.
 
+**Šaukinys privalo baigtis `-ATAK`, `-WinTAK` arba `-iTAK`** — pvz. `Alpha1-iTAK`. Tai ne kosmetika: iTAK importavimo funkcijai reikia kitokios zip failo struktūros (sertifikatų failai šaknyje), nei ATAK/WinTAK naudojamas Mission Package formatas (sudėti į `content/` aplanką). Priesaga nurodo, kurį formatą sukurti. Pasirinkus netinkamą kliento tipą, paketas importuosis tyliai, bet serverio įrašas neatsiras.
+
 ### Standartinis būdas (generuoti ir suteikti prieigą vienu žingsniu)
 
 ```bash
 cd ~/tak-server
-make add-user USERNAME=JusuŠaukinys
+./generate_user.sh Alpha1-iTAK
 ```
+
+Paleidus be argumento, paklaus šaukinio interaktyviai.
+
+Tas pats per administravimo skydelį: **Users → New User** — įveskite šaukinį ir pasirinkite kliento tipą iš sąrašo; priesaga pridedama automatiškai.
 
 ### Atskiras būdas (paruošti iš anksto, prieigą suteikti vėliau)
 
-Jei norite sugeneruoti paketus iš anksto, nesuteikiant prieigos iš karto — pvz., paruošiant rinkinius prieš operaciją — naudokite atskirus žingsnius:
+Jei norite sugeneruoti paketus iš anksto, nesuteikiant prieigos iš karto — pvz., paruošiant rinkinius prieš operaciją — naudokite skriptus tiesiogiai:
 
 ```bash
-# Tik įrenginio sertifikatas (.p12 failas, be paketo)
-make gen-device-cert USERNAME=JusuŠaukinys
+docker compose exec -T -e CLIENT_CERT_NAME=Alpha1-iTAK takserver_config \
+    bash /opt/scripts/gen_client_cert.sh
 
-# Sukurti atsisiunčiamą paketą iš esamo sertifikato
-make make-package USERNAME=JusuŠaukinys
-
-# Arba abu kartu (sertifikatas + paketas, dar neautorizuota)
-make gen-cert USERNAME=JusuŠaukinys
+docker compose exec -T -e CLIENT_CERT_NAME=Alpha1-iTAK -e TAK_SERVER_ADDRESS=<SERVERIO_IP> takserver_config \
+    bash /opt/scripts/make_pkg_zip.sh
 
 # Suteikti prieigą, kai esate pasiruošę
-make enable-user USERNAME=JusuŠaukinys
+docker compose exec -T -e USER_CERT_NAME=Alpha1-iTAK takserver_config \
+    bash /opt/scripts/enable_user.sh
 ```
 
-Kai paketas paruoštas, įrenginio naršyklėje atidarykite:
-
-```
-http://<SERVERIO_IP>:8888/JusuŠaukinys.zip
-```
+Kai paketas paruoštas, atsisiųskite jį iš administravimo skydelio adresu `https://<SERVERIO_IP>:8889` — skiltis **Packages**.
 
 Vietoje `<SERVERIO_IP>` naudokite:
 - **A variantas:** serverio LAN IP (pvz. `192.168.1.50`)
@@ -129,6 +129,8 @@ Vietoje `<SERVERIO_IP>` naudokite:
 ```bash
 ip addr show wt0 | grep "inet " | awk '{print $2}' | cut -d/ -f1
 ```
+
+Sugeneravus paketą per administravimo skydelį, tam žmogui automatiškai sukuriama (arba pakartotinai panaudojama) paskyra: naudotojo vardas — jo bazinis šaukinys (pvz. `Alpha1`, be priesagos), o slaptažodis parodomas vieną kartą jo sukūrimo metu. Perduokite tą slaptažodį naudotojui kitu kanalu, ir jis galės pats prisijungti prie administravimo skydelio iš savo telefono ar nešiojamo kompiuterio, matyti tik savo paketus ir juos atsisiųsti tiesiogiai — operatoriui nebereikės perduoti `.zip` failo rankiniu būdu.
 
 ---
 
@@ -153,15 +155,15 @@ Serverio įrašas atsiras automatiškai. Paspauskite **Connect**.
 
 ## Žemėlapių šaltiniai
 
-40+ ATAK suderinami žemėlapių šaltiniai (Bing, Google, ESRI, USGS, OpenTopo, OpenSeaMap, Estijos Maa-amet, Ukrainos Visicom ir kt.) pasiekiami adresu `http://<SERVERIO_IP>:8888/maps/`.
+40+ ATAK suderinami žemėlapių šaltiniai (Bing, Google, ESRI, USGS, OpenTopo, OpenSeaMap, Estijos Maa-amet, Ukrainos Visicom ir kt.) pasiekiami administravimo skydelio skiltyje **Maps**, adresu `https://<SERVERIO_IP>:8889/maps`.
 
 **Atsisiųsti visus iš karto (rekomenduojama):**
-1. Atidarykite `http://<SERVERIO_IP>:8888/maps/` → spustelėkite **[Download All as ZIP]**
+1. Atidarykite `https://<SERVERIO_IP>:8889/maps` → spustelėkite **[Download All as ZIP]**
 2. Išskleiskite `tak-maps.zip` į aplanką
 3. ATAK/WinTAK → hamburger → **Import Manager** → Import → pasirinkite išsklestą aplanką arba atskirus XML failus
 
 **Atsisiųsti atskirus šaltinius:**
-1. Įrenginyje atidarykite naršyklę → `http://<SERVERIO_IP>:8888/maps/`
+1. Įrenginyje atidarykite naršyklę → `https://<SERVERIO_IP>:8889/maps`
 2. Paspauskite ant `.xml` failo, kad atsisiųstumėte
 3. ATAK/WinTAK → hamburger → **Import Manager** → pasirinkite failą
 
@@ -173,7 +175,7 @@ ATAK papildiniai — tai APK failai, diegiami Android įrenginiuose, o ne server
 
 ### Papildinių įkėlimas į serverį platinimui
 
-Nukopijuokite APK failus į serverį, kad komandos įrenginiai galėtų juos atsisiųsti adresu `http://<SERVERIO_IP>:8888/plugins/`:
+Nukopijuokite APK failus į serverį, kad komandos įrenginiai galėtų juos atsisiųsti administravimo skydelio skiltyje **Plugins**, adresu `https://<SERVERIO_IP>:8889/plugins`:
 
 ```bash
 cd ~/tak-server
@@ -187,7 +189,7 @@ make add-plugin APK=/kelias/iki/ATAK-Plugin-hammer-1.2-...-release.apk
 make list-plugins
 ```
 
-Android įrenginyje: atidarykite naršyklę → `http://<SERVERIO_IP>:8888/plugins/` → paspauskite ant failo → ATAK → **Settings → Manage Plugins → Install from file**.
+Android įrenginyje: atidarykite naršyklę → `https://<SERVERIO_IP>:8889/plugins` → paspauskite ant failo → ATAK → **Settings → Manage Plugins → Install from file**.
 
 ---
 
@@ -198,7 +200,7 @@ Sinchronizuoja misijas, žemėlapių sluoksnius, duomenų paketus ir failus tarp
 > **Serverio reikalavimai:** Jokie. Mission API jau veikia TAK serveryje adresu `https://<serveris>:8443/Marti/api/missions`. Papildomos konfigūracijos nereikia.
 
 **Diegimas įrenginyje:**
-1. Atsisiųskite DataSync APK iš `http://<SERVERIO_IP>:8888/plugins/`
+1. Atsisiųskite DataSync APK administravimo skydelio skiltyje **Plugins**, adresu `https://<SERVERIO_IP>:8889/plugins`
 2. ATAK → **Settings → Manage Plugins → Install from file** → pasirinkite APK
 3. Iš naujo paleiskite ATAK, jei paprašoma
 4. DataSync atsiranda ATAK įrankių juostoje (sinchronizavimo piktograma)
@@ -237,13 +239,46 @@ Struktūrizuotos taktinės ataskaitos — 9-linijinis MEDEVAC, CAS (artima oro p
 
 ---
 
+## Priežiūra
+
+```bash
+cd ~/tak-server
+
+# Atsisiųsti naujausią kodą, perstatyti, paleisti iš naujo — automatiškai
+# save patikrina ir atsistato pats, jei kas nepavyko
+./update.sh
+
+# Patikrinti, ar diegimas šiuo metu veikia tinkamai, neatsisiunčiant kodo —
+# saugu leisti bet kada (pvz., per cron), taip pat automatiškai atsistato
+./health.sh
+
+# Priverstinai pašalinti visus vartotojo sertifikato/paketo failus, nesvarbu
+# kokia dabartinė būsena — naudokite, jei vartotojas "įstrigo" (pvz.
+# rodo „jau egzistuoja" po ištrynimo)
+./purge_user.sh <vardas>
+
+# Pašalinti konteinerius/atvaizdus ir įdiegti iš naujo — duomenų bazė,
+# sertifikatai, paketai ir takserver.env išsaugomi
+./reinstall.sh
+```
+
+`update.sh` ir `health.sh` abu patikrina, ar diegti konteineriai iš tikrųjų atitinka atsisiųstą kodą — ne tik tai, kad `git pull` pavyko. Jei Docker kešas tyliai panaudoja pasenusį sluoksnį (taip gali nutikti), jie automatiškai priverstinai perstato be kešo ir patikrina dar kartą, užuot palikę sugadintą diegimą jums pačiam derinti.
+
+Jei administravimo skydelis kada nors taptų nepasiekiamas, du skriptai repozitorijos šaknyje suteikia atsarginį variantą — jiems reikia tik SSH/shell prieigos prie serverio, ne tinklo prieigos prie 8889 prievado. `./get_package.sh [vardas]` be argumento parodo prieinamus paketus, o su vardu — atsisiunčia paketą į dabartinį aplanką. `./admin_fallback.sh` atidaro interaktyvų meniu tai pačiai skaitymo režimo paketų ir žemėlapių naršymo/atsisiuntimo funkcijai.
+
 ## Dažnos problemos
 
 > **Nepavyksta atsisiųsti paketo įrenginyje**
-> Patikrinkite, ar įrenginys pasiekia serverio IP per prievadą 8888. A variantas: įsitikinkite, kad įrenginys yra tame pačiame Wi-Fi/LAN tinkle. B variantas: patikrinkite, ar NetBird programėlė rodo **Connected**.
+> Patikrinkite, ar įrenginys pasiekia serverio IP per prievadą 8889 (administravimo skydelis). A variantas: įsitikinkite, kad įrenginys yra tame pačiame Wi-Fi/LAN tinkle. B variantas: patikrinkite, ar NetBird programėlė rodo **Connected**.
 
 > **Serveris matomas, bet neprisijungia**
-> Paketas gali būti sugeneruotas su netinkamu serverio IP. Ištrinkite serverio įrašą, sugeneruokite paketą iš naujo su `make add-user USERNAME=JusuŠaukinys` ir importuokite pakartotinai.
+> Paketas gali būti sugeneruotas su netinkamu serverio IP. Ištrinkite serverio įrašą, sugeneruokite paketą iš naujo su `./generate_user.sh JusuŠaukinys-iTAK` (arba `-ATAK`/`-WinTAK`) ir importuokite pakartotinai.
+
+> **iTAK neparodo serverio importavus paketą**
+> Įsitikinkite, kad šaukinys baigiasi `-iTAK`, o ne `-ATAK`/`-WinTAK` — iTAK reikia savo paketo struktūros (žr. 4 žingsnį). Paleiskite `./health.sh`, kad patikrintumėte, ar paketų generatorius veikia tinkamai.
+
+> **„Šaukinys jau egzistuoja" kuriant vartotoją, kurį maniniate ištrynę**
+> Paleiskite `./purge_user.sh <vardas>`, kad priverstinai pašalintumėte likusius sertifikato/paketo failus, tada sukurkite iš naujo.
 
 > **Ryšys nutrūksta užgęsus ekranui**
 > Išjunkite energijos taupymo optimizaciją TAK programėlei.

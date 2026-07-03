@@ -220,6 +220,7 @@ ADMIN_SECRET_KEY=${ADMIN_SECRET_KEY}
 ADMIN_FIRST_USER=${ADMIN_FIRST_USER}
 ADMIN_FIRST_PASS=${ADMIN_FIRST_PASS}
 ENVEOF
+chmod 600 "$ENV_FILE"
 
 # ── [7/7] Build & start ───────────────────────────────────────────────────────
 cd "$SCRIPT_DIR"

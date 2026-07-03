@@ -7,8 +7,9 @@ import { FitAddon } from '@xterm/addon-fit'
 
 export const Route = createFileRoute('/logs')({
   beforeLoad: () => {
-    const { token } = useAuth.getState()
+    const { token, role } = useAuth.getState()
     if (!token) throw redirect({ to: '/login' })
+    if (role === 'field') throw redirect({ to: '/packages' })
   },
   component: LogsPage,
 })

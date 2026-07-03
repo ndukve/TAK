@@ -79,17 +79,6 @@ services:
       takserver_initialization:
         condition: service_completed_successfully
 
-  # ── Package download server (port 8888) ────────────────────────────────────
-  pkg_server:
-    image: python:3.11-slim
-    command: ["python3", "/srv/serve_packages.py"]
-    volumes:
-      - takserver_data:/opt/tak/data:ro
-      - ./scripts/serve_packages.py:/srv/serve_packages.py:ro
-    working_dir: /opt/tak/data/certs/files/clientpkgs
-    network_mode: host
-    restart: unless-stopped
-
 volumes:
   takdb_data:
     driver: local

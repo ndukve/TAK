@@ -4,7 +4,7 @@ import { Layout } from '@/components/Layout'
 import { apiJson, apiFetch } from '@/lib/api'
 import { useAuth } from '@/store/auth'
 import { toast } from 'sonner'
-import { Trash2, Upload, Copy, Check } from 'lucide-react'
+import { Trash2, Upload, Copy, Check, Download } from 'lucide-react'
 
 function CopyHash({ hash }: { hash: string }) {
   const [copied, setCopied] = useState(false)
@@ -127,8 +127,8 @@ function MapsPage() {
           />
         </div>
 
-        <div className="rounded-lg border border-zinc-800 overflow-hidden">
-          <table className="w-full text-sm">
+        <div className="rounded-lg border border-zinc-800 overflow-x-auto">
+          <table className="w-full text-sm min-w-[600px]">
             <thead className="bg-zinc-900 text-zinc-400">
               <tr>
                 <th className="px-4 py-3 text-left font-medium">Provider</th>
@@ -153,7 +153,15 @@ function MapsPage() {
                   <td className="px-4 py-3 text-zinc-400">{m.size}</td>
                   <td className="px-4 py-3">{m.sha256 ? <CopyHash hash={m.sha256} /> : <span className="text-zinc-600 text-xs">—</span>}</td>
                   <td className="px-4 py-3">
-                    <div className="flex justify-end">
+                    <div className="flex justify-end gap-1">
+                      <a
+                        href={`/api/maps/${encodeURIComponent(m.provider)}/${encodeURIComponent(m.filename)}/download`}
+                        download
+                        className="p-1.5 rounded hover:bg-zinc-800 text-blue-400"
+                        title="Download"
+                      >
+                        <Download size={14} />
+                      </a>
                       <button
                         onClick={() => handleDelete(m)}
                         className="p-1.5 rounded hover:bg-zinc-800 text-red-400"

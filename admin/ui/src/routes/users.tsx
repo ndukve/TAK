@@ -8,8 +8,9 @@ import { UserPlus, Trash2, CheckCircle, XCircle, KeyRound } from 'lucide-react'
 
 export const Route = createFileRoute('/users')({
   beforeLoad: () => {
-    const { token } = useAuth.getState()
+    const { token, role } = useAuth.getState()
     if (!token) throw redirect({ to: '/login' })
+    if (role === 'field') throw redirect({ to: '/packages' })
   },
   component: UsersPage,
 })
@@ -21,6 +22,7 @@ function NewUserModal({ onClose, onCreated }: { onClose: () => void; onCreated: 
   const [clientType, setClientType] = useState<'ATAK' | 'WinTAK' | 'iTAK'>('iTAK')
   const [step, setStep] = useState<Step>('form')
   const [downloadUrl, setDownloadUrl] = useState('')
+  const [fieldAccount, setFieldAccount] = useState<{ username: string; password: string } | null>(null)
 
   const username = callsign.trim() ? `${callsign}-${clientType}` : ''
 
@@ -39,7 +41,10 @@ function NewUserModal({ onClose, onCreated }: { onClose: () => void; onCreated: 
       await apiJson('/api/users/gen-cert', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ username }) })
       setStep('make-package')
       const pkg = await apiJson<any>('/api/users/make-package', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ username }) })
-      if (pkg.download_url) setDownloadUrl(pkg.download_url)
+      setDownloadUrl(`/api/packages/${encodeURIComponent(username)}/download`)
+      if (pkg.field_account_created) {
+        setFieldAccount({ username: pkg.field_username, password: pkg.field_account_password })
+      }
       setStep('enable')
       await apiJson('/api/users/enable', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ username }) })
       setStep('done')
@@ -112,6 +117,13 @@ function NewUserModal({ onClose, onCreated }: { onClose: () => void; onCreated: 
                 className="inline-block px-4 py-2 bg-zinc-800 hover:bg-zinc-700 text-white text-sm rounded-md transition-colors">
                 Download data package
               </a>
+            )}
+            {fieldAccount && (
+              <div className="p-3 rounded-lg border border-yellow-700/50 bg-yellow-900/20 text-sm space-y-1">
+                <p className="text-yellow-200">Field login created — shown once, save it now:</p>
+                <p className="font-mono text-zinc-200">user: {fieldAccount.username}</p>
+                <p className="font-mono text-zinc-200">pass: {fieldAccount.password}</p>
+              </div>
             )}
             <button onClick={onClose}
               className="block px-4 py-2 bg-zinc-700 hover:bg-zinc-600 text-white text-sm rounded-md transition-colors">

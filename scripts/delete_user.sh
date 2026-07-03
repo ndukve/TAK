@@ -27,5 +27,8 @@ TAKCL_CORECONFIG_PATH="${CONFIG}" java -jar /opt/tak/utils/UserManager.jar \
     || info "Revoke skipped (cert not registered with UserManager, or already revoked)"
 
 info "Removing certificate and package files"
-rm -f ${CR}/files/${USER_CERT_NAME}.* ${CR}/files/clientpkgs/${USER_CERT_NAME}.zip
+rm -f ${CR}/files/${USER_CERT_NAME}.* \
+      ${CR}/files/${USER_CERT_NAME}-public.p12 \
+      ${CR}/files/${USER_CERT_NAME}-trusted.pem \
+      ${CR}/files/clientpkgs/${USER_CERT_NAME}.zip
 ok "${USER_CERT_NAME} files removed"

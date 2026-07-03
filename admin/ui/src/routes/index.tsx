@@ -8,8 +8,9 @@ import { cn } from '@/lib/utils'
 
 export const Route = createFileRoute('/')({
   beforeLoad: () => {
-    const { token } = useAuth.getState()
+    const { token, role } = useAuth.getState()
     if (!token) throw redirect({ to: '/login' })
+    if (role === 'field') throw redirect({ to: '/packages' })
   },
   component: DashboardPage,
 })

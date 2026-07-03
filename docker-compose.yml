@@ -112,19 +112,22 @@ services:
       takserver_initialization:
         condition: service_completed_successfully
 
-  # ── Package download server (port 8888) ────────────────────────────────────
-  pkg_server:
-    image: python:3.11-slim
-    command: ["python3", "/srv/serve_packages.py"]
+  # ── Docker socket proxy (scoped access for the admin panel) ──────────────
+  # admin needs to list/inspect containers, exec into takserver_config (user
+  # management scripts, shell tab), and read logs — nothing else. Rather than
+  # mounting the raw host socket (which would let any compromise of the admin
+  # app — a dependency CVE, an XSS-to-RCE chain, whatever — escalate straight
+  # to `docker run --privileged -v /:/host` and full host root), only this
+  # narrowly-scoped proxy touches the real socket. admin talks to it over TCP
+  # on the internal network instead.
+  docker_socket_proxy:
+    image: tecnativa/docker-socket-proxy:v0.4.2
     environment:
-      PKG_SERVER_PASS: ${PKG_SERVER_PASS:-}
+      CONTAINERS: 1
+      EXEC: 1
+      POST: 1
     volumes:
-      - takserver_data:/opt/tak/data:ro
-      - ./packages/tak-maps:/opt/tak/maps:ro
-      - ./scripts/serve_packages.py:/srv/serve_packages.py:ro
-    working_dir: /opt/tak/data
-    ports:
-      - "8888:8888"
+      - /var/run/docker.sock:/var/run/docker.sock:ro
     networks:
       - taknet
     restart: unless-stopped
@@ -136,10 +139,12 @@ services:
       args:
         GIT_COMMIT: ${GIT_COMMIT:-unknown}
     env_file: takserver.env
+    environment:
+      DOCKER_HOST: tcp://docker_socket_proxy:2375
     volumes:
-      - /var/run/docker.sock:/var/run/docker.sock
       - takserver_data:/opt/tak/data:rw
       - tak_plugins:/opt/tak/plugins:rw
+      - ./packages/tak-maps:/opt/tak/maps:rw
     networks:
       - taknet
     depends_on:
@@ -147,6 +152,8 @@ services:
         condition: service_healthy
       takserver_initialization:
         condition: service_completed_successfully
+      docker_socket_proxy:
+        condition: service_started
     restart: unless-stopped
 
   # ── Admin TLS reverse proxy (port 8889 HTTPS) ────────────────────────────

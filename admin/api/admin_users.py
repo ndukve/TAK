@@ -40,8 +40,11 @@ class ChangePasswordRequest(BaseModel):
 
 
 @router.get("")
-async def list_users(db: AsyncSession = Depends(get_db), actor=Depends(_superadmin)):
-    result = await db.execute(select(AdminUser))
+async def list_users(include_field: bool = False, db: AsyncSession = Depends(get_db), actor=Depends(_superadmin)):
+    query = select(AdminUser)
+    if not include_field:
+        query = query.where(AdminUser.role != "field")
+    result = await db.execute(query)
     users = result.scalars().all()
     return {"users": [
         {"id": u.id, "username": u.username, "role": u.role, "is_active": u.is_active, "created_at": u.created_at}
