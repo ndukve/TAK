@@ -59,7 +59,7 @@ if [ "${#_STALE[@]}" -gt 0 ]; then
     ok "Clean rebuild now matches ${GIT_COMMIT:0:7}"
 
     info "Restarting containers..."
-    $_DC down --remove-orphans && $_DC up -d \
+    $_DC up -d --remove-orphans \
         || fail "Container restart failed (see output above)."
     ok "Containers restarted"
 else

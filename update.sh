@@ -88,8 +88,10 @@ docker compose --env-file "$ENV_FILE" build \
 ok "Image built"
 
 info "Restarting containers..."
-docker compose --env-file "$ENV_FILE" down --remove-orphans \
-    && docker compose --env-file "$ENV_FILE" up -d \
+# up -d (no preceding down) only recreates containers whose image/config
+# actually changed — a plain admin-panel update leaves takserver_config's
+# messaging/CoT service running undisturbed instead of bouncing everything.
+docker compose --env-file "$ENV_FILE" up -d --remove-orphans \
     || fail "Container restart failed (see output above)."
 ok "Containers restarted"
 
