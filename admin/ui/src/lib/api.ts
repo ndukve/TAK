@@ -49,3 +49,24 @@ export async function apiJson<T>(path: string, init: RequestInit = {}): Promise<
   }
   return res.json()
 }
+
+// Plain <a href> downloads don't carry the Authorization header our JWT auth
+// needs (browsers only attach that via explicit fetch calls), so protected
+// download endpoints 401 on a normal link click. Fetch authenticated via
+// apiFetch, then hand the browser a blob URL to save instead.
+export async function downloadFile(path: string, filename: string): Promise<void> {
+  const res = await apiFetch(path)
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({ detail: res.statusText }))
+    throw new Error(err.detail ?? res.statusText)
+  }
+  const blob = await res.blob()
+  const url = URL.createObjectURL(blob)
+  const a = document.createElement('a')
+  a.href = url
+  a.download = filename
+  document.body.appendChild(a)
+  a.click()
+  a.remove()
+  URL.revokeObjectURL(url)
+}

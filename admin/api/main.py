@@ -1,6 +1,6 @@
 import os
 from contextlib import asynccontextmanager
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException
 from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
 from starlette.types import Scope
@@ -62,10 +62,12 @@ class SPAStaticFiles(StaticFiles):
     to parse as JS, which just turns a clear error into a confusing one."""
 
     async def get_response(self, path: str, scope: Scope):
-        response = await super().get_response(path, scope)
-        if response.status_code == 404 and "." not in path.rsplit("/", 1)[-1]:
-            response = await super().get_response("index.html", scope)
-        return response
+        try:
+            return await super().get_response(path, scope)
+        except HTTPException as exc:
+            if exc.status_code == 404 and "." not in path.rsplit("/", 1)[-1]:
+                return await super().get_response("index.html", scope)
+            raise
 
 
 STATIC_DIR = "/app/static"
