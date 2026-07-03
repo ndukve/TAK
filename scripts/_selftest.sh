@@ -34,8 +34,18 @@ package_selftest() {
 
     _selftest_one() {
         local name="$1" expect_content="$2"  # expect_content: yes|no
+        # Full file set makeCert.sh's client path produces (.key .csr .pem
+        # .p12 -public.p12 .jks) — a prior run's leftover .jks in particular
+        # makes keytool -importkeystore hit an "alias already exists"
+        # conflict on the next run, which then hangs/dies waiting on an
+        # overwrite prompt that never comes non-interactively.
         $dc exec -T -u root takserver_config rm -f \
             "/opt/tak/data/certs/files/${name}.key" \
+            "/opt/tak/data/certs/files/${name}.csr" \
+            "/opt/tak/data/certs/files/${name}.pem" \
+            "/opt/tak/data/certs/files/${name}.p12" \
+            "/opt/tak/data/certs/files/${name}-public.p12" \
+            "/opt/tak/data/certs/files/${name}.jks" \
             "/opt/tak/data/certs/files/${name}.certpass" \
             "/opt/tak/data/certs/files/clientpkgs/${name}.zip" 2>/dev/null || true
 
@@ -65,6 +75,7 @@ package_selftest() {
         $dc exec -T -u root takserver_config rm -f \
             "/opt/tak/data/certs/files/${name}.key" "/opt/tak/data/certs/files/${name}.pem" \
             "/opt/tak/data/certs/files/${name}.p12" "/opt/tak/data/certs/files/${name}.csr" \
+            "/opt/tak/data/certs/files/${name}-public.p12" "/opt/tak/data/certs/files/${name}.jks" \
             "/opt/tak/data/certs/files/${name}.certpass" \
             "/opt/tak/data/certs/files/clientpkgs/${name}.zip" 2>/dev/null || true
 
