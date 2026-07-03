@@ -39,17 +39,24 @@ package_selftest() {
             "/opt/tak/data/certs/files/${name}.certpass" \
             "/opt/tak/data/certs/files/clientpkgs/${name}.zip" 2>/dev/null || true
 
+        local _st_log
+        _st_log="$(mktemp)"
         if ! $dc exec -T -e CLIENT_CERT_NAME="$name" takserver_config \
-            bash /opt/scripts/gen_client_cert.sh >/dev/null 2>&1; then
+            bash /opt/scripts/gen_client_cert.sh > "$_st_log" 2>&1; then
             warn "Self-test cert generation failed for ${name} — gen_client_cert.sh may be broken"
+            cat "$_st_log"
+            rm -f "$_st_log"
             return 1
         fi
 
         if ! $dc exec -T -e CLIENT_CERT_NAME="$name" -e TAK_SERVER_ADDRESS=selftest takserver_config \
-            bash /opt/scripts/make_pkg_zip.sh >/dev/null 2>&1; then
+            bash /opt/scripts/make_pkg_zip.sh > "$_st_log" 2>&1; then
             warn "Self-test package build failed for ${name} — make_pkg_zip.sh may be broken"
+            cat "$_st_log"
+            rm -f "$_st_log"
             return 1
         fi
+        rm -f "$_st_log"
 
         local listing has_content
         listing="$($dc exec -T takserver_config unzip -l "/opt/tak/data/certs/files/clientpkgs/${name}.zip" 2>/dev/null)"
