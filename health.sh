@@ -45,6 +45,11 @@ _STALE=()
 if [ "${#_STALE[@]}" -gt 0 ]; then
     warn "Stale build cache detected (${_STALE[*]}) — forcing a clean rebuild"
     export GIT_COMMIT
+
+    info "Starting registry mirror..."
+    $_DC up -d registry || fail "Registry mirror failed to start (see output above)."
+    ok "Registry mirror up"
+
     info "Rebuilding without cache (${_STALE[*]})..."
     $_DC build --no-cache "${_STALE[@]}" \
         || fail "Clean rebuild failed (see output above)."

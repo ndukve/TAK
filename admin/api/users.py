@@ -98,20 +98,26 @@ class SetPasswordRequest(BaseModel):
     password: str
 
 
+class RenameFieldAccountRequest(BaseModel):
+    new_username: str
+
+
 @router.get("")
 async def list_users(db: AsyncSession = Depends(get_db), _=Depends(_admin)):
     code, out = await run_in_container(["bash", "-c", f"ls {CLIENTPKGS}/*.zip 2>/dev/null || true"])
     zips = [f.split("/")[-1].replace(".zip", "") for f in out.strip().splitlines() if f.endswith(".zip")]
 
-    result = await db.execute(select(AdminUser.owned_callsign).where(AdminUser.role == "field"))
-    field_bases = {row[0] for row in result.all()}
+    result = await db.execute(select(AdminUser.owned_callsign, AdminUser.username).where(AdminUser.role == "field"))
+    field_logins = {row[0]: row[1] for row in result.all()}  # owned_callsign -> current (possibly renamed) username
 
     return {"users": [
         {
             "username": z,
-            "has_field_account": _base_callsign(z) in field_bases,
-            "field_username": _base_callsign(z),
+            "has_field_account": _base_callsign(z) in field_logins,
+            "field_username": field_logins.get(_base_callsign(z), _base_callsign(z)),
+            "base_callsign": _base_callsign(z),
             "cert_days_remaining": _cert_days_remaining(z),
+            "is_client": bool(_NEW_USERNAME_RE.fullmatch(z)),
         }
         for z in zips
     ]}
@@ -183,6 +189,31 @@ async def create_field_login(username: str, db: AsyncSession = Depends(get_db), 
     if created:
         await write_audit(db, actor.id, "create_field_account", base)
     return {"field_account_created": created, "field_account_password": password, "field_username": base}
+
+
+@router.post("/field-account/{base}/rename")
+async def rename_field_account(base: str, body: RenameFieldAccountRequest, db: AsyncSession = Depends(get_db), actor=Depends(_admin)):
+    """Renames a field account's login username only — owned_callsign (which
+    actually links the account to its package/cert) is untouched, so the
+    underlying package/cert keeps its original name. No cert regeneration."""
+    new_username = _validate_username(body.new_username)
+
+    result = await db.execute(
+        select(AdminUser).where(AdminUser.role == "field", AdminUser.owned_callsign == base)
+    )
+    account = result.scalar_one_or_none()
+    if account is None:
+        raise HTTPException(status_code=404, detail="No field account for that package")
+
+    existing = await db.execute(select(AdminUser).where(AdminUser.username == new_username))
+    if existing.scalar_one_or_none() is not None:
+        raise HTTPException(status_code=409, detail="Username already taken")
+
+    old_username = account.username
+    account.username = new_username
+    await db.commit()
+    await write_audit(db, actor.id, "rename_field_account", f"{old_username} -> {new_username}")
+    return {"username": new_username}
 
 
 @router.post("/set-password")

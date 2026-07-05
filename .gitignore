@@ -12,6 +12,11 @@ packages/*.zip
 # Plugin APKs — licensed, do not redistribute via git
 *.apk
 
+# Your own tak.gov-downloaded TAK Server release ZIP — licensed, do not
+# redistribute via git (see Dockerfile Stage 1 comment)
+takserver-dist/*
+!takserver-dist/.gitkeep
+
 # Service cert output (make add-service)
 certs/
 

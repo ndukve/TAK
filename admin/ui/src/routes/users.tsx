@@ -4,7 +4,7 @@ import { Layout } from '@/components/Layout'
 import { apiJson, apiFetch, downloadFile } from '@/lib/api'
 import { useAuth } from '@/store/auth'
 import { toast } from 'sonner'
-import { UserPlus, Trash2, CheckCircle, XCircle, KeyRound, Download, RefreshCw } from 'lucide-react'
+import { UserPlus, Trash2, CheckCircle, XCircle, KeyRound, Download, RefreshCw, Pencil } from 'lucide-react'
 
 export const Route = createFileRoute('/users')({
   beforeLoad: () => {
@@ -25,6 +25,64 @@ function CertBadge({ daysRemaining }: { daysRemaining: number | null }) {
       ? 'text-yellow-400 bg-yellow-400/10'
       : 'text-green-400 bg-green-400/10'
   return <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${cls}`}>{daysRemaining}d</span>
+}
+
+function UserTable({ users, emptyText, createFieldLogin, renameFieldAccount, downloadPackage, enableUser, disableUser, setSetPwUser, deleteUser }: {
+  users: TakUser[]
+  emptyText: string
+  createFieldLogin: (username: string) => void
+  renameFieldAccount: (baseCallsign: string, currentName: string) => void
+  downloadPackage: (username: string) => void
+  enableUser: (username: string) => void
+  disableUser: (username: string) => void
+  setSetPwUser: (username: string) => void
+  deleteUser: (username: string) => void
+}) {
+  return (
+    <div className="rounded-lg border border-zinc-800 overflow-x-auto mb-6">
+      <table className="w-full text-sm min-w-[560px]">
+        <thead className="bg-zinc-900 text-zinc-400">
+          <tr>
+            <th className="px-4 py-3 text-left font-medium">Callsign</th>
+            <th className="px-4 py-3 text-left font-medium">Web Login</th>
+            <th className="px-4 py-3 text-left font-medium">Cert</th>
+            <th className="px-4 py-3 text-right font-medium">Actions</th>
+          </tr>
+        </thead>
+        <tbody className="divide-y divide-zinc-800">
+          {users.length === 0 && (
+            <tr><td colSpan={4} className="px-4 py-8 text-center text-zinc-500">{emptyText}</td></tr>
+          )}
+          {users.map(u => (
+            <tr key={u.username} className="bg-zinc-950 hover:bg-zinc-900/50">
+              <td className="px-4 py-3 font-mono">{u.username}</td>
+              <td className="px-4 py-3">
+                {u.has_field_account
+                  ? (
+                    <span className="inline-flex items-center gap-1">
+                      <span className="text-xs px-2 py-0.5 rounded-full font-medium text-green-400 bg-green-400/10">active ({u.field_username})</span>
+                      <button onClick={() => renameFieldAccount(u.base_callsign, u.field_username)} title="Rename login" className="p-1 rounded hover:bg-zinc-800 text-zinc-400"><Pencil size={12} /></button>
+                    </span>
+                  )
+                  : <button onClick={() => createFieldLogin(u.username)} className="text-xs px-2 py-1 rounded bg-zinc-800 hover:bg-zinc-700 text-zinc-300">Create login</button>
+                }
+              </td>
+              <td className="px-4 py-3">
+                <CertBadge daysRemaining={u.cert_days_remaining} />
+              </td>
+              <td className="px-4 py-3 flex justify-end gap-2">
+                <button onClick={() => downloadPackage(u.username)} title="Download package" className="p-1.5 rounded hover:bg-zinc-800 text-accent-ring"><Download size={14} /></button>
+                <button onClick={() => enableUser(u.username)} title="Enable" className="p-1.5 rounded hover:bg-zinc-800 text-green-400"><CheckCircle size={14} /></button>
+                <button onClick={() => disableUser(u.username)} title="Disable" className="p-1.5 rounded hover:bg-zinc-800 text-yellow-400"><XCircle size={14} /></button>
+                <button onClick={() => setSetPwUser(u.username)} title="Set Password" className="p-1.5 rounded hover:bg-zinc-800 text-accent-ring"><KeyRound size={14} /></button>
+                <button onClick={() => deleteUser(u.username)} title="Delete" className="p-1.5 rounded hover:bg-zinc-800 text-red-400"><Trash2 size={14} /></button>
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  )
 }
 
 function NewUserModal({ onClose, onCreated }: { onClose: () => void; onCreated: () => void }) {
@@ -198,7 +256,9 @@ interface TakUser {
   username: string
   has_field_account: boolean
   field_username: string
+  base_callsign: string
   cert_days_remaining: number | null
+  is_client: boolean
 }
 
 function UsersPage() {
@@ -224,6 +284,22 @@ function UsersPage() {
     try {
       const res = await apiJson<any>(`/api/users/create-field-login/${encodeURIComponent(username)}`, { method: 'POST' })
       setFieldResult({ username: res.field_username, password: res.field_account_password, created: res.field_account_created })
+      load()
+    } catch (e: any) {
+      toast.error(e.message)
+    }
+  }
+
+  async function renameFieldAccount(baseCallsign: string, currentName: string) {
+    const newUsername = prompt(`Rename web login "${currentName}" to:`, currentName)
+    if (!newUsername || newUsername === currentName) return
+    try {
+      await apiJson(`/api/users/field-account/${encodeURIComponent(baseCallsign)}/rename`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ new_username: newUsername }),
+      })
+      toast.success(`Renamed to ${newUsername}`)
       load()
     } catch (e: any) {
       toast.error(e.message)
@@ -308,44 +384,31 @@ function UsersPage() {
             ))}
           </div>
         )}
-        <div className="rounded-lg border border-zinc-800 overflow-x-auto">
-          <table className="w-full text-sm min-w-[560px]">
-            <thead className="bg-zinc-900 text-zinc-400">
-              <tr>
-                <th className="px-4 py-3 text-left font-medium">Callsign</th>
-                <th className="px-4 py-3 text-left font-medium">Web Login</th>
-                <th className="px-4 py-3 text-left font-medium">Cert</th>
-                <th className="px-4 py-3 text-right font-medium">Actions</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-zinc-800">
-              {users.length === 0 && (
-                <tr><td colSpan={4} className="px-4 py-8 text-center text-zinc-500">No users yet — create one</td></tr>
-              )}
-              {users.map(u => (
-                <tr key={u.username} className="bg-zinc-950 hover:bg-zinc-900/50">
-                  <td className="px-4 py-3 font-mono">{u.username}</td>
-                  <td className="px-4 py-3">
-                    {u.has_field_account
-                      ? <span className="text-xs px-2 py-0.5 rounded-full font-medium text-green-400 bg-green-400/10">active ({u.field_username})</span>
-                      : <button onClick={() => createFieldLogin(u.username)} className="text-xs px-2 py-1 rounded bg-zinc-800 hover:bg-zinc-700 text-zinc-300">Create login</button>
-                    }
-                  </td>
-                  <td className="px-4 py-3">
-                    <CertBadge daysRemaining={u.cert_days_remaining} />
-                  </td>
-                  <td className="px-4 py-3 flex justify-end gap-2">
-                    <button onClick={() => downloadPackage(u.username)} title="Download package" className="p-1.5 rounded hover:bg-zinc-800 text-accent-ring"><Download size={14} /></button>
-                    <button onClick={() => enableUser(u.username)} title="Enable" className="p-1.5 rounded hover:bg-zinc-800 text-green-400"><CheckCircle size={14} /></button>
-                    <button onClick={() => disableUser(u.username)} title="Disable" className="p-1.5 rounded hover:bg-zinc-800 text-yellow-400"><XCircle size={14} /></button>
-                    <button onClick={() => setSetPwUser(u.username)} title="Set Password" className="p-1.5 rounded hover:bg-zinc-800 text-accent-ring"><KeyRound size={14} /></button>
-                    <button onClick={() => deleteUser(u.username)} title="Delete" className="p-1.5 rounded hover:bg-zinc-800 text-red-400"><Trash2 size={14} /></button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+        <h2 className="text-sm font-semibold text-zinc-400 uppercase tracking-wider mb-3">TAK Users</h2>
+        <UserTable
+          users={users.filter(u => u.is_client)}
+          emptyText="No users yet — create one"
+          createFieldLogin={createFieldLogin}
+          renameFieldAccount={renameFieldAccount}
+          downloadPackage={downloadPackage}
+          enableUser={enableUser}
+          disableUser={disableUser}
+          setSetPwUser={setSetPwUser}
+          deleteUser={deleteUser}
+        />
+
+        <h2 className="text-sm font-semibold text-zinc-400 uppercase tracking-wider mb-3 mt-8">Service Accounts</h2>
+        <UserTable
+          users={users.filter(u => !u.is_client)}
+          emptyText="No service accounts — create one with make add-service"
+          createFieldLogin={createFieldLogin}
+          renameFieldAccount={renameFieldAccount}
+          downloadPackage={downloadPackage}
+          enableUser={enableUser}
+          disableUser={disableUser}
+          setSetPwUser={setSetPwUser}
+          deleteUser={deleteUser}
+        />
       </div>
       {showNew && <NewUserModal onClose={() => setShowNew(false)} onCreated={load} />}
       {setPwUser && <SetPasswordModal username={setPwUser} onClose={() => setSetPwUser(null)} />}

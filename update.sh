@@ -82,6 +82,13 @@ docker compose exec -T takdb psql -U "$PGUSER" \
 # ── Rebuild ───────────────────────────────────────────────────────────────────
 export GIT_COMMIT="$(git rev-parse HEAD)"
 
+# The registry mirror (docker-compose.yml's `registry` service) has to be up
+# before any build — every image below pulls through it, not Docker Hub directly.
+info "Starting registry mirror..."
+docker compose --env-file "$ENV_FILE" up -d registry \
+    || fail "Registry mirror failed to start (see output above)."
+ok "Registry mirror up"
+
 info "Building updated image..."
 docker compose --env-file "$ENV_FILE" build \
     || fail "Build failed (see output above)."

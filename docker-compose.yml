@@ -13,9 +13,24 @@ x-tak: &tak-base
 
 services:
 
+  # ── Local registry mirror (pull-through cache for Docker Hub) ────────────────
+  # Every image below is referenced through this mirror, by exact digest —
+  # builds source from here instead of hitting Docker Hub directly, and only
+  # pick up upstream changes when someone explicitly re-pulls/re-pins a digest.
+  # Must be up before any `docker compose build` — see update.sh/health.sh/
+  # install.sh, which all start this first.
+  registry:
+    image: registry:2
+    ports:
+      - "127.0.0.1:5000:5000"
+    volumes:
+      - registry_data:/var/lib/registry
+      - ./registry/config.yml:/etc/docker/registry/config.yml:ro
+    restart: unless-stopped
+
   # ── Database ────────────────────────────────────────────────────────────────
   takdb:
-    image: postgis/postgis:15-3.3
+    image: localhost:5000/postgis/postgis@sha256:a2fc46b52819d25add4ed93d3da83e106e17ea3ace6883cce3791631c9820bb2
     env_file: takserver.env
     environment:
       POSTGRES_DB: ${POSTGRES_DB:-cot}
@@ -121,7 +136,7 @@ services:
   # narrowly-scoped proxy touches the real socket. admin talks to it over TCP
   # on the internal network instead.
   docker_socket_proxy:
-    image: tecnativa/docker-socket-proxy:v0.4.2
+    image: localhost:5000/tecnativa/docker-socket-proxy@sha256:1f3a6f303320723d199d2316a3e82b2e2685d86c275d5e3deeaf182573b47476
     environment:
       CONTAINERS: 1
       EXEC: 1
@@ -160,7 +175,7 @@ services:
 
   # ── Admin TLS reverse proxy (port 8889 HTTPS) ────────────────────────────
   admin_proxy:
-    image: nginx:alpine
+    image: localhost:5000/library/nginx@sha256:54f2a904c251d5a34adf545a72d32515a15e08418dae0266e23be2e18c66fefa
     env_file: takserver.env
     volumes:
       - ./admin/nginx/nginx.conf:/etc/nginx/conf.d/default.conf:ro
@@ -176,6 +191,7 @@ services:
     restart: unless-stopped
 
 volumes:
+  registry_data:
   takdb_data:
   takserver_data:
   tak_plugins:

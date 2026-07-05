@@ -44,6 +44,10 @@ if [ "${TAK_REINSTALL:-}" = "1" ] && [ -f "$ENV_FILE" ]; then
     cd "$SCRIPT_DIR"
     docker compose --env-file "$ENV_FILE" down --remove-orphans 2>/dev/null || true
 
+    run_with_gauge "Registry" "Starting local registry mirror..." -- \
+        docker compose --env-file "$ENV_FILE" up -d registry \
+        || fail "Registry mirror failed to start (see output above)."
+
     export GIT_COMMIT="$(git rev-parse HEAD 2>/dev/null || echo unknown)"
     run_with_gauge "Build" "Building TAK Server image (this can take a few minutes)..." -- \
         docker compose --env-file "$ENV_FILE" build \
@@ -129,6 +133,8 @@ else
     esac
 fi
 
+wt_input TAK_SERVER_NAME "Networking [1/7]" "Server display name (shown in client packages/chat):" "TAK Server"
+
 # ── [2/7] Certificate metadata ────────────────────────────────────────────────
 wt_input COUNTRY             "Certificate Metadata [2/7]" "Country code (2 letters):"  "US"
 wt_input STATE               "Certificate Metadata [2/7]" "State / Province:"          "Florida"
@@ -146,6 +152,7 @@ done
 
 # ── [4/7] Review ──────────────────────────────────────────────────────────────
 _SUMMARY="Server address    : ${TAK_SERVER_ADDRESS}
+Server name       : ${TAK_SERVER_NAME}
 Country           : ${COUNTRY}
 State             : ${STATE}
 City              : ${CITY}
@@ -192,7 +199,7 @@ cat > "$ENV_FILE" << ENVEOF
 # DO NOT commit this file to version control.
 
 TAK_SERVER_ADDRESS=${TAK_SERVER_ADDRESS}
-TAK_SERVER_NAME=takserver
+TAK_SERVER_NAME=${TAK_SERVER_NAME}
 
 POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
 POSTGRES_DB=cot
@@ -225,6 +232,10 @@ chmod 600 "$ENV_FILE"
 # ── [7/7] Build & start ───────────────────────────────────────────────────────
 cd "$SCRIPT_DIR"
 docker compose --env-file "$ENV_FILE" down --remove-orphans 2>/dev/null || true
+
+run_with_gauge "Registry [7/7]" "Starting local registry mirror..." -- \
+    docker compose --env-file "$ENV_FILE" up -d registry \
+    || fail "Registry mirror failed to start (see output above)."
 
 export GIT_COMMIT="$(git rev-parse HEAD 2>/dev/null || echo unknown)"
 run_with_gauge "Build [7/7]" "Building TAK Server image (this can take a few minutes)..." -- \

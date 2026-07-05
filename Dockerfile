@@ -1,13 +1,10 @@
 # syntax=docker/dockerfile:1
-ARG TEMURIN_VERSION="17"
-ARG TAK_RELEASE="5.7-RELEASE-43"
 
-# ── Stage 1: extract TAK distribution ZIP ────────────────────────────────────
-FROM pvarki/tak-server-dist:${TAK_RELEASE} AS tak-files
-RUN mv /zips/takserver-docker-*.zip /tmp/takserver.zip
-
-# ── Stage 2: base system with all runtime deps ────────────────────────────────
-FROM eclipse-temurin:${TEMURIN_VERSION}-noble AS deps
+# ── Stage 1: base system with all runtime deps ────────────────────────────────
+# Every base image below is pulled through the local registry mirror (see the
+# `registry` service in docker-compose.yml), pinned by exact digest so builds
+# are reproducible and don't silently drift when upstream retags :stable/:alpine/etc.
+FROM localhost:5000/library/eclipse-temurin@sha256:0386aaf49d6756b4856119f8e037f40cc865c7c8fbdda7c81733cc806f462daf AS deps
 ENV LC_ALL=C.UTF-8
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
@@ -31,17 +28,19 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
        -o /usr/bin/wait-for-it.sh \
     && chmod a+x /usr/bin/wait-for-it.sh
 
-COPY --from=hairyhenderson/gomplate:stable /gomplate /bin/gomplate
+COPY --from=localhost:5000/hairyhenderson/gomplate@sha256:23914375b491cbfb6620911200ff5ed31af200cd66484c833496fca1dfc97e74 /gomplate /bin/gomplate
 
 SHELL ["/bin/bash", "-lc"]
 
-# ── Stage 3: install TAK Server + project scripts/templates ──────────────────
+# ── Stage 2: install TAK Server + project scripts/templates ──────────────────
 FROM deps AS install
 
 COPY docker/entrypoint.sh /entrypoint.sh
 RUN chmod +x /entrypoint.sh
 
-COPY --from=tak-files /tmp/takserver.zip /tmp/takserver.zip
+# takserver-dist/ holds your own tak.gov-downloaded release ZIP (gitignored —
+# licensed binary, not redistributed via git). See .gitignore for the rule.
+COPY takserver-dist/takserver-docker-*.zip /tmp/takserver.zip
 RUN cd /tmp \
     && unzip takserver.zip \
     && rm takserver.zip \
@@ -51,7 +50,7 @@ RUN cd /tmp \
 COPY scripts /opt/scripts
 COPY templates /opt/templates
 
-# ── Stage 4: runtime image ───────────────────────────────────────────────────
+# ── Stage 3: runtime image ───────────────────────────────────────────────────
 FROM install AS run
 ARG GIT_COMMIT=unknown
 LABEL org.opencontainers.image.revision="$GIT_COMMIT"
