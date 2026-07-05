@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
-import { useRouterState, type AnyRouter } from '@tanstack/react-router'
 import { useAuth } from '@/store/auth'
+import { useRoute } from '@/store/route'
 import { apiJson } from '@/lib/api'
 import { Terminal } from '@xterm/xterm'
 import { FitAddon } from '@xterm/addon-fit'
@@ -13,10 +13,13 @@ import { cn } from '@/lib/utils'
 // route only owns the auth guard; all state (ticket, xterm instance, the
 // WebSocket) lives here so leaving the page hides this via CSS instead of
 // tearing down the underlying docker exec session and its scrollback.
-export function ShellSession({ router }: { router: AnyRouter }) {
+// Reads the current path from a plain store (published by Layout.tsx, which
+// safely has router context) instead of touching the router directly — this
+// component is rendered outside the router tree entirely.
+export function ShellSession() {
   const { token, role } = useAuth()
-  const routerState = useRouterState({ router })
-  const onShellPage = routerState.location.pathname === '/shell'
+  const pathname = useRoute((s) => s.pathname)
+  const onShellPage = pathname === '/shell'
 
   const [password, setPassword] = useState('')
   const [loading, setLoading] = useState(false)

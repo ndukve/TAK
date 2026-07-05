@@ -1,6 +1,7 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Link, useNavigate, useRouterState } from '@tanstack/react-router'
 import { useAuth } from '@/store/auth'
+import { useRoute } from '@/store/route'
 import { cn } from '@/lib/utils'
 import { apiFetch } from '@/lib/api'
 import { brand } from '@/brand'
@@ -119,8 +120,13 @@ export function Layout({ children }: { children: React.ReactNode }) {
   const navigate = useNavigate()
   const routerState = useRouterState()
   const current = routerState.location.pathname
+  const setPathname = useRoute((s) => s.setPathname)
   const [showChangePw, setShowChangePw] = useState(false)
   const [sidebarOpen, setSidebarOpen] = useState(false)
+
+  useEffect(() => {
+    setPathname(current)
+  }, [current, setPathname])
 
   async function handleLogout() {
     await apiFetch('/auth/logout', { method: 'POST' })
