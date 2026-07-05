@@ -71,6 +71,9 @@ export function ShellSession({ router }: { router: AnyRouter }) {
       } else {
         term.writeln('\r\n[session ended]')
       }
+      // Drop back to the password form instead of leaving a dead terminal —
+      // reconnecting means re-authenticating, same as being logged out.
+      setTicket(null)
     }
     ws.onerror = () => term.writeln('\r\n[connection error]')
 
