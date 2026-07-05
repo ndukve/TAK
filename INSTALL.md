@@ -93,7 +93,7 @@ Both certificate files are required. The client cert authenticates the device to
 
 **The callsign must end in `-ATAK`, `-WinTAK`, or `-iTAK`** — e.g. `Alpha1-iTAK`. This isn't cosmetic: iTAK's importer requires a different zip layout (cert files at the root) than ATAK/WinTAK's Mission Package format (nested under `content/`), and the suffix is how the package builder knows which one to produce. Using the wrong client type will import silently with no server entry appearing.
 
-### Standard flow (generate + authorize in one step)
+### Standard flow (generate + authorise in one step)
 
 ```bash
 cd ~/tak-server
@@ -104,7 +104,7 @@ Run it with no argument and it will prompt you interactively for the callsign.
 
 Same thing from the admin panel: **Users → New User** — enter the callsign and pick the client type from the dropdown; it appends the suffix for you.
 
-### Split flow (prepare ahead, authorize later)
+### Split flow (prepare ahead, authorise later)
 
 If you want to pre-generate packages without granting access yet — for example, staging kit before an operation — use the underlying scripts directly:
 
@@ -115,7 +115,7 @@ docker compose exec -T -e CLIENT_CERT_NAME=Alpha1-iTAK takserver_config \
 docker compose exec -T -e CLIENT_CERT_NAME=Alpha1-iTAK -e TAK_SERVER_ADDRESS=<SERVER_IP> takserver_config \
     bash /opt/scripts/make_pkg_zip.sh
 
-# Authorize when ready to grant access
+# Authorise when ready to grant access
 docker compose exec -T -e USER_CERT_NAME=Alpha1-iTAK takserver_config \
     bash /opt/scripts/enable_user.sh
 ```

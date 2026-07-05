@@ -26,3 +26,15 @@ certs/
 
 # macOS
 .DS_Store
+
+# Node dependencies / build output — installed by pnpm, built by vite,
+# neither belongs in git (regenerated on every install/build)
+node_modules/
+admin/ui/dist/
+
+# Python bytecode cache
+__pycache__/
+*.pyc
+
+# Offline install bundle (scripts/build steps regenerate this)
+offline-bundle/

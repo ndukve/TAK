@@ -4,13 +4,14 @@ import os
 import socket
 import time
 from datetime import datetime
-import docker
-from fastapi import APIRouter, Depends, WebSocket, WebSocketDisconnect, Query
-from docker.errors import DockerException
-from jose import JWTError, jwt
-from cryptography import x509
 
-from .deps import require_role, SECRET_KEY, ALGORITHM
+import docker
+from cryptography import x509
+from docker.errors import DockerException
+from fastapi import APIRouter, Depends, Query, WebSocket, WebSocketDisconnect
+from jose import JWTError, jwt
+
+from .deps import ALGORITHM, SECRET_KEY, require_role
 
 router = APIRouter(prefix="/api/health", tags=["health"])
 _client = docker.from_env()

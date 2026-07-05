@@ -1,4 +1,5 @@
 #!/usr/bin/env -S /bin/bash
+# shellcheck shell=bash
 # Generate client certificate only. Does not package or authorize.
 # Password is written to <name>.certpass so make_pkg_zip.sh can read it.
 
@@ -18,7 +19,8 @@ if [ -f "${CR}/files/${CLIENT_CERT_NAME}.key" ]; then
     fail "${CLIENT_CERT_NAME} cert already exists"
 fi
 
-export CLIENT_CERT_PASSWORD=$(pwgen -cn1 20 1) # pragma: allowlist secret
+CLIENT_CERT_PASSWORD=$(pwgen -cn1 20 1) # pragma: allowlist secret
+export CLIENT_CERT_PASSWORD
 
 info "Generating certificate for ${CLIENT_CERT_NAME}"
 cd ${CR}

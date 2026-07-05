@@ -1,7 +1,7 @@
 import { createFileRoute, redirect } from '@tanstack/react-router'
 import { useEffect, useRef, useState } from 'react'
 import { Layout } from '@/components/Layout'
-import { apiJson, apiFetch, downloadFile } from '@/lib/api'
+import { apiJson, apiFetch, downloadFile, errorMessage } from '@/lib/api'
 import { useAuth } from '@/store/auth'
 import { toast } from 'sonner'
 import { Download, Trash2, Upload } from 'lucide-react'
@@ -30,10 +30,12 @@ function PackagesPage() {
 
   async function handleCreateFieldLogin(pkg: Package) {
     try {
-      const res = await apiJson<any>(`/api/users/create-field-login/${encodeURIComponent(pkg.name)}`, { method: 'POST' })
+      const res = await apiJson<{ field_username: string; field_account_password: string | null; field_account_created: boolean }>(
+        `/api/users/create-field-login/${encodeURIComponent(pkg.name)}`, { method: 'POST' }
+      )
       setFieldResult({ username: res.field_username, password: res.field_account_password, created: res.field_account_created })
-    } catch (e: any) {
-      toast.error(e.message)
+    } catch (e) {
+      toast.error(errorMessage(e))
     }
   }
 
@@ -41,8 +43,8 @@ function PackagesPage() {
     try {
       const data = await apiJson<{ packages: Package[] }>('/api/packages')
       setPackages(data.packages)
-    } catch (e: any) {
-      toast.error(e.message)
+    } catch (e) {
+      toast.error(errorMessage(e))
     }
   }
 
@@ -62,8 +64,8 @@ function PackagesPage() {
       }
       toast.success(`${file.name} uploaded`)
       load()
-    } catch (e: any) {
-      toast.error(e.message)
+    } catch (e) {
+      toast.error(errorMessage(e))
     } finally {
       setUploading(false)
       if (fileRef.current) fileRef.current.value = ''
@@ -73,8 +75,8 @@ function PackagesPage() {
   async function handleDownload(pkg: Package) {
     try {
       await downloadFile(`/api/packages/${encodeURIComponent(pkg.name)}/download`, pkg.filename)
-    } catch (e: any) {
-      toast.error(e.message)
+    } catch (e) {
+      toast.error(errorMessage(e))
     }
   }
 
@@ -89,8 +91,8 @@ function PackagesPage() {
       toast.success(`${pkg.name} deleted`)
       if (selected?.name === pkg.name) setSelected(null)
       load()
-    } catch (e: any) {
-      toast.error(e.message)
+    } catch (e) {
+      toast.error(errorMessage(e))
     }
   }
 

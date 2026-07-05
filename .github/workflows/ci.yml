@@ -1,0 +1,80 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  shellcheck:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: ShellCheck all scripts
+        # -S warning: excludes info-level style notes (e.g. printf with a
+        # fixed color-code var, A && B || C for cosmetic logging) that are
+        # intentional here, not bugs. docker/wait-for-it.sh is vendored
+        # third-party code (vishnubob/wait-for-it) — not ours to "fix".
+        run: |
+          shellcheck -x -S warning \
+            $(find . -name "*.sh" -not -path "./.git/*" -not -path "./docker/wait-for-it.sh")
+
+  python-lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Parse all admin/api Python files
+        run: |
+          python3 -c "
+          import ast, pathlib
+          for p in pathlib.Path('admin/api').rglob('*.py'):
+              ast.parse(p.read_text(), filename=str(p))
+          "
+      - name: Install ruff
+        run: pip install ruff
+      - name: Ruff check
+        run: ruff check .
+        working-directory: admin
+
+  ui-checks:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: admin/ui
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: pnpm
+          cache-dependency-path: admin/ui/pnpm-lock.yaml
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm type-check
+      - run: pnpm lint
+
+  python-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install dependencies
+        run: pip install -r requirements.txt -r requirements-dev.txt
+        working-directory: admin
+      - name: Run pytest
+        run: pytest
+        working-directory: admin
+
+  compose-validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate docker-compose.yml parses
+        run: python3 -c "import yaml; yaml.safe_load(open('docker-compose.yml'))"

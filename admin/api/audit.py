@@ -4,7 +4,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from .db import get_db
 from .deps import require_role
-from .models import AuditLog, AdminUser
+from .models import AdminUser, AuditLog
 
 router = APIRouter(prefix="/api/audit-log", tags=["audit-log"])
 _superadmin = require_role("superadmin")

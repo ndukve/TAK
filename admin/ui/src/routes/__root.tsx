@@ -1,5 +1,4 @@
-import { createRootRoute, Outlet, redirect } from '@tanstack/react-router'
-import { useAuth } from '@/store/auth'
+import { createRootRoute, Outlet } from '@tanstack/react-router'
 import { Toaster } from 'sonner'
 
 export const Route = createRootRoute({

@@ -1,21 +1,19 @@
-import hashlib
-import secrets
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime
+
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
+from sqlalchemy import delete, select
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, delete
 
 from .db import get_db
-from .models import AdminUser, InviteLink, RefreshToken
-from .deps import require_role, write_audit, pwd_ctx, get_current_user
+from .deps import get_current_user, pwd_ctx, require_role, write_audit
+from .models import AdminUser, RefreshToken
 from .password_policy import validate_password
 
 router = APIRouter(prefix="/api/admin-users", tags=["admin-users"])
 _superadmin = require_role("superadmin")
 
 VALID_ROLES = {"superadmin", "admin"}
-INVITE_EXPIRE_HOURS = 24
 
 
 class CreateUserRequest(BaseModel):
@@ -28,10 +26,6 @@ class PatchUserRequest(BaseModel):
     role: str | None = None
     password: str | None = None
     is_active: bool | None = None
-
-
-class InviteRequest(BaseModel):
-    role: str
 
 
 class ChangePasswordRequest(BaseModel):
@@ -85,7 +79,7 @@ async def patch_user(user_id: str, body: PatchUserRequest, db: AsyncSession = De
     if body.password:
         await validate_password(body.password)
         user.password_hash = pwd_ctx.hash(body.password)
-        user.password_changed_at = datetime.now(timezone.utc)
+        user.password_changed_at = datetime.now(UTC)
     if body.is_active is not None:
         user.is_active = body.is_active
     await db.commit()
@@ -121,20 +115,7 @@ async def change_own_password(
         raise HTTPException(status_code=400, detail="Current password is incorrect")
     await validate_password(body.new_password)
     actor.password_hash = pwd_ctx.hash(body.new_password)
-    actor.password_changed_at = datetime.now(timezone.utc)
+    actor.password_changed_at = datetime.now(UTC)
     await db.commit()
     await write_audit(db, actor.id, "change_own_password", actor.username)
     return {"status": "ok"}
-
-
-@router.post("/invite", status_code=201)
-async def create_invite(body: InviteRequest, db: AsyncSession = Depends(get_db), actor=Depends(_superadmin)):
-    if body.role not in VALID_ROLES:
-        raise HTTPException(status_code=400, detail=f"role must be one of {VALID_ROLES}")
-    raw_token = secrets.token_urlsafe(24)
-    token_hash = hashlib.sha256(raw_token.encode()).hexdigest()
-    expires = datetime.now(timezone.utc) + timedelta(hours=INVITE_EXPIRE_HOURS)
-    db.add(InviteLink(created_by=actor.username, token_hash=token_hash, role=body.role, expires_at=expires))
-    await db.commit()
-    await write_audit(db, actor.id, "create_invite", body.role)
-    return {"invite_token": raw_token, "expires_at": expires, "role": body.role}

@@ -1,21 +1,23 @@
 import os
 from contextlib import asynccontextmanager
-from fastapi import FastAPI, HTTPException
-from fastapi.staticfiles import StaticFiles
-from fastapi.middleware.cors import CORSMiddleware
-from starlette.types import Scope
-from sqlalchemy import text
 
-from .db import engine, Base, ensure_database
+from fastapi import FastAPI, HTTPException
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
+from sqlalchemy import text
+from starlette.types import Scope
+
 from . import models  # noqa: F401 — ensures models register with Base
-from .auth import router as auth_router, _ensure_first_user
 from .admin_users import router as admin_users_router
-from .users import router as users_router
-from .health import router as health_router
-from .packages import router as packages_router
-from .logs import router as logs_router
-from .shell import router as shell_router
 from .audit import router as audit_router
+from .auth import _ensure_first_user
+from .auth import router as auth_router
+from .db import Base, engine, ensure_database
+from .health import router as health_router
+from .logs import router as logs_router
+from .packages import router as packages_router
+from .shell import router as shell_router
+from .users import router as users_router
 
 
 @asynccontextmanager
@@ -35,13 +37,18 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(title="TAK Admin API", version="1.0.0", lifespan=lifespan)
 
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["http://localhost:5173"],  # dev only; prod serves from same origin
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
+# Prod serves the UI from the same origin (via admin_proxy) — no CORS needed
+# there at all. Only wire up the middleware when explicitly running the Vite
+# dev server against this API, so a stray dev origin never ships in prod.
+_dev_origin = os.environ.get("ADMIN_DEV_CORS_ORIGIN")
+if _dev_origin:
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=[_dev_origin],
+        allow_credentials=True,
+        allow_methods=["*"],
+        allow_headers=["*"],
+    )
 
 app.include_router(auth_router)
 app.include_router(admin_users_router)

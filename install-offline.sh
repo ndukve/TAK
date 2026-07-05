@@ -41,7 +41,8 @@ if [ "${1:-}" = "bundle" ]; then
 
     echo "Building images (needs internet for this step only)..."
     cd "$SCRIPT_DIR"
-    export GIT_COMMIT="$(git rev-parse HEAD 2>/dev/null || echo unknown)"
+    GIT_COMMIT="$(git rev-parse HEAD 2>/dev/null || echo unknown)"
+    export GIT_COMMIT
     docker compose build
 
     echo "Saving images into $BUNDLE_DIR/images ..."

@@ -1,7 +1,7 @@
 import { createFileRoute, redirect } from '@tanstack/react-router'
 import { useEffect, useState } from 'react'
 import { Layout } from '@/components/Layout'
-import { apiJson, apiFetch } from '@/lib/api'
+import { apiJson, apiFetch, errorMessage } from '@/lib/api'
 import { useAuth } from '@/store/auth'
 import { toast } from 'sonner'
 import { UserPlus, Trash2 } from 'lucide-react'
@@ -40,8 +40,8 @@ function NewAdminModal({ onClose, onCreated }: { onClose: () => void; onCreated:
       toast.success(`${username} created`)
       onCreated()
       onClose()
-    } catch (e: any) {
-      toast.error(e.message)
+    } catch (e) {
+      toast.error(errorMessage(e))
     } finally {
       setLoading(false)
     }
@@ -91,7 +91,7 @@ function AdminUsersPage() {
     try {
       const data = await apiJson<{ users: AdminUser[] }>('/api/admin-users')
       setUsers(data.users)
-    } catch (e: any) { toast.error(e.message) }
+    } catch (e) { toast.error(errorMessage(e)) }
   }
 
   useEffect(() => { load() }, [])
@@ -106,7 +106,7 @@ function AdminUsersPage() {
       }
       toast.success(`${username} deleted`)
       load()
-    } catch (e: any) { toast.error(e.message) }
+    } catch (e) { toast.error(errorMessage(e)) }
   }
 
   async function toggleActive(id: string, username: string, is_active: boolean) {
@@ -118,7 +118,7 @@ function AdminUsersPage() {
       })
       toast.success(`${username} ${is_active ? 'deactivated' : 'activated'}`)
       load()
-    } catch (e: any) { toast.error(e.message) }
+    } catch (e) { toast.error(errorMessage(e)) }
   }
 
   return (

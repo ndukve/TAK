@@ -1,7 +1,7 @@
 import { createFileRoute, redirect } from '@tanstack/react-router'
 import { useEffect, useRef, useState } from 'react'
 import { Layout } from '@/components/Layout'
-import { apiFetch, apiJson } from '@/lib/api'
+import { apiFetch, apiJson, errorMessage } from '@/lib/api'
 import { useAuth } from '@/store/auth'
 import { toast } from 'sonner'
 import { Trash2, Upload, Copy, Check } from 'lucide-react'
@@ -59,8 +59,8 @@ function UploadModal({ onClose, onUploaded }: { onClose: () => void; onUploaded:
       toast.success(`${file.name} uploaded — SHA-256: ${data.sha256?.slice(0, 16)}…`)
       onUploaded()
       onClose()
-    } catch (e: any) {
-      toast.error(e.message)
+    } catch (e) {
+      toast.error(errorMessage(e))
     } finally {
       setUploading(false)
     }
@@ -107,8 +107,8 @@ function PluginsPage() {
     try {
       const d = await apiJson<{ plugins: Plugin[] }>('/api/plugins')
       setPlugins(d.plugins)
-    } catch (e: any) {
-      toast.error(e.message)
+    } catch (e) {
+      toast.error(errorMessage(e))
     }
   }
 
@@ -124,8 +124,8 @@ function PluginsPage() {
       }
       toast.success(`${plugin.filename} deleted`)
       load()
-    } catch (e: any) {
-      toast.error(e.message)
+    } catch (e) {
+      toast.error(errorMessage(e))
     }
   }
 

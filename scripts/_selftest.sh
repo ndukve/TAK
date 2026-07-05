@@ -1,3 +1,4 @@
+# shellcheck shell=bash
 # Shared package-layout self-test — source this from update.sh / health.sh.
 # Requires scripts/_spinner.sh already sourced (uses its ok/info/warn/fail).
 #

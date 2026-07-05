@@ -1,8 +1,10 @@
 import asyncio
 import socket
+
 import docker
-from fastapi import APIRouter, WebSocket, WebSocketDisconnect, Query
 from docker.errors import DockerException
+from fastapi import APIRouter, Query, WebSocket, WebSocketDisconnect
+
 from .auth import consume_shell_ticket
 
 router = APIRouter(tags=["shell"])

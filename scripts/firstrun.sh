@@ -1,4 +1,5 @@
 #!/usr/bin/env -S /bin/bash
+# shellcheck shell=bash
 
 if [ -f /opt/tak/data/firstrun.done ]; then
     echo "  ✓  First run already done"
@@ -7,9 +8,8 @@ fi
 
 TR=/opt/tak
 CR=${TR}/certs
-CONFIG=${TR}/data/CoreConfig.xml
 
-G='\033[0;32m' R='\033[0;31m' C='\033[0;36m' DIM='\033[2m' NC='\033[0m'
+G='\033[0;32m' R='\033[0;31m' C='\033[0;36m' NC='\033[0m'
 ok()   { printf "${G}  ✓${NC}  %s\n" "$*"; }
 fail() { printf "${R}  ✗${NC}  %s\n" "$*" >&2; exit 1; }
 info() { printf "${C}  →${NC}  %s\n" "$*"; }
@@ -75,7 +75,10 @@ else
     ok "Using existing admin certificate: ${ADMIN_CERT_NAME}"
 fi
 
-chmod -R 777 ${TR}/data/
+# Every container touching this volume runs as root (no USER directive
+# anywhere in this project's Dockerfiles), so world-writable was never
+# functionally necessary — root:root + owner/group access is sufficient.
+chmod -R 750 ${TR}/data/
 
 info "Waiting for PostgreSQL"
 WAITFORIT_TIMEOUT=60 /usr/bin/wait-for-it.sh ${POSTGRES_ADDRESS}:5432 -- true

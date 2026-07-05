@@ -119,7 +119,15 @@ services:
   # app — a dependency CVE, an XSS-to-RCE chain, whatever — escalate straight
   # to `docker run --privileged -v /:/host` and full host root), only this
   # narrowly-scoped proxy touches the real socket. admin talks to it over TCP
-  # on the internal network instead.
+  # on its own isolated network instead.
+  #
+  # CONTAINERS=1 + POST=1 together unlock every POST under /containers/*, not
+  # just exec — including `create`/`start` with an attacker-chosen HostConfig
+  # (bind mounts, --privileged). The proxy has no finer-grained "exec-only"
+  # mode, so the real containment is network isolation: docker_proxy_net is
+  # `internal` (no route out) and shared with nothing except `admin` — a
+  # compromise of takdb/takserver_*/admin_proxy can't reach this proxy at all,
+  # since they're never on this network.
   docker_socket_proxy:
     image: tecnativa/docker-socket-proxy:v0.4.2
     environment:
@@ -129,7 +137,7 @@ services:
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock:ro
     networks:
-      - taknet
+      - docker_proxy_net
     restart: unless-stopped
 
   # ── Admin panel (internal only — accessed via admin_proxy) ───────────────
@@ -150,6 +158,7 @@ services:
       - admin_ssl:/etc/nginx-ssl:ro
     networks:
       - taknet
+      - docker_proxy_net
     depends_on:
       takdb:
         condition: service_healthy
@@ -186,3 +195,6 @@ volumes:
 networks:
   taknet:
     driver: bridge
+  docker_proxy_net:
+    driver: bridge
+    internal: true

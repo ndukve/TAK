@@ -1,10 +1,11 @@
 import asyncio
+
 import docker
-from fastapi import APIRouter, WebSocket, WebSocketDisconnect, Query
 from docker.errors import DockerException
+from fastapi import APIRouter, Query, WebSocket, WebSocketDisconnect
 from jose import JWTError, jwt
 
-from .deps import SECRET_KEY, ALGORITHM
+from .deps import ALGORITHM, SECRET_KEY
 
 router = APIRouter(tags=["logs"])
 _client = docker.from_env()

@@ -3,7 +3,7 @@ import { Link, useNavigate, useRouterState } from '@tanstack/react-router'
 import { useAuth } from '@/store/auth'
 import { useRoute } from '@/store/route'
 import { cn } from '@/lib/utils'
-import { apiFetch } from '@/lib/api'
+import { apiFetch, errorMessage } from '@/lib/api'
 import { brand } from '@/brand'
 import {
   LayoutDashboard, Users, Package, Puzzle, Map,
@@ -67,8 +67,8 @@ function ChangePasswordModal({ onClose, forced }: { onClose: () => void; forced?
         throw new Error(err.detail ?? res.statusText)
       }
       setOk(true)
-    } catch (err: any) {
-      setError(err.message ?? 'Failed')
+    } catch (err) {
+      setError(errorMessage(err) || 'Failed')
     }
   }
 

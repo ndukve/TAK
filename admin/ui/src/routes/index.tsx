@@ -65,7 +65,9 @@ function DashboardPage() {
       const data = await apiJson<{ services: ServiceState[]; system: SystemStats }>('/api/health')
       setServices(data.services)
       setSystem(data.system)
-    } catch {}
+    } catch {
+      // health endpoint unreachable — leave prior state, next poll retries
+    }
   }
 
   useEffect(() => {

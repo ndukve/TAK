@@ -1,7 +1,16 @@
 import hashlib
+import os
 import re
+
 import httpx
 from fastapi import HTTPException
+
+# TAK deployments are frequently on air-gapped/tactical networks — an
+# unexpected outbound call to api.pwnedpasswords.com on every password change
+# could be a surprise there. Enabled by default (unchanged behavior for
+# normal internet-connected installs); set ADMIN_HIBP_CHECK=0 to disable
+# for air-gapped deployments.
+_HIBP_ENABLED = os.environ.get("ADMIN_HIBP_CHECK", "1") != "0"
 
 _RULES = [
     (r'[A-Z]', "at least one uppercase letter"),

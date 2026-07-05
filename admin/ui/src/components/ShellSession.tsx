@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { useAuth } from '@/store/auth'
 import { useRoute } from '@/store/route'
-import { apiJson } from '@/lib/api'
+import { apiJson, errorMessage } from '@/lib/api'
 import { Terminal } from '@xterm/xterm'
 import { FitAddon } from '@xterm/addon-fit'
 import { toast } from 'sonner'
@@ -38,8 +38,8 @@ export function ShellSession() {
       })
       setTicket(data.ticket)
       setPassword('')
-    } catch (err: any) {
-      toast.error(err.message)
+    } catch (err) {
+      toast.error(errorMessage(err))
     } finally {
       setLoading(false)
     }

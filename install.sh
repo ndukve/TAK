@@ -58,7 +58,8 @@ if [ -f "$ENV_FILE" ]; then
             load_vendored_images "$SCRIPT_DIR/takserver-dist" \
             || fail "Loading vendored images failed (see output above)."
 
-        export GIT_COMMIT="$(git rev-parse HEAD 2>/dev/null || echo unknown)"
+        GIT_COMMIT="$(git rev-parse HEAD 2>/dev/null || echo unknown)"
+        export GIT_COMMIT
         run_with_gauge "Build" "Building TAK Server image (this can take a few minutes)..." -- \
             docker compose --env-file "$ENV_FILE" build \
             || fail "Image build failed (see output above)."
@@ -251,7 +252,8 @@ run_with_gauge "Vendored Images [7/7]" "Loading pre-fetched images (if any)..." 
     load_vendored_images "$SCRIPT_DIR/takserver-dist" \
     || fail "Loading vendored images failed (see output above)."
 
-export GIT_COMMIT="$(git rev-parse HEAD 2>/dev/null || echo unknown)"
+GIT_COMMIT="$(git rev-parse HEAD 2>/dev/null || echo unknown)"
+export GIT_COMMIT
 run_with_gauge "Build [7/7]" "Building TAK Server image (this can take a few minutes)..." -- \
     docker compose --env-file "$ENV_FILE" build \
     || fail "Image build failed (see output above)."

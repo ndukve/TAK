@@ -1,6 +1,7 @@
 import { createFileRoute, useNavigate } from '@tanstack/react-router'
 import { useState } from 'react'
 import { useAuth } from '@/store/auth'
+import { errorMessage } from '@/lib/api'
 import { brand } from '@/brand'
 import { toast } from 'sonner'
 
@@ -33,8 +34,8 @@ function LoginPage() {
       const payload = JSON.parse(atob(access_token.split('.')[1]))
       setToken(access_token, payload.role, payload.username)
       navigate({ to: '/' })
-    } catch (err: any) {
-      toast.error(err.message)
+    } catch (err) {
+      toast.error(errorMessage(err))
     } finally {
       setLoading(false)
     }

@@ -8,17 +8,17 @@
 
 mkdir -p "$DIR"
 
-cd "$DIR"
+cd "$DIR" || exit 1
 
 usage() {
 echo "Usage: ./makeCert.sh [server|client|ca] <common name>"
 echo " If you do not provide a common name on the command line, you will be prompted for one"
-exit -1
+exit 1
 }
 
 if [ ! -e ca.pem ]; then
 echo "ca.pem does not exist! Please make a CA before trying to make server certficiates"
-exit -1
+exit 1
 fi
 
 if [ "$1" ]; then

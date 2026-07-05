@@ -82,7 +82,8 @@ docker compose exec -T takdb psql -U "$PGUSER" \
     || ok "admin database already exists"
 
 # ── Rebuild ───────────────────────────────────────────────────────────────────
-export GIT_COMMIT="$(git rev-parse HEAD)"
+GIT_COMMIT="$(git rev-parse HEAD)"
+export GIT_COMMIT
 
 info "Loading vendored images (if any)..."
 load_vendored_images "$SCRIPT_DIR/takserver-dist"

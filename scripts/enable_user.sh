@@ -1,4 +1,5 @@
 #!/usr/bin/env -S /bin/bash
+# shellcheck shell=bash
 
 G='\033[0;32m' R='\033[0;31m' C='\033[0;36m' NC='\033[0m'
 ok()   { printf "${G}  ✓${NC}  %s\n" "$*"; }

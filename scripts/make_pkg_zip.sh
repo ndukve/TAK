@@ -1,4 +1,5 @@
 #!/usr/bin/env -S /bin/bash
+# shellcheck shell=bash
 # Build the client data package zip from an existing cert.
 # Requires gen_client_cert.sh to have run first (reads <name>.certpass).
 #
@@ -34,7 +35,8 @@ PASSFILE="${CR}/files/${CLIENT_CERT_NAME}.certpass"
 [ -f "${CR}/files/${CLIENT_CERT_NAME}.p12" ]   || fail "No cert found — run gen-device-cert first"
 [ ! -f "${ZIPTGT}/${CLIENT_CERT_NAME}.zip" ]   || fail "${CLIENT_CERT_NAME} package already exists"
 
-export CLIENT_CERT_PASSWORD=$(cat "$PASSFILE")
+CLIENT_CERT_PASSWORD=$(cat "$PASSFILE")
+export CLIENT_CERT_PASSWORD
 
 info "Building data package for ${CLIENT_CERT_NAME} (${TEMPLATE_DIR})"
 

@@ -1,7 +1,7 @@
 import { createFileRoute, redirect } from '@tanstack/react-router'
 import { useEffect, useState } from 'react'
 import { Layout } from '@/components/Layout'
-import { apiJson, apiFetch, downloadFile } from '@/lib/api'
+import { apiJson, apiFetch, downloadFile, errorMessage } from '@/lib/api'
 import { useAuth } from '@/store/auth'
 import { toast } from 'sonner'
 import { UserPlus, Trash2, CheckCircle, XCircle, KeyRound, Download, RefreshCw, Pencil } from 'lucide-react'
@@ -108,7 +108,9 @@ function NewUserModal({ onClose, onCreated }: { onClose: () => void; onCreated: 
       setStep('gen-cert')
       await apiJson('/api/users/gen-cert', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ username }) })
       setStep('make-package')
-      const pkg = await apiJson<any>('/api/users/make-package', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ username }) })
+      const pkg = await apiJson<{ field_account_created: boolean; field_username: string; field_account_password: string | null }>(
+        '/api/users/make-package', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ username }) }
+      )
       setPackageReady(true)
       if (pkg.field_account_created) {
         setFieldAccount({ username: pkg.field_username, password: pkg.field_account_password })
@@ -117,8 +119,8 @@ function NewUserModal({ onClose, onCreated }: { onClose: () => void; onCreated: 
       await apiJson('/api/users/enable', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ username }) })
       setStep('done')
       onCreated()
-    } catch (e: any) {
-      toast.error(e.message)
+    } catch (e) {
+      toast.error(errorMessage(e))
       setStep('form')
     }
   }
@@ -140,7 +142,7 @@ function NewUserModal({ onClose, onCreated }: { onClose: () => void; onCreated: 
             </div>
             <div className="space-y-1">
               <label className="text-sm text-zinc-300">Client</label>
-              <select value={clientType} onChange={e => setClientType(e.target.value as any)}
+              <select value={clientType} onChange={e => setClientType(e.target.value as 'ATAK' | 'WinTAK' | 'iTAK')}
                 className="w-full px-3 py-2 rounded-md bg-zinc-800 border border-zinc-700 text-white text-sm focus:outline-none focus:ring-2 focus:ring-accent-ring">
                 <option value="iTAK">iTAK (iOS)</option>
                 <option value="ATAK">ATAK (Android)</option>
@@ -181,7 +183,7 @@ function NewUserModal({ onClose, onCreated }: { onClose: () => void; onCreated: 
               <span className="font-medium">{username} is ready</span>
             </div>
             {packageReady && (
-              <button onClick={() => downloadFile(`/api/packages/${encodeURIComponent(username)}/download`, `${username}.zip`).catch((e: any) => toast.error(e.message))}
+              <button onClick={() => downloadFile(`/api/packages/${encodeURIComponent(username)}/download`, `${username}.zip`).catch((e) => toast.error(errorMessage(e)))}
                 className="inline-block px-4 py-2 bg-zinc-800 hover:bg-zinc-700 text-white text-sm rounded-md transition-colors">
                 Download data package
               </button>
@@ -221,8 +223,8 @@ function SetPasswordModal({ username, onClose }: { username: string; onClose: ()
       })
       toast.success(`Password set for ${username}`)
       onClose()
-    } catch (e: any) {
-      toast.error(e.message)
+    } catch (e) {
+      toast.error(errorMessage(e))
     } finally {
       setLoading(false)
     }
@@ -273,8 +275,8 @@ function UsersPage() {
     try {
       const data = await apiJson<{ users: TakUser[] }>('/api/users')
       setUsers(data.users)
-    } catch (e: any) {
-      toast.error(e.message)
+    } catch (e) {
+      toast.error(errorMessage(e))
     }
   }
 
@@ -282,11 +284,13 @@ function UsersPage() {
 
   async function createFieldLogin(username: string) {
     try {
-      const res = await apiJson<any>(`/api/users/create-field-login/${encodeURIComponent(username)}`, { method: 'POST' })
+      const res = await apiJson<{ field_username: string; field_account_password: string | null; field_account_created: boolean }>(
+        `/api/users/create-field-login/${encodeURIComponent(username)}`, { method: 'POST' }
+      )
       setFieldResult({ username: res.field_username, password: res.field_account_password, created: res.field_account_created })
       load()
-    } catch (e: any) {
-      toast.error(e.message)
+    } catch (e) {
+      toast.error(errorMessage(e))
     }
   }
 
@@ -301,8 +305,8 @@ function UsersPage() {
       })
       toast.success(`Renamed to ${newUsername}`)
       load()
-    } catch (e: any) {
-      toast.error(e.message)
+    } catch (e) {
+      toast.error(errorMessage(e))
     }
   }
 
@@ -317,8 +321,8 @@ function UsersPage() {
         toast.success(`Created ${res.created.length} field account(s) — shown below, save now`)
       }
       load()
-    } catch (e: any) {
-      toast.error(e.message)
+    } catch (e) {
+      toast.error(errorMessage(e))
     } finally {
       setSyncing(false)
     }
@@ -328,14 +332,14 @@ function UsersPage() {
     try {
       await apiJson('/api/users/enable', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ username }) })
       toast.success(`${username} enabled`)
-    } catch (e: any) { toast.error(e.message) }
+    } catch (e) { toast.error(errorMessage(e)) }
   }
 
   async function downloadPackage(username: string) {
     try {
       await downloadFile(`/api/packages/${encodeURIComponent(username)}/download`, `${username}.zip`)
-    } catch (e: any) {
-      toast.error(e.message)
+    } catch (e) {
+      toast.error(errorMessage(e))
     }
   }
 
@@ -343,7 +347,7 @@ function UsersPage() {
     try {
       await apiJson('/api/users/disable', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ username }) })
       toast.success(`${username} disabled`)
-    } catch (e: any) { toast.error(e.message) }
+    } catch (e) { toast.error(errorMessage(e)) }
   }
 
   async function deleteUser(username: string) {
@@ -356,7 +360,7 @@ function UsersPage() {
       }
       toast.success(`${username} deleted`)
       load()
-    } catch (e: any) { toast.error(e.message) }
+    } catch (e) { toast.error(errorMessage(e)) }
   }
 
   return (

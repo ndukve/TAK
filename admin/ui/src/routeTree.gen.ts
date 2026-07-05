@@ -16,6 +16,7 @@ import { Route as PackagesRouteImport } from './routes/packages'
 import { Route as MapsRouteImport } from './routes/maps'
 import { Route as LogsRouteImport } from './routes/logs'
 import { Route as LoginRouteImport } from './routes/login'
+import { Route as AuditLogRouteImport } from './routes/audit-log'
 import { Route as AdminUsersRouteImport } from './routes/admin-users'
 import { Route as IndexRouteImport } from './routes/index'
 
@@ -54,6 +55,11 @@ const LoginRoute = LoginRouteImport.update({
   path: '/login',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AuditLogRoute = AuditLogRouteImport.update({
+  id: '/audit-log',
+  path: '/audit-log',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AdminUsersRoute = AdminUsersRouteImport.update({
   id: '/admin-users',
   path: '/admin-users',
@@ -68,6 +74,7 @@ const IndexRoute = IndexRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/admin-users': typeof AdminUsersRoute
+  '/audit-log': typeof AuditLogRoute
   '/login': typeof LoginRoute
   '/logs': typeof LogsRoute
   '/maps': typeof MapsRoute
@@ -79,6 +86,7 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/admin-users': typeof AdminUsersRoute
+  '/audit-log': typeof AuditLogRoute
   '/login': typeof LoginRoute
   '/logs': typeof LogsRoute
   '/maps': typeof MapsRoute
@@ -91,6 +99,7 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/admin-users': typeof AdminUsersRoute
+  '/audit-log': typeof AuditLogRoute
   '/login': typeof LoginRoute
   '/logs': typeof LogsRoute
   '/maps': typeof MapsRoute
@@ -104,6 +113,7 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/admin-users'
+    | '/audit-log'
     | '/login'
     | '/logs'
     | '/maps'
@@ -115,6 +125,7 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/admin-users'
+    | '/audit-log'
     | '/login'
     | '/logs'
     | '/maps'
@@ -126,6 +137,7 @@ export interface FileRouteTypes {
     | '__root__'
     | '/'
     | '/admin-users'
+    | '/audit-log'
     | '/login'
     | '/logs'
     | '/maps'
@@ -138,6 +150,7 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AdminUsersRoute: typeof AdminUsersRoute
+  AuditLogRoute: typeof AuditLogRoute
   LoginRoute: typeof LoginRoute
   LogsRoute: typeof LogsRoute
   MapsRoute: typeof MapsRoute
@@ -198,6 +211,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof LoginRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/audit-log': {
+      id: '/audit-log'
+      path: '/audit-log'
+      fullPath: '/audit-log'
+      preLoaderRoute: typeof AuditLogRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/admin-users': {
       id: '/admin-users'
       path: '/admin-users'
@@ -218,6 +238,7 @@ declare module '@tanstack/react-router' {
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AdminUsersRoute: AdminUsersRoute,
+  AuditLogRoute: AuditLogRoute,
   LoginRoute: LoginRoute,
   LogsRoute: LogsRoute,
   MapsRoute: MapsRoute,

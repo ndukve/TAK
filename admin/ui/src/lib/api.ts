@@ -35,10 +35,16 @@ export async function apiFetch(path: string, init: RequestInit = {}): Promise<Re
       if (body.detail === 'password_expired') {
         useAuth.getState().setPasswordExpired(true)
       }
-    } catch {}
+    } catch {
+      // non-JSON or unreadable body — not a password-expired response, ignore
+    }
   }
 
   return res
+}
+
+export function errorMessage(e: unknown): string {
+  return e instanceof Error ? e.message : String(e)
 }
 
 export async function apiJson<T>(path: string, init: RequestInit = {}): Promise<T> {

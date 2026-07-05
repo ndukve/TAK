@@ -1,4 +1,5 @@
 #!/usr/bin/env -S /bin/bash
+# shellcheck shell=bash
 # Fully remove a user: revoke on the server AND delete cert/package files so
 # the callsign becomes reusable. Revoking alone (UserManager certmod -g
 # revoked) leaves the .key/.p12/.certpass/.zip files in place, which makes

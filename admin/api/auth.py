@@ -1,16 +1,16 @@
 import hashlib
 import os
 import secrets
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 
-from fastapi import APIRouter, Depends, HTTPException, Response, Cookie
+from fastapi import APIRouter, Cookie, Depends, HTTPException, Response
+from sqlalchemy import select, update
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select
 
-from .db import get_db, SessionLocal
+from .db import SessionLocal, get_db
+from .deps import create_access_token, get_current_user, pwd_ctx, write_audit
 from .models import AdminUser, RefreshToken
-from .schemas import LoginRequest, TokenResponse, ShellElevateRequest, ShellTicketResponse
-from .deps import pwd_ctx, create_access_token, get_current_user, write_audit
+from .schemas import LoginRequest, ShellElevateRequest, ShellTicketResponse, TokenResponse
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 
@@ -25,12 +25,12 @@ _shell_tickets: dict[str, tuple[str, datetime]] = {}
 
 @router.post("/login", response_model=TokenResponse)
 async def login(body: LoginRequest, response: Response, db: AsyncSession = Depends(get_db)):
-    result = await db.execute(select(AdminUser).where(AdminUser.username == body.username, AdminUser.is_active == True))
+    result = await db.execute(select(AdminUser).where(AdminUser.username == body.username, AdminUser.is_active))
     user = result.scalar_one_or_none()
 
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
 
-    if user and user.locked_until and user.locked_until.replace(tzinfo=timezone.utc) > now:
+    if user and user.locked_until and user.locked_until.replace(tzinfo=UTC) > now:
         raise HTTPException(status_code=429, detail="Account temporarily locked")
 
     if not user or not pwd_ctx.verify(body.password, user.password_hash):
@@ -50,36 +50,48 @@ async def login(body: LoginRequest, response: Response, db: AsyncSession = Depen
 
     raw_refresh = secrets.token_urlsafe(32)
     token_hash = hashlib.sha256(raw_refresh.encode()).hexdigest()
-    expires = datetime.now(timezone.utc) + timedelta(days=REFRESH_TOKEN_EXPIRE_DAYS)
+    expires = datetime.now(UTC) + timedelta(days=REFRESH_TOKEN_EXPIRE_DAYS)
     db.add(RefreshToken(user_id=user.id, token_hash=token_hash, expires_at=expires))
     await db.commit()
 
-    response.set_cookie("refresh_token", raw_refresh, httponly=True, samesite="lax", max_age=60 * 60 * 24 * REFRESH_TOKEN_EXPIRE_DAYS)
+    response.set_cookie("refresh_token", raw_refresh, httponly=True, secure=True, samesite="lax", max_age=60 * 60 * 24 * REFRESH_TOKEN_EXPIRE_DAYS)
     await write_audit(db, user.id, "login")
     return TokenResponse(access_token=access_token)
 
 
 @router.post("/refresh", response_model=TokenResponse)
-async def refresh(refresh_token: str = Cookie(None), db: AsyncSession = Depends(get_db)):
+async def refresh(response: Response, refresh_token: str = Cookie(None), db: AsyncSession = Depends(get_db)):
     if not refresh_token:
         raise HTTPException(status_code=401, detail="No refresh token")
     token_hash = hashlib.sha256(refresh_token.encode()).hexdigest()
-    now = datetime.now(timezone.utc)
-    result = await db.execute(
-        select(RefreshToken).where(
-            RefreshToken.token_hash == token_hash,
-            RefreshToken.revoked == False,
-            RefreshToken.expires_at > now,
-        )
-    )
+    now = datetime.now(UTC)
+    result = await db.execute(select(RefreshToken).where(RefreshToken.token_hash == token_hash))
     token = result.scalar_one_or_none()
-    if not token:
+    if not token or token.expires_at.replace(tzinfo=UTC) <= now:
         raise HTTPException(status_code=401, detail="Invalid or expired refresh token")
 
-    user_result = await db.execute(select(AdminUser).where(AdminUser.id == token.user_id, AdminUser.is_active == True))
+    if token.revoked:
+        # Reuse of an already-rotated-away token — signal the token family was
+        # stolen. Revoke every refresh token for this user to force a fresh
+        # login everywhere, rather than trusting this presented token.
+        await db.execute(update(RefreshToken).where(RefreshToken.user_id == token.user_id).values(revoked=True))
+        await db.commit()
+        raise HTTPException(status_code=401, detail="Invalid or expired refresh token")
+
+    user_result = await db.execute(select(AdminUser).where(AdminUser.id == token.user_id, AdminUser.is_active))
     user = user_result.scalar_one_or_none()
     if not user:
         raise HTTPException(status_code=401, detail="User inactive")
+
+    # Rotate: revoke the token just used, issue a new one in its place.
+    token.revoked = True
+    raw_refresh = secrets.token_urlsafe(32)
+    new_hash = hashlib.sha256(raw_refresh.encode()).hexdigest()
+    expires = now + timedelta(days=REFRESH_TOKEN_EXPIRE_DAYS)
+    db.add(RefreshToken(user_id=user.id, token_hash=new_hash, expires_at=expires))
+    await db.commit()
+
+    response.set_cookie("refresh_token", raw_refresh, httponly=True, secure=True, samesite="lax", max_age=60 * 60 * 24 * REFRESH_TOKEN_EXPIRE_DAYS)
 
     access_token = create_access_token({"sub": user.id, "role": user.role, "username": user.username})
     return TokenResponse(access_token=access_token)
@@ -111,7 +123,7 @@ async def shell_elevate(
 
     ticket = secrets.token_urlsafe(32)
     ticket_hash = hashlib.sha256(ticket.encode()).hexdigest()
-    expires = datetime.now(timezone.utc) + timedelta(minutes=SHELL_TICKET_EXPIRE_MINUTES)
+    expires = datetime.now(UTC) + timedelta(minutes=SHELL_TICKET_EXPIRE_MINUTES)
     _shell_tickets[ticket_hash] = (user.id, expires)
     await write_audit(db, user.id, "shell_elevate")
     return ShellTicketResponse(ticket=ticket, expires_at=expires)
@@ -124,7 +136,7 @@ def consume_shell_ticket(ticket: str) -> str | None:
     if not entry:
         return None
     user_id, expires = entry
-    if datetime.now(timezone.utc) > expires:
+    if datetime.now(UTC) > expires:
         return None
     return user_id
 

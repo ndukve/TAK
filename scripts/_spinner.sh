@@ -1,3 +1,4 @@
+# shellcheck shell=bash
 # Shared colored spinner helpers — source this from non-interactive scripts.
 # No whiptail dependency. Requires: set -euo pipefail already active in the caller.
 

@@ -1,7 +1,7 @@
 import { createFileRoute, redirect } from '@tanstack/react-router'
 import { useEffect, useRef, useState } from 'react'
 import { Layout } from '@/components/Layout'
-import { apiJson, apiFetch, downloadFile } from '@/lib/api'
+import { apiJson, apiFetch, downloadFile, errorMessage } from '@/lib/api'
 import { useAuth } from '@/store/auth'
 import { toast } from 'sonner'
 import { Trash2, Upload, Copy, Check, Download } from 'lucide-react'
@@ -46,8 +46,8 @@ function MapsPage() {
     try {
       const d = await apiJson<{ maps: MapSource[] }>('/api/maps')
       setMaps(d.maps)
-    } catch (e: any) {
-      toast.error(e.message)
+    } catch (e) {
+      toast.error(errorMessage(e))
     }
   }
 
@@ -75,8 +75,8 @@ function MapsPage() {
       }
       toast.success(`${file.name} uploaded`)
       load()
-    } catch (e: any) {
-      toast.error(e.message)
+    } catch (e) {
+      toast.error(errorMessage(e))
     } finally {
       setUploading(false)
       if (fileRef.current) fileRef.current.value = ''
@@ -86,8 +86,8 @@ function MapsPage() {
   async function handleDownload(m: MapSource) {
     try {
       await downloadFile(`/api/maps/${encodeURIComponent(m.provider)}/${encodeURIComponent(m.filename)}/download`, m.filename)
-    } catch (e: any) {
-      toast.error(e.message)
+    } catch (e) {
+      toast.error(errorMessage(e))
     }
   }
 
@@ -101,8 +101,8 @@ function MapsPage() {
       }
       toast.success(`${m.filename} deleted`)
       load()
-    } catch (e: any) {
-      toast.error(e.message)
+    } catch (e) {
+      toast.error(errorMessage(e))
     }
   }
 

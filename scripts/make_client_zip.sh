@@ -1,4 +1,5 @@
 #!/usr/bin/env -S /bin/bash
+# shellcheck shell=bash
 # Legacy: generate cert AND package in one step (make_pkg_zip.sh is preferred).
 
 G='\033[0;32m' R='\033[0;31m' C='\033[0;36m' NC='\033[0m'
@@ -20,7 +21,8 @@ if [ -f "${ZIPTGT}/${CLIENT_CERT_NAME}.zip" ] || [ -f "${CR}/files/${CLIENT_CERT
     fail "${CLIENT_CERT_NAME} already exists"
 fi
 
-export CLIENT_CERT_PASSWORD=$(pwgen -cn1 20 1) # pragma: allowlist secret
+CLIENT_CERT_PASSWORD=$(pwgen -cn1 20 1) # pragma: allowlist secret
+export CLIENT_CERT_PASSWORD
 
 info "Generating certificate for ${CLIENT_CERT_NAME}"
 tmp_dir=$(mktemp -d "/tmp/newclient.XXXXXXXX")

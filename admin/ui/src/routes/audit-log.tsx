@@ -1,7 +1,7 @@
 import { createFileRoute, redirect } from '@tanstack/react-router'
 import { useEffect, useState } from 'react'
 import { Layout } from '@/components/Layout'
-import { apiJson } from '@/lib/api'
+import { apiJson, errorMessage } from '@/lib/api'
 import { useAuth } from '@/store/auth'
 import { toast } from 'sonner'
 
@@ -29,8 +29,8 @@ function AuditLogPage() {
     try {
       const data = await apiJson<{ entries: AuditEntry[] }>('/api/audit-log')
       setEntries(data.entries)
-    } catch (e: any) {
-      toast.error(e.message)
+    } catch (e) {
+      toast.error(errorMessage(e))
     }
   }
 
