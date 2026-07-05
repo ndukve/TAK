@@ -1,16 +1,8 @@
 # syntax=docker/dockerfile:1
 
-ARG TAK_RELEASE="5.7-RELEASE-43"
 ARG TEMURIN_VERSION="17"
 
-# ── Stage 1: fetch TAK distribution ZIP ───────────────────────────────────────
-# Published via scripts/publish_tak_dist.sh to your own GHCR — a minimal image
-# wrapping your tak.gov-downloaded zip, same pattern pvarki/tak-server-dist
-# used, just self-hosted. Requires `docker login ghcr.io` on this machine.
-FROM ghcr.io/ndukve/tak-server-dist:${TAK_RELEASE} AS tak-files
-RUN mv /zips/takserver-docker-*.zip /tmp/takserver.zip
-
-# ── Stage 2: base system with all runtime deps ────────────────────────────────
+# ── Stage 1: base system with all runtime deps ────────────────────────────────
 FROM eclipse-temurin:${TEMURIN_VERSION}-noble AS deps
 ENV LC_ALL=C.UTF-8
 
@@ -30,22 +22,26 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     postgresql-client \
     jq \
     && apt-get autoremove -y \
-    && rm -rf /var/lib/apt/lists/* \
-    && curl -fsSL https://raw.githubusercontent.com/vishnubob/wait-for-it/master/wait-for-it.sh \
-       -o /usr/bin/wait-for-it.sh \
-    && chmod a+x /usr/bin/wait-for-it.sh
+    && rm -rf /var/lib/apt/lists/*
+
+COPY docker/wait-for-it.sh /usr/bin/wait-for-it.sh
+RUN chmod a+x /usr/bin/wait-for-it.sh
 
 COPY --from=hairyhenderson/gomplate:stable /gomplate /bin/gomplate
 
 SHELL ["/bin/bash", "-lc"]
 
-# ── Stage 3: install TAK Server + project scripts/templates ──────────────────
+# ── Stage 2: install TAK Server + project scripts/templates ──────────────────
 FROM deps AS install
 
 COPY docker/entrypoint.sh /entrypoint.sh
 RUN chmod +x /entrypoint.sh
 
-COPY --from=tak-files /tmp/takserver.zip /tmp/takserver.zip
+# takserver-dist/ holds your own tak.gov-downloaded release ZIP (gitignored —
+# licensed binary, not redistributed via git). See .gitignore for the rule.
+# No registry pull here — the offline install image needs this build to work
+# with zero network access, so the zip has to already be a local file.
+COPY takserver-dist/takserver-docker-*.zip /tmp/takserver.zip
 RUN cd /tmp \
     && unzip takserver.zip \
     && rm takserver.zip \
@@ -55,7 +51,7 @@ RUN cd /tmp \
 COPY scripts /opt/scripts
 COPY templates /opt/templates
 
-# ── Stage 4: runtime image ───────────────────────────────────────────────────
+# ── Stage 3: runtime image ───────────────────────────────────────────────────
 FROM install AS run
 ARG GIT_COMMIT=unknown
 LABEL org.opencontainers.image.revision="$GIT_COMMIT"

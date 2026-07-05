@@ -134,6 +134,7 @@ services:
 
   # ── Admin panel (internal only — accessed via admin_proxy) ───────────────
   admin:
+    image: admin:local
     build:
       context: ./admin
       args:
