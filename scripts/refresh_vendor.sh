@@ -23,6 +23,9 @@
 set -euo pipefail
 
 GHCR_VENDOR_REPO="ghcr.io/ndukve/tak-vendor"
+# Must match the Dockerfile's `ARG TAK_RELEASE` default — used only as a
+# fallback version to look up when no local zip exists to derive it from.
+TAK_DEFAULT_RELEASE="5.7-RELEASE-43"
 
 VENDORED_IMAGES=(
     "nginx_alpine.tar|nginx:alpine|nginx-alpine"
@@ -54,7 +57,13 @@ load_vendored_images() {
         docker load -i "$f" >/dev/null
     done
 
-    # TAK Server zip — vendored from your own tak.gov download, not pulled.
+    # TAK Server zip — vendored from your own tak.gov download when present.
+    # If this machine has no local zip (e.g. a server that never had it
+    # scp'd over), fall back to your own GHCR mirror before giving up — same
+    # resilience pattern as the 7 images above. Requires `docker login
+    # ghcr.io` on this machine for the fallback to actually succeed; if
+    # neither is available, warn instead of failing here — the build itself
+    # will fail with a clearer error if it actually needs this image.
     local zip version tak_tar
     zip=$(ls "$dir"/takserver-docker-*.zip 2>/dev/null | head -1) || true
     if [ -n "${zip:-}" ]; then
@@ -66,6 +75,18 @@ load_vendored_images() {
             docker save -o "$tak_tar" "tak-server-dist:${version}"
         fi
         docker load -i "$tak_tar" >/dev/null
+    else
+        version="$TAK_DEFAULT_RELEASE"
+        tak_tar="$dir/tak-server-dist_${version}.tar"
+        if [ -e "$tak_tar" ]; then
+            docker load -i "$tak_tar" >/dev/null
+        elif docker pull "ghcr.io/ndukve/tak-server-dist:${version}" >/dev/null 2>&1; then
+            echo "No local zip — restored tak-server-dist:${version} from ghcr.io/ndukve/tak-server-dist."
+            docker tag "ghcr.io/ndukve/tak-server-dist:${version}" "tak-server-dist:${version}"
+            docker save -o "$tak_tar" "tak-server-dist:${version}"
+        else
+            echo "Warning: no local takserver-dist/*.zip and ghcr.io/ndukve/tak-server-dist:${version} not reachable (docker login ghcr.io first?). Build will fail if it needs tak-server-dist:${version}." >&2
+        fi
     fi
 }
 

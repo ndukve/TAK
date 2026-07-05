@@ -1,5 +1,7 @@
 <div align="center">
 
+<img src="https://raw.githubusercontent.com/ndukve/TAK/main/docs/branding/logo-placeholder.svg" width="120" alt="TAK Server logo placeholder">
+
 # TAK Server
 
 Production deployment of the official Java TAK Server 5.7, containerised with Docker Compose and integrated with NetBird for secure overlay networking. Supports ATAK, iTAK, and WinTAK clients.
@@ -10,9 +12,13 @@ Production deployment of the official Java TAK Server 5.7, containerised with Do
 ![React](https://img.shields.io/badge/React-admin_UI-61DAFB?logo=react&logoColor=black)
 ![PostgreSQL](https://img.shields.io/badge/PostgreSQL-PostGIS-4169E1?logo=postgresql&logoColor=white)
 
-[![CI](https://img.shields.io/github/actions/workflow/status/ndukve/TAK/ci.yml?branch=main&label=CI)](https://github.com/ndukve/TAK/actions/workflows/ci.yml)
-[![Release](https://img.shields.io/github/actions/workflow/status/ndukve/TAK/release.yml?label=release)](https://github.com/ndukve/TAK/actions/workflows/release.yml)
-[![Latest release](https://img.shields.io/github/v/release/ndukve/TAK?include_prereleases&sort=semver)](https://github.com/ndukve/TAK/releases)
+[![shellcheck](https://img.shields.io/github/actions/workflow/status/ndukve/TAK/shellcheck.yml?branch=main&label=shellcheck&logo=github&logoColor=white)](https://github.com/ndukve/TAK/actions/workflows/shellcheck.yml)
+[![python-lint](https://img.shields.io/github/actions/workflow/status/ndukve/TAK/python-lint.yml?branch=main&label=python-lint&logo=github&logoColor=white)](https://github.com/ndukve/TAK/actions/workflows/python-lint.yml)
+[![python-tests](https://img.shields.io/github/actions/workflow/status/ndukve/TAK/python-tests.yml?branch=main&label=python-tests&logo=github&logoColor=white)](https://github.com/ndukve/TAK/actions/workflows/python-tests.yml)
+[![ui-checks](https://img.shields.io/github/actions/workflow/status/ndukve/TAK/ui-checks.yml?branch=main&label=ui-checks&logo=github&logoColor=white)](https://github.com/ndukve/TAK/actions/workflows/ui-checks.yml)
+[![compose-validate](https://img.shields.io/github/actions/workflow/status/ndukve/TAK/compose-validate.yml?branch=main&label=compose-validate&logo=github&logoColor=white)](https://github.com/ndukve/TAK/actions/workflows/compose-validate.yml)
+[![release](https://img.shields.io/github/actions/workflow/status/ndukve/TAK/release.yml?label=release&logo=github&logoColor=white)](https://github.com/ndukve/TAK/actions/workflows/release.yml)
+[![Latest release](https://img.shields.io/github/v/release/ndukve/TAK?include_prereleases&sort=semver&logo=github&logoColor=white)](https://github.com/ndukve/TAK/releases)
 
 </div>
 

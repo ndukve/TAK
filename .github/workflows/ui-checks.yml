@@ -1,0 +1,26 @@
+name: ui-checks
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  ui-checks:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: admin/ui
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: pnpm
+          cache-dependency-path: admin/ui/pnpm-lock.yaml
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm type-check
+      - run: pnpm lint
