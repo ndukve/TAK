@@ -1,10 +1,12 @@
 import os
 import re
 import secrets
+from datetime import datetime
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
+from cryptography import x509
 
 from .db import get_db
 from .deps import require_role, write_audit, pwd_ctx
@@ -41,6 +43,22 @@ def _validate_new_username(username: str) -> str:
             detail="Username must end in -ATAK, -WinTAK, or -iTAK (e.g. alpha1-iTAK)",
         )
     return username
+
+
+def _cert_days_remaining(username: str) -> int | None:
+    """Days until this user's own client cert expires, or None if the cert
+    file is missing/unreadable — a package can exist without a readable
+    cert in edge cases (e.g. mid-generation), so this degrades gracefully
+    rather than failing the whole list."""
+    path = os.path.join(TAK_DATA, f"{username}.pem")
+    if not os.path.isfile(path):
+        return None
+    try:
+        with open(path, "rb") as f:
+            cert = x509.load_pem_x509_certificate(f.read())
+        return (cert.not_valid_after - datetime.utcnow()).days
+    except Exception:
+        return None
 
 
 def _base_callsign(username: str) -> str:
@@ -93,6 +111,7 @@ async def list_users(db: AsyncSession = Depends(get_db), _=Depends(_admin)):
             "username": z,
             "has_field_account": _base_callsign(z) in field_bases,
             "field_username": _base_callsign(z),
+            "cert_days_remaining": _cert_days_remaining(z),
         }
         for z in zips
     ]}

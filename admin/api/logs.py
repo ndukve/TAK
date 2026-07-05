@@ -12,7 +12,7 @@ _client = docker.from_env()
 ALLOWED_SERVICES = {
     "takdb", "takserver_config", "takserver_messaging",
     "takserver_api", "takserver_retention", "takserver_pluginmanager",
-    "pkg_server", "admin",
+    "admin",
 }
 
 

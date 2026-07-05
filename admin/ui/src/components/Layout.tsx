@@ -7,7 +7,7 @@ import { apiFetch } from '@/lib/api'
 import { brand } from '@/brand'
 import {
   LayoutDashboard, Users, Package, Puzzle, Map,
-  ScrollText, Terminal, ShieldUser, LogOut, KeyRound, Menu
+  ScrollText, Terminal, ShieldUser, LogOut, KeyRound, Menu, History
 } from 'lucide-react'
 
 const navItems = [
@@ -27,6 +27,7 @@ const fieldItems = [
 const superAdminItems = [
   { to: '/shell', label: 'Shell', icon: Terminal },
   { to: '/admin-users', label: 'Admin Users', icon: ShieldUser },
+  { to: '/audit-log', label: 'Audit Log', icon: History },
 ]
 
 function passwordStrength(p: string): { score: number; label: string; color: string } {

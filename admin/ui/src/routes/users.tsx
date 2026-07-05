@@ -17,6 +17,16 @@ export const Route = createFileRoute('/users')({
 
 type Step = 'form' | 'gen-cert' | 'make-package' | 'enable' | 'done'
 
+function CertBadge({ daysRemaining }: { daysRemaining: number | null }) {
+  if (daysRemaining === null) return <span className="text-xs text-zinc-600">—</span>
+  const cls = daysRemaining < 7
+    ? 'text-red-400 bg-red-400/10'
+    : daysRemaining < 30
+      ? 'text-yellow-400 bg-yellow-400/10'
+      : 'text-green-400 bg-green-400/10'
+  return <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${cls}`}>{daysRemaining}d</span>
+}
+
 function NewUserModal({ onClose, onCreated }: { onClose: () => void; onCreated: () => void }) {
   const [callsign, setCallsign] = useState('')
   const [clientType, setClientType] = useState<'ATAK' | 'WinTAK' | 'iTAK'>('iTAK')
@@ -188,6 +198,7 @@ interface TakUser {
   username: string
   has_field_account: boolean
   field_username: string
+  cert_days_remaining: number | null
 }
 
 function UsersPage() {
@@ -303,12 +314,13 @@ function UsersPage() {
               <tr>
                 <th className="px-4 py-3 text-left font-medium">Callsign</th>
                 <th className="px-4 py-3 text-left font-medium">Web Login</th>
+                <th className="px-4 py-3 text-left font-medium">Cert</th>
                 <th className="px-4 py-3 text-right font-medium">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-zinc-800">
               {users.length === 0 && (
-                <tr><td colSpan={3} className="px-4 py-8 text-center text-zinc-500">No users yet — create one</td></tr>
+                <tr><td colSpan={4} className="px-4 py-8 text-center text-zinc-500">No users yet — create one</td></tr>
               )}
               {users.map(u => (
                 <tr key={u.username} className="bg-zinc-950 hover:bg-zinc-900/50">
@@ -318,6 +330,9 @@ function UsersPage() {
                       ? <span className="text-xs px-2 py-0.5 rounded-full font-medium text-green-400 bg-green-400/10">active ({u.field_username})</span>
                       : <button onClick={() => createFieldLogin(u.username)} className="text-xs px-2 py-1 rounded bg-zinc-800 hover:bg-zinc-700 text-zinc-300">Create login</button>
                     }
+                  </td>
+                  <td className="px-4 py-3">
+                    <CertBadge daysRemaining={u.cert_days_remaining} />
                   </td>
                   <td className="px-4 py-3 flex justify-end gap-2">
                     <button onClick={() => downloadPackage(u.username)} title="Download package" className="p-1.5 rounded hover:bg-zinc-800 text-accent-ring"><Download size={14} /></button>

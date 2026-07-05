@@ -2,6 +2,9 @@
 .env
 takserver.env
 
+# Backup output (DB dumps, certs, secrets) — never commit
+backups/
+
 # Generated user packages
 packages/*.zip
 !packages/.gitkeep

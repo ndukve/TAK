@@ -15,6 +15,7 @@ from .health import router as health_router
 from .packages import router as packages_router
 from .logs import router as logs_router
 from .shell import router as shell_router
+from .audit import router as audit_router
 
 
 @asynccontextmanager
@@ -49,6 +50,7 @@ app.include_router(health_router)
 app.include_router(packages_router)
 app.include_router(logs_router)
 app.include_router(shell_router)
+app.include_router(audit_router)
 
 class SPAStaticFiles(StaticFiles):
     """Fall back to index.html for unknown client-side routes (e.g. /logs,
