@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import { useRouterState } from '@tanstack/react-router'
+import { useRouterState, type AnyRouter } from '@tanstack/react-router'
 import { useAuth } from '@/store/auth'
 import { apiJson } from '@/lib/api'
 import { Terminal } from '@xterm/xterm'
@@ -13,9 +13,9 @@ import { cn } from '@/lib/utils'
 // route only owns the auth guard; all state (ticket, xterm instance, the
 // WebSocket) lives here so leaving the page hides this via CSS instead of
 // tearing down the underlying docker exec session and its scrollback.
-export function ShellSession() {
+export function ShellSession({ router }: { router: AnyRouter }) {
   const { token, role } = useAuth()
-  const routerState = useRouterState()
+  const routerState = useRouterState({ router })
   const onShellPage = routerState.location.pathname === '/shell'
 
   const [password, setPassword] = useState('')
