@@ -31,8 +31,8 @@ update:
 add-user:
 	@[ -n "$(USERNAME)" ] || { echo "Usage: make add-user USERNAME=alice"; exit 1; }
 	@[ -f $(ENV_FILE) ] || { echo "Run './install.sh' first"; exit 1; }
-	@chmod +x ./generate_user.sh
-	./generate_user.sh $(USERNAME)
+	@chmod +x ./users.sh
+	./users.sh create $(USERNAME)
 
 ## Generate device cert (.p12) only — no package, not authorized yet.
 ## Usage: make gen-device-cert USERNAME=alice-iTAK  (must end in -ATAK/-WinTAK/-iTAK)

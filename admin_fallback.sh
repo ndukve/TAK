@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Interactive break-glass fallback for the admin web UI: browse and download
 # packages/maps from the terminal when the web UI is unavailable. Requires
-# SSH/shell access to the server itself, same trust boundary as get_package.sh.
+# SSH/shell access to the server itself, same trust boundary as ./users.sh get.
 # Read-only: no create/delete, no user management.
 # Usage: ./admin_fallback.sh
 set -euo pipefail

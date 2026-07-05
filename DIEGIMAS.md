@@ -97,7 +97,7 @@ Abu sertifikatų failai būtini. Kliento sertifikatas autentifikuoja įrenginį 
 
 ```bash
 cd ~/tak-server
-./generate_user.sh Alpha1-iTAK
+./users.sh create Alpha1-iTAK
 ```
 
 Paleidus be argumento, paklaus šaukinio interaktyviai.
@@ -252,19 +252,21 @@ cd ~/tak-server
 # saugu leisti bet kada (pvz., per cron), taip pat automatiškai atsistato
 ./health.sh
 
+# Paleiskite diegimo skriptą pakartotinai bet kada — jis aptinka esamą
+# takserver.env ir pasiūlys arba įdiegti iš naujo (pašalinti konteinerius/
+# atvaizdus, perstatyti, išsaugoti duomenų bazę/sertifikatus/paketus),
+# arba pilnai perkonfigūruoti nuo nulio
+./install.sh
+
 # Priverstinai pašalinti visus vartotojo sertifikato/paketo failus, nesvarbu
 # kokia dabartinė būsena — naudokite, jei vartotojas "įstrigo" (pvz.
 # rodo „jau egzistuoja" po ištrynimo)
-./purge_user.sh <vardas>
-
-# Pašalinti konteinerius/atvaizdus ir įdiegti iš naujo — duomenų bazė,
-# sertifikatai, paketai ir takserver.env išsaugomi
-./reinstall.sh
+./users.sh purge <vardas>
 ```
 
 `update.sh` ir `health.sh` abu patikrina, ar diegti konteineriai iš tikrųjų atitinka atsisiųstą kodą — ne tik tai, kad `git pull` pavyko. Jei Docker kešas tyliai panaudoja pasenusį sluoksnį (taip gali nutikti), jie automatiškai priverstinai perstato be kešo ir patikrina dar kartą, užuot palikę sugadintą diegimą jums pačiam derinti.
 
-Jei administravimo skydelis kada nors taptų nepasiekiamas, du skriptai repozitorijos šaknyje suteikia atsarginį variantą — jiems reikia tik SSH/shell prieigos prie serverio, ne tinklo prieigos prie 8889 prievado. `./get_package.sh [vardas]` be argumento parodo prieinamus paketus, o su vardu — atsisiunčia paketą į dabartinį aplanką. `./admin_fallback.sh` atidaro interaktyvų meniu tai pačiai skaitymo režimo paketų ir žemėlapių naršymo/atsisiuntimo funkcijai.
+Jei administravimo skydelis kada nors taptų nepasiekiamas, du skriptai repozitorijos šaknyje suteikia atsarginį variantą — jiems reikia tik SSH/shell prieigos prie serverio, ne tinklo prieigos prie 8889 prievado. `./users.sh get [vardas]` be argumento parodo prieinamus paketus, o su vardu — atsisiunčia paketą į dabartinį aplanką. `./admin_fallback.sh` atidaro interaktyvų meniu tai pačiai skaitymo režimo paketų ir žemėlapių naršymo/atsisiuntimo funkcijai.
 
 ## Dažnos problemos
 
@@ -272,13 +274,13 @@ Jei administravimo skydelis kada nors taptų nepasiekiamas, du skriptai repozito
 > Patikrinkite, ar įrenginys pasiekia serverio IP per prievadą 8889 (administravimo skydelis). A variantas: įsitikinkite, kad įrenginys yra tame pačiame Wi-Fi/LAN tinkle. B variantas: patikrinkite, ar NetBird programėlė rodo **Connected**.
 
 > **Serveris matomas, bet neprisijungia**
-> Paketas gali būti sugeneruotas su netinkamu serverio IP. Ištrinkite serverio įrašą, sugeneruokite paketą iš naujo su `./generate_user.sh JusuŠaukinys-iTAK` (arba `-ATAK`/`-WinTAK`) ir importuokite pakartotinai.
+> Paketas gali būti sugeneruotas su netinkamu serverio IP. Ištrinkite serverio įrašą, sugeneruokite paketą iš naujo su `./users.sh create JusuŠaukinys-iTAK` (arba `-ATAK`/`-WinTAK`) ir importuokite pakartotinai.
 
 > **iTAK neparodo serverio importavus paketą**
 > Įsitikinkite, kad šaukinys baigiasi `-iTAK`, o ne `-ATAK`/`-WinTAK` — iTAK reikia savo paketo struktūros (žr. 4 žingsnį). Paleiskite `./health.sh`, kad patikrintumėte, ar paketų generatorius veikia tinkamai.
 
 > **„Šaukinys jau egzistuoja" kuriant vartotoją, kurį maniniate ištrynę**
-> Paleiskite `./purge_user.sh <vardas>`, kad priverstinai pašalintumėte likusius sertifikato/paketo failus, tada sukurkite iš naujo.
+> Paleiskite `./users.sh purge <vardas>`, kad priverstinai pašalintumėte likusius sertifikato/paketo failus, tada sukurkite iš naujo.
 
 > **Ryšys nutrūksta užgęsus ekranui**
 > Išjunkite energijos taupymo optimizaciją TAK programėlei.

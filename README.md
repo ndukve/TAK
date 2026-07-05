@@ -35,7 +35,7 @@ All client traffic runs over a NetBird WireGuard overlay (`wt0`). No ports need 
 Dockerfile                  TAK Server image
 docker-compose.yml          Production stack
 install.sh                  Interactive installer (Docker + NetBird + config)
-generate_user.sh            Client package + cert generation
+users.sh                    User/package management (create, purge, get)
 scripts/
   firstrun.sh               PKI bootstrap + DB schema init
   start-tak.sh              Service entrypoint

@@ -97,7 +97,7 @@ Both certificate files are required. The client cert authenticates the device to
 
 ```bash
 cd ~/tak-server
-./generate_user.sh Alpha1-iTAK
+./users.sh create Alpha1-iTAK
 ```
 
 Run it with no argument and it will prompt you interactively for the callsign.
@@ -251,18 +251,19 @@ cd ~/tak-server
 # safe to run anytime (e.g. from cron), and auto-recovers if something's wrong
 ./health.sh
 
+# Re-run the installer any time — it detects an existing takserver.env and
+# offers to reinstall (wipe containers/images, rebuild, keep the database/
+# certs/packages) or fully reconfigure from scratch
+./install.sh
+
 # Force-remove all cert/package files for a user, regardless of current
 # state — use this if a user is stuck (e.g. "already exists" after deleting)
-./purge_user.sh <name>
-
-# Wipe containers/images and reinstall from scratch — keeps the database,
-# certificates, packages, and takserver.env
-./reinstall.sh
+./users.sh purge <name>
 ```
 
 `update.sh` and `health.sh` both verify the deployed containers actually match the code that was pulled — not just that `git pull` succeeded. If Docker's build cache silently serves a stale layer (this can happen), they automatically force a clean rebuild and re-verify before declaring success, rather than leaving a broken deployment for you to debug by hand.
 
-If the admin panel itself is ever unreachable, two scripts at the repo root give you a break-glass fallback — they only need SSH/shell access to the server, not network access to port 8889. `./get_package.sh [name]` lists available packages with no argument, or downloads one to the current directory when given a name. `./admin_fallback.sh` opens an interactive menu covering the same read-only package and map browsing/downloading.
+If the admin panel itself is ever unreachable, two scripts at the repo root give you a break-glass fallback — they only need SSH/shell access to the server, not network access to port 8889. `./users.sh get [name]` lists available packages with no argument, or downloads one to the current directory when given a name. `./admin_fallback.sh` opens an interactive menu covering the same read-only package and map browsing/downloading.
 
 ## Troubleshooting
 
@@ -270,13 +271,13 @@ If the admin panel itself is ever unreachable, two scripts at the repo root give
 > Confirm the device can reach the server IP on port 8889 (the admin panel). For Option A: check that the device is on the same Wi-Fi/LAN. For Option B: confirm the NetBird app shows **Connected**.
 
 > **Server appears but won't connect**
-> The package may have been generated with the wrong server IP. Delete the server entry, regenerate the package with `./generate_user.sh YourCallsign-iTAK` (or `-ATAK`/`-WinTAK`), and re-import.
+> The package may have been generated with the wrong server IP. Delete the server entry, regenerate the package with `./users.sh create YourCallsign-iTAK` (or `-ATAK`/`-WinTAK`), and re-import.
 
 > **iTAK doesn't show the server after importing the package**
 > Make sure the callsign ends in `-iTAK`, not `-ATAK`/`-WinTAK` — iTAK needs its own package layout (see Step 4). Run `./health.sh` to confirm the package builder itself is working correctly.
 
 > **"Callsign already exists" when creating a user that you thought you deleted**
-> Run `./purge_user.sh <name>` to force-remove any leftover cert/package files, then create it again.
+> Run `./users.sh purge <name>` to force-remove any leftover cert/package files, then create it again.
 
 > **Connection drops when the screen turns off**
 > Disable battery optimisation for the TAK app.

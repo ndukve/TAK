@@ -1,13 +1,71 @@
 #!/usr/bin/env bash
-# TAK Server — offline installer, for closed/air-gapped networks that can't
-# reach GitHub/Docker Hub/apt at all (e.g. governmental networks, offgrid
-# comms). No git clone, no curl, no apt-get, no registry pulls — everything
-# needed is already in this folder (see scripts/build_offline_bundle.sh,
-# which must be run on a machine WITH internet beforehand to produce it).
+# TAK Server — offline installer + bundle builder, for closed/air-gapped
+# networks that can't reach GitHub/Docker Hub/apt at all (e.g. governmental
+# networks, offgrid comms).
+#
+# Two modes:
+#   ./install-offline.sh bundle [output-dir]
+#       Run on a CONNECTED machine: builds normally, packages the finished
+#       images + Docker itself + deployment files into a folder. Copy that
+#       whole folder to the offline machine (USB, local network push,
+#       whatever your environment allows).
+#   ./install-offline.sh
+#       Run from INSIDE that folder, on the offline machine. No git clone,
+#       no curl, no apt-get, no registry pulls — installs Docker from the
+#       bundled binaries if missing, loads the images, brings it up.
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]:-$0}")" 2>/dev/null && pwd || echo "$PWD")"
-[ -f "$SCRIPT_DIR/docker-compose.yml" ] || { echo "Run this from inside the bundle produced by scripts/build_offline_bundle.sh"; exit 1; }
+
+# ── Bundle mode: build the offline package on a connected machine ───────────
+if [ "${1:-}" = "bundle" ]; then
+    DOCKER_VERSION="29.6.1"
+    COMPOSE_VERSION="v5.3.0"
+    # shellcheck source=scripts/refresh_vendor.sh
+    . "$SCRIPT_DIR/scripts/refresh_vendor.sh"
+
+    BUNDLE_DIR="${2:-$SCRIPT_DIR/offline-bundle}"
+    rm -rf "$BUNDLE_DIR"
+    mkdir -p "$BUNDLE_DIR/images" "$BUNDLE_DIR/docker-bin"
+
+    echo "Fetching Docker ${DOCKER_VERSION} static binaries + Compose ${COMPOSE_VERSION} plugin..."
+    curl -fsSL "https://download.docker.com/linux/static/stable/x86_64/docker-${DOCKER_VERSION}.tgz" \
+        -o "$BUNDLE_DIR/docker-bin/docker.tgz"
+    curl -fsSL "https://github.com/docker/compose/releases/download/${COMPOSE_VERSION}/docker-compose-linux-x86_64" \
+        -o "$BUNDLE_DIR/docker-bin/docker-compose"
+    chmod +x "$BUNDLE_DIR/docker-bin/docker-compose"
+    cp "$SCRIPT_DIR/docker/containerd.service" "$SCRIPT_DIR/docker/docker.service" "$BUNDLE_DIR/docker-bin/"
+
+    echo "Loading vendored images (fetching any not yet vendored)..."
+    load_vendored_images "$SCRIPT_DIR/takserver-dist"
+
+    echo "Building images (needs internet for this step only)..."
+    cd "$SCRIPT_DIR"
+    export GIT_COMMIT="$(git rev-parse HEAD 2>/dev/null || echo unknown)"
+    docker compose build
+
+    echo "Saving images into $BUNDLE_DIR/images ..."
+    docker save -o "$BUNDLE_DIR/images/takserver.tar"           takserver:local
+    docker save -o "$BUNDLE_DIR/images/admin.tar"               admin:local
+    docker save -o "$BUNDLE_DIR/images/nginx.tar"               nginx:alpine
+    docker save -o "$BUNDLE_DIR/images/postgis.tar"             postgis/postgis:15-3.3
+    docker save -o "$BUNDLE_DIR/images/docker-socket-proxy.tar" tecnativa/docker-socket-proxy:v0.4.2
+
+    echo "Copying deployment files..."
+    cp docker-compose.yml install-offline.sh Makefile "$BUNDLE_DIR/"
+    cp -r scripts templates "$BUNDLE_DIR/"
+    mkdir -p "$BUNDLE_DIR/admin"
+    cp -r admin/nginx "$BUNDLE_DIR/admin/"
+    mkdir -p "$BUNDLE_DIR/packages/tak-maps"
+
+    echo ""
+    echo "Bundle ready: $BUNDLE_DIR"
+    echo "Copy this whole folder to the offline machine, then run: ./install-offline.sh"
+    exit 0
+fi
+
+# ── Install mode: run from inside a bundle, on the offline machine ──────────
+[ -f "$SCRIPT_DIR/docker-compose.yml" ] || { echo "Run this from inside a bundle produced by './install-offline.sh bundle', or run that first."; exit 1; }
 [ -d "$SCRIPT_DIR/images" ] && ls "$SCRIPT_DIR"/images/*.tar >/dev/null 2>&1 \
     || { echo "No images/*.tar found — this doesn't look like a built bundle."; exit 1; }
 
@@ -18,7 +76,7 @@ ENV_FILE="$SCRIPT_DIR/takserver.env"
 if ! command -v docker &>/dev/null; then
     echo "Docker not found — installing from bundled static binaries (no network used)..."
     [ -d "$SCRIPT_DIR/docker-bin" ] || {
-        echo "docker-bin/ missing from this bundle — rebuild it with scripts/build_offline_bundle.sh"
+        echo "docker-bin/ missing from this bundle — rebuild it with './install-offline.sh bundle'"
         exit 1
     }
 

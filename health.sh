@@ -21,8 +21,8 @@ ENV_FILE="$SCRIPT_DIR/takserver.env"
 . "$SCRIPT_DIR/scripts/_spinner.sh"
 # shellcheck source=scripts/_selftest.sh
 . "$SCRIPT_DIR/scripts/_selftest.sh"
-# shellcheck source=scripts/_vendor.sh
-. "$SCRIPT_DIR/scripts/_vendor.sh"
+# shellcheck source=scripts/refresh_vendor.sh
+. "$SCRIPT_DIR/scripts/refresh_vendor.sh"
 
 [ -f "$ENV_FILE" ] || fail "takserver.env not found — run ./install.sh first"
 [ -d "$SCRIPT_DIR/.git" ] || fail "Not a git repo — clone via git, not manual download"
