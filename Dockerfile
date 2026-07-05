@@ -2,12 +2,16 @@
 
 ARG TAK_RELEASE="5.7-RELEASE-43"
 ARG TEMURIN_VERSION="17"
+# Defaults to pvarki's public redistribution — anyone cloning this repo can
+# build with zero setup, no gated tak.gov account needed up front. Override
+# in takserver.env (TAK_DIST_IMAGE=tak-server-dist:5.7-RELEASE-43, built
+# locally via scripts/refresh_vendor.sh tak from your own zip, or
+# ghcr.io/<you>/tak-server-dist:<version> if you've published one) if you'd
+# rather build from your own tak.gov download instead.
+ARG TAK_DIST_IMAGE="pvarki/tak-server-dist:${TAK_RELEASE}"
 
 # ── Stage 1: fetch TAK distribution ZIP ───────────────────────────────────────
-# Vendored locally via scripts/vendor_tak_zip.sh, same treatment as the other
-# base images: load_vendored_images (see scripts/_vendor.sh) puts this in the
-# local image cache before build, so this FROM resolves with zero network.
-FROM tak-server-dist:${TAK_RELEASE} AS tak-files
+FROM ${TAK_DIST_IMAGE} AS tak-files
 
 # ── Stage 2: base system with all runtime deps ────────────────────────────────
 FROM eclipse-temurin:${TEMURIN_VERSION}-noble AS deps

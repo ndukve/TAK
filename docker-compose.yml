@@ -40,6 +40,7 @@ services:
       context: .
       args:
         GIT_COMMIT: ${GIT_COMMIT:-unknown}
+        TAK_DIST_IMAGE: ${TAK_DIST_IMAGE:-pvarki/tak-server-dist:5.7-RELEASE-43}
     command: ["/bin/bash", "/opt/scripts/firstrun.sh"]
     depends_on:
       takdb:
