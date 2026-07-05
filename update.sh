@@ -9,6 +9,8 @@ ENV_FILE="$SCRIPT_DIR/takserver.env"
 . "$SCRIPT_DIR/scripts/_spinner.sh"
 # shellcheck source=scripts/_selftest.sh
 . "$SCRIPT_DIR/scripts/_selftest.sh"
+# shellcheck source=scripts/_vendor.sh
+. "$SCRIPT_DIR/scripts/_vendor.sh"
 
 # ── Preflight ─────────────────────────────────────────────────────────────────
 [ -f "$ENV_FILE" ] || fail "takserver.env not found — run ./install.sh first"
@@ -82,12 +84,9 @@ docker compose exec -T takdb psql -U "$PGUSER" \
 # ── Rebuild ───────────────────────────────────────────────────────────────────
 export GIT_COMMIT="$(git rev-parse HEAD)"
 
-# The registry mirror (docker-compose.yml's `registry` service) has to be up
-# before any build — every image below pulls through it, not Docker Hub directly.
-info "Starting registry mirror..."
-docker compose --env-file "$ENV_FILE" up -d registry \
-    || fail "Registry mirror failed to start (see output above)."
-ok "Registry mirror up"
+info "Loading vendored images (if any)..."
+load_vendored_images "$SCRIPT_DIR/takserver-dist"
+ok "Vendored images loaded"
 
 info "Building updated image..."
 docker compose --env-file "$ENV_FILE" build \

@@ -26,6 +26,8 @@ ENV_FILE="$SCRIPT_DIR/takserver.env"
 WT_BACKTITLE="TAK Server Installer"
 # shellcheck source=scripts/_tui.sh
 . "$SCRIPT_DIR/scripts/_tui.sh"
+# shellcheck source=scripts/_vendor.sh
+. "$SCRIPT_DIR/scripts/_vendor.sh"
 
 gen_hex() { openssl rand -hex "${1:-16}"; }
 
@@ -44,9 +46,9 @@ if [ "${TAK_REINSTALL:-}" = "1" ] && [ -f "$ENV_FILE" ]; then
     cd "$SCRIPT_DIR"
     docker compose --env-file "$ENV_FILE" down --remove-orphans 2>/dev/null || true
 
-    run_with_gauge "Registry" "Starting local registry mirror..." -- \
-        docker compose --env-file "$ENV_FILE" up -d registry \
-        || fail "Registry mirror failed to start (see output above)."
+    run_with_gauge "Vendored Images" "Loading pre-fetched images (if any)..." -- \
+        load_vendored_images "$SCRIPT_DIR/takserver-dist" \
+        || fail "Loading vendored images failed (see output above)."
 
     export GIT_COMMIT="$(git rev-parse HEAD 2>/dev/null || echo unknown)"
     run_with_gauge "Build" "Building TAK Server image (this can take a few minutes)..." -- \
@@ -233,9 +235,9 @@ chmod 600 "$ENV_FILE"
 cd "$SCRIPT_DIR"
 docker compose --env-file "$ENV_FILE" down --remove-orphans 2>/dev/null || true
 
-run_with_gauge "Registry [7/7]" "Starting local registry mirror..." -- \
-    docker compose --env-file "$ENV_FILE" up -d registry \
-    || fail "Registry mirror failed to start (see output above)."
+run_with_gauge "Vendored Images [7/7]" "Loading pre-fetched images (if any)..." -- \
+    load_vendored_images "$SCRIPT_DIR/takserver-dist" \
+    || fail "Loading vendored images failed (see output above)."
 
 export GIT_COMMIT="$(git rev-parse HEAD 2>/dev/null || echo unknown)"
 run_with_gauge "Build [7/7]" "Building TAK Server image (this can take a few minutes)..." -- \

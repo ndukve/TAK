@@ -8,7 +8,7 @@ ENV_FILE := takserver.env
 # ── Lifecycle ─────────────────────────────────────────────────────────────────
 
 build:
-	docker compose --env-file $(ENV_FILE) up -d registry
+	@bash -c '. ./scripts/_vendor.sh && load_vendored_images takserver-dist'
 	docker compose --env-file $(ENV_FILE) build
 
 up:

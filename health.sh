@@ -21,6 +21,8 @@ ENV_FILE="$SCRIPT_DIR/takserver.env"
 . "$SCRIPT_DIR/scripts/_spinner.sh"
 # shellcheck source=scripts/_selftest.sh
 . "$SCRIPT_DIR/scripts/_selftest.sh"
+# shellcheck source=scripts/_vendor.sh
+. "$SCRIPT_DIR/scripts/_vendor.sh"
 
 [ -f "$ENV_FILE" ] || fail "takserver.env not found — run ./install.sh first"
 [ -d "$SCRIPT_DIR/.git" ] || fail "Not a git repo — clone via git, not manual download"
@@ -46,9 +48,9 @@ if [ "${#_STALE[@]}" -gt 0 ]; then
     warn "Stale build cache detected (${_STALE[*]}) — forcing a clean rebuild"
     export GIT_COMMIT
 
-    info "Starting registry mirror..."
-    $_DC up -d registry || fail "Registry mirror failed to start (see output above)."
-    ok "Registry mirror up"
+    info "Loading vendored images (if any)..."
+    load_vendored_images "$SCRIPT_DIR/takserver-dist"
+    ok "Vendored images loaded"
 
     info "Rebuilding without cache (${_STALE[*]})..."
     $_DC build --no-cache "${_STALE[@]}" \
