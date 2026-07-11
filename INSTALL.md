@@ -213,7 +213,7 @@ DataSync reads the server connection from your existing `.zip` data package — 
 
 Displays drone video feeds as picture-in-picture on the ATAK map, and shows UAV tracks from your MAVLink bridge in a dedicated flight control panel.
 
-> **EFDI integration:** With the MAVLink bridge running, UAS Tool automatically shows all MAVLink-connected drones as blue UAV icons on the map. Video feed URL is configured per-drone inside UAS Tool settings.
+> **MAVLink integration:** With a MAVLink bridge running, UAS Tool automatically shows all MAVLink-connected drones as blue UAV icons on the map. Video feed URL is configured per-drone inside UAS Tool settings.
 
 **Install:** Same sideload procedure as DataSync.
 

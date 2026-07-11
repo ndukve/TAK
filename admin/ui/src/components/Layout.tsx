@@ -10,8 +10,29 @@ import { useTheme } from '@/store/theme'
 import { useNotifications } from '@/store/notifications'
 import {
   LayoutDashboard, Users, Package, Puzzle, Map,
-  ScrollText, Terminal, ShieldUser, LogOut, Menu, History, Settings, Sun, Moon, Bell, Radio, Satellite
+  ScrollText, Terminal, ShieldUser, LogOut, History, Settings, Sun, Moon, Bell, Radio, Satellite
 } from 'lucide-react'
+
+// Three-bar icon that morphs into an X on open — plain CSS transitions on
+// each bar's rotation/position/opacity, no icon-swap flash.
+function HamburgerIcon({ open }: { open: boolean }) {
+  return (
+    <span className="relative block w-4 h-4">
+      <span className={cn(
+        'absolute left-0 top-0.5 w-4 h-0.5 rounded-full bg-current transition-all duration-300',
+        open && 'top-[7px] rotate-45'
+      )} />
+      <span className={cn(
+        'absolute left-0 top-[7px] w-4 h-0.5 rounded-full bg-current transition-all duration-300',
+        open && 'opacity-0'
+      )} />
+      <span className={cn(
+        'absolute left-0 bottom-0.5 w-4 h-0.5 rounded-full bg-current transition-all duration-300',
+        open && 'bottom-[7px] -rotate-45'
+      )} />
+    </span>
+  )
+}
 
 const navItems = [
   { to: '/', label: 'Dashboard', icon: LayoutDashboard },
@@ -232,81 +253,82 @@ export function Layout({ children }: { children: React.ReactNode }) {
   const adminItems = role === 'superadmin' ? superAdminItems : []
 
   return (
-    <div className="flex h-screen bg-zinc-50 dark:bg-[#000000] text-zinc-900 dark:text-zinc-100 hud-grid-bg">
+    <div className="flex h-screen bg-zinc-50 dark:bg-hud-0 text-zinc-900 dark:text-zinc-100">
       <a
         href="#main-content"
         className="sr-only focus:not-sr-only focus:absolute focus:top-2 focus:left-2 focus:z-50 focus:px-3 focus:py-2 focus:rounded-md focus:bg-accent-fill focus:text-accent-text focus:text-sm"
       >
         Skip to content
       </a>
-      <button
-        onClick={() => setSidebarOpen(v => !v)}
-        className="md:hidden fixed top-3 left-3 z-50 p-2 rounded-md bg-zinc-100 dark:bg-[#111113] border border-zinc-200 dark:border-white/10 text-zinc-700 dark:text-zinc-300"
-        aria-label="Toggle menu"
-      >
-        <Menu size={18} />
-      </button>
+      <header className="fixed top-0 left-0 right-0 z-50 h-14 pl-16 pr-4 flex items-center gap-2 min-w-0 border-b border-zinc-200 dark:border-white/10 bg-white/97 dark:bg-hud-1/97 backdrop-blur-xl">
+        <button
+          onClick={() => setSidebarOpen(v => !v)}
+          className="fixed top-3 left-3 z-50 p-2.5 rounded-md bg-zinc-100 dark:bg-[#111113] border border-zinc-200 dark:border-white/10 text-zinc-700 dark:text-zinc-300 hover:text-zinc-900 dark:hover:text-white transition-colors"
+          aria-label="Toggle menu"
+          aria-expanded={sidebarOpen}
+        >
+          <HamburgerIcon open={sidebarOpen} />
+        </button>
+        {logoUrl && <img src={logoUrl} alt="" className="w-7 h-7 rounded object-contain shrink-0" />}
+        <span className="font-display font-bold text-xl tracking-tight truncate">{orgName}</span>
+        <div className="relative ml-auto">
+          <button
+            onClick={() => setNotifOpen((v) => !v)}
+            aria-label="Notifications"
+            className="p-1.5 rounded hover:bg-zinc-200 dark:hover:bg-[#1a1a1d] text-zinc-600 dark:text-zinc-400 relative focus:outline-none focus:ring-2 focus:ring-accent-ring"
+          >
+            <Bell size={16} />
+            {notifications.length > 0 && (
+              <span className="absolute top-0.5 right-0.5 w-2 h-2 rounded-full bg-red-500" />
+            )}
+          </button>
+          {notifOpen && (
+            <div className="fixed top-14 left-4 right-4 w-auto md:absolute md:top-auto md:left-0 md:right-auto md:mt-2 md:w-72 rounded-md border border-zinc-200 dark:border-white/10 bg-white dark:bg-[#111113] shadow-lg z-50 max-h-80 overflow-y-auto">
+              <div className="flex items-center justify-between px-3 py-2 border-b border-zinc-200 dark:border-white/10">
+                <span className="hud-label text-xs font-semibold text-zinc-600 dark:text-zinc-400">Notifications</span>
+                <button onClick={clearNotifications} className="text-xs text-accent-ring hover:underline">Clear all</button>
+              </div>
+              {notifications.length === 0 ? (
+                <p className="px-3 py-4 text-sm text-zinc-500 text-center">No notifications yet</p>
+              ) : (
+                notifications.map((n) => {
+                  const content = (
+                    <>
+                      <span className={`w-1.5 h-1.5 rounded-full mt-1.5 ${n.type === 'success' ? 'bg-green-500' : 'bg-red-500'}`} />
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm text-zinc-900 dark:text-zinc-200 break-words">{n.message}</p>
+                        <p className="text-xs text-zinc-500">{new Date(n.timestamp).toLocaleTimeString()}</p>
+                      </div>
+                    </>
+                  )
+                  return role === 'superadmin' ? (
+                    <button
+                      key={n.id}
+                      onClick={() => { setNotifOpen(false); navigate({ to: '/logs' }) }}
+                      title="View logs"
+                      className="flex items-start gap-2 w-full text-left px-3 py-2 border-b border-zinc-100 dark:border-white/5 last:border-0 hover:bg-zinc-100 dark:hover:bg-white/[0.05] transition-colors"
+                    >
+                      {content}
+                    </button>
+                  ) : (
+                    <div key={n.id} className="flex items-start gap-2 px-3 py-2 border-b border-zinc-100 dark:border-white/5 last:border-0">
+                      {content}
+                    </div>
+                  )
+                })
+              )}
+            </div>
+          )}
+        </div>
+      </header>
       {sidebarOpen && (
-        <div className="md:hidden fixed inset-0 bg-black/50 z-30" onClick={() => setSidebarOpen(false)} />
+        <div className="fixed inset-0 top-14 bg-black/50 z-30" onClick={() => setSidebarOpen(false)} />
       )}
       <aside className={cn(
-        'w-56 flex-shrink-0 border-r border-zinc-200 dark:border-white/10 flex flex-col hud-glass',
-        'fixed inset-y-0 left-0 z-40 bg-zinc-50 transition-transform md:relative md:translate-x-0',
+        'w-64 flex-shrink-0 border-r border-zinc-200 dark:border-white/10 flex flex-col',
+        'fixed top-14 bottom-0 left-0 z-40 bg-white/97 dark:bg-hud-1/97 shadow-xl backdrop-blur-xl transition-transform duration-300 ease-in-out',
         sidebarOpen ? 'translate-x-0' : '-translate-x-full'
       )}>
-        <div className="p-4 border-b border-zinc-200 dark:border-white/10 flex items-center gap-2">
-          {logoUrl && <img src={logoUrl} alt="" className="w-6 h-6 rounded object-contain" />}
-          <span className="font-bold text-lg tracking-tight">{orgName}</span>
-          <div className="relative ml-auto">
-            <button
-              onClick={() => setNotifOpen((v) => !v)}
-              aria-label="Notifications"
-              className="p-1.5 rounded hover:bg-zinc-200 dark:hover:bg-[#1a1a1d] text-zinc-600 dark:text-zinc-400 relative focus:outline-none focus:ring-2 focus:ring-accent-ring"
-            >
-              <Bell size={16} />
-              {notifications.length > 0 && (
-                <span className="absolute top-0.5 right-0.5 w-2 h-2 rounded-full bg-red-500" />
-              )}
-            </button>
-            {notifOpen && (
-              <div className="fixed top-14 left-4 right-4 w-auto md:absolute md:top-auto md:left-0 md:right-auto md:mt-2 md:w-72 rounded-md border border-zinc-200 dark:border-white/10 bg-white dark:bg-[#111113] shadow-lg z-50 max-h-80 overflow-y-auto">
-                <div className="flex items-center justify-between px-3 py-2 border-b border-zinc-200 dark:border-white/10">
-                  <span className="hud-label text-xs font-semibold text-zinc-600 dark:text-zinc-400">Notifications</span>
-                  <button onClick={clearNotifications} className="text-xs text-accent-ring hover:underline">Clear all</button>
-                </div>
-                {notifications.length === 0 ? (
-                  <p className="px-3 py-4 text-sm text-zinc-500 text-center">No notifications yet</p>
-                ) : (
-                  notifications.map((n) => {
-                    const content = (
-                      <>
-                        <span className={`w-1.5 h-1.5 rounded-full mt-1.5 ${n.type === 'success' ? 'bg-green-500' : 'bg-red-500'}`} />
-                        <div className="flex-1 min-w-0">
-                          <p className="text-sm text-zinc-900 dark:text-zinc-200 break-words">{n.message}</p>
-                          <p className="text-xs text-zinc-500">{new Date(n.timestamp).toLocaleTimeString()}</p>
-                        </div>
-                      </>
-                    )
-                    return role === 'superadmin' ? (
-                      <button
-                        key={n.id}
-                        onClick={() => { setNotifOpen(false); navigate({ to: '/logs' }) }}
-                        title="View logs"
-                        className="flex items-start gap-2 w-full text-left px-3 py-2 border-b border-zinc-100 dark:border-white/5 last:border-0 hover:bg-zinc-100 dark:hover:bg-white/[0.05] transition-colors"
-                      >
-                        {content}
-                      </button>
-                    ) : (
-                      <div key={n.id} className="flex items-start gap-2 px-3 py-2 border-b border-zinc-100 dark:border-white/5 last:border-0">
-                        {content}
-                      </div>
-                    )
-                  })
-                )}
-              </div>
-            )}
-          </div>
-        </div>
         <nav className="flex-1 p-2 space-y-1">
           {items.map(({ to, label, icon: Icon }) => (
             <Link
@@ -386,7 +408,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
           <p className="px-3 pt-2 text-[10px] text-zinc-400 dark:text-zinc-600 text-center">TAK Admin {__APP_VERSION__}</p>
         </div>
       </aside>
-      <main id="main-content" tabIndex={-1} className="flex-1 overflow-auto pt-14 md:pt-0">{children}</main>
+      <main id="main-content" tabIndex={-1} className="flex-1 overflow-auto pt-14 isolate hud-grid-bg">{children}</main>
       {showUserSettings && <UserSettingsModal onClose={() => setShowUserSettings(false)} />}
       {passwordExpired && <ChangePasswordModal forced onClose={() => setPasswordExpired(false)} />}
     </div>

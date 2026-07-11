@@ -213,7 +213,7 @@ DataSync serverio adresą nuskaito iš jūsų `.zip` duomenų paketo — papildo
 
 Rodo dronų vaizdo įrašą kaip „picture-in-picture" ant ATAK žemėlapio ir vaizduoja UAV takelius iš MAVLink tilto atskirame valdymo skydelyje.
 
-> **EFDI integracija:** Kai MAVLink bridge veikia, UAS Tool automatiškai rodo visus MAVLink prijungtus dronus kaip mėlynas UAV piktogramas žemėlapyje. Vaizdo srauto URL konfigūruojamas UAS Tool nustatymuose kiekvienam dronui atskirai.
+> **MAVLink integracija:** Kai MAVLink tiltas veikia, UAS Tool automatiškai rodo visus MAVLink prijungtus dronus kaip mėlynas UAV piktogramas žemėlapyje. Vaizdo srauto URL konfigūruojamas UAS Tool nustatymuose kiekvienam dronui atskirai.
 
 **Diegimas:** Ta pati APK diegimo procedūra kaip DataSync.
 

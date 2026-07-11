@@ -93,10 +93,10 @@ function DashboardPage() {
 
   return (
     <Layout>
-      <div className="p-6">
+      <div className="p-8 max-w-[1600px]">
         <PageHeader title="Dashboard" />
 
-        <div className="grid grid-cols-2 lg:grid-cols-6 gap-4 mb-6 hud-enter">
+        <div className="flex flex-nowrap gap-3 pt-1 pb-3 mb-3 overflow-x-auto hud-enter">
           {system ? (
             <>
               <SystemStatCard icon={Cpu} label="CPU" value={system.cpu_percent !== null ? `${system.cpu_percent}%` : '—'} />
@@ -108,34 +108,34 @@ function DashboardPage() {
             </>
           ) : (
             Array.from({ length: 6 }).map((_, i) => (
-              <div key={i} className="rounded-md border border-zinc-200 dark:border-white/10 bg-white dark:bg-[#111113] p-4 hud-card">
-                <div className="flex items-start justify-between mb-3">
-                  <Skeleton className="h-2.5 w-10" />
-                  <Skeleton className="w-7 h-7 rounded-md" />
+              <div key={i} className="rounded-md border border-zinc-200 dark:border-white/10 bg-white dark:bg-[#111113] p-2.5 hud-card flex-1 min-w-[120px] h-24">
+                <div className="flex items-start justify-between mb-1.5">
+                  <Skeleton className="h-2 w-8" />
+                  <Skeleton className="w-5 h-5 rounded" />
                 </div>
-                <Skeleton className="h-4 w-24" />
+                <Skeleton className="h-3.5 w-20" />
               </div>
             ))
           )}
         </div>
         {system && <CertList certs={system.certs} />}
 
-        {role !== 'readonly' && (
-          <div className="mb-6">
-            <div className="flex items-center justify-between mb-3">
-              <h2 className="hud-label text-sm font-semibold text-zinc-600 dark:text-zinc-400">Live Map</h2>
-              <Link to="/live-map" className="text-xs text-accent-ring hover:underline">Open full map →</Link>
-            </div>
-            <LiveMapWidget height="320px" pollMs={8000} />
-          </div>
-        )}
-
         <h2 className="hud-label text-sm font-semibold text-zinc-600 dark:text-zinc-400 mb-3">Services</h2>
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 hud-enter hud-enter-delay-1">
+        <div className="flex flex-nowrap gap-3 pt-1 pb-3 mb-3 overflow-x-auto hud-enter hud-enter-delay-1">
           {services.map(s => (
             <ServiceCard key={s.name} service={s} />
           ))}
         </div>
+
+        {role !== 'readonly' && (
+          <div>
+            <div className="flex items-center justify-between mb-3">
+              <h2 className="hud-label text-sm font-semibold text-zinc-600 dark:text-zinc-400">Live Map</h2>
+              <Link to="/live-map" className="text-xs text-accent-ring hover:underline">Open full map →</Link>
+            </div>
+            <LiveMapWidget height="480px" pollMs={8000} />
+          </div>
+        )}
       </div>
     </Layout>
   )
@@ -145,15 +145,15 @@ function SystemStatCard({ icon: Icon, label, value, state = 'ok' }: { icon: Luci
   const badgeClass = state === 'critical' ? 'border-red-300 dark:border-red-800 bg-red-100 dark:bg-red-500/10' : state === 'warn' ? 'border-yellow-300 dark:border-yellow-800 bg-yellow-100 dark:bg-yellow-500/10' : 'border-zinc-300 dark:border-white/10 bg-zinc-200/50 dark:bg-white/[0.04]'
   const textClass = state === 'critical' ? 'text-red-600 dark:text-red-400' : state === 'warn' ? 'text-yellow-600 dark:text-yellow-400' : 'text-zinc-800 dark:text-zinc-200'
   return (
-    <div className="hud-frame rounded-md border border-zinc-200 dark:border-white/10 bg-white dark:bg-[#111113] p-4 hud-card">
+    <div className="hud-frame rounded-md border border-zinc-200 dark:border-white/10 bg-white dark:bg-[#111113] p-2.5 hud-card flex-1 min-w-[120px] h-24 flex flex-col justify-between">
       <HudCorners />
-      <div className="flex items-start justify-between mb-3">
-        <span className="text-[10px] font-semibold tracking-wider text-zinc-500 uppercase">{label}</span>
-        <div className={cn('w-7 h-7 rounded-md border flex items-center justify-center shrink-0', badgeClass)}>
-          <Icon size={14} className={textClass} />
+      <div className="flex items-start justify-between">
+        <span className="text-[9px] font-semibold tracking-wider text-zinc-500 uppercase">{label}</span>
+        <div className={cn('w-5 h-5 rounded border flex items-center justify-center shrink-0', badgeClass)}>
+          <Icon size={11} className={textClass} />
         </div>
       </div>
-      <p className={cn('text-sm font-medium font-mono', textClass)}>{value}</p>
+      <p className={cn('text-xs font-medium font-mono truncate', textClass)}>{value}</p>
     </div>
   )
 }
@@ -188,29 +188,30 @@ function ServiceCard({ service }: { service: ServiceState }) {
 
   const badge = (
     <div className={cn(
-      'w-7 h-7 rounded-md border flex items-center justify-center shrink-0',
+      'w-5 h-5 rounded border flex items-center justify-center shrink-0',
       running ? 'border-green-300 dark:border-green-800 bg-green-100 dark:bg-green-500/10' : 'border-red-300 dark:border-red-800 bg-red-100 dark:bg-red-500/10',
       canViewLogs && 'hover:ring-2 hover:ring-accent-ring cursor-pointer transition-shadow'
     )}>
       {running
-        ? <CheckCircle size={14} className="text-green-600 dark:text-green-500" />
-        : <XCircle size={14} className="text-red-600 dark:text-red-500" />
+        ? <CheckCircle size={11} className="text-green-600 dark:text-green-500" />
+        : <XCircle size={11} className="text-red-600 dark:text-red-500" />
       }
     </div>
   )
 
   return (
-    <div className="rounded-md border border-zinc-200 dark:border-white/10 bg-white dark:bg-[#111113] p-4 hud-card">
-      <div className="flex items-start justify-between mb-3">
-        <span className="text-[10px] font-semibold tracking-wider text-zinc-500 uppercase">Service</span>
+    <div className="hud-frame rounded-md border border-zinc-200 dark:border-white/10 bg-white dark:bg-[#111113] p-2.5 hud-card flex-1 min-w-[120px] h-24 flex flex-col justify-between">
+      <HudCorners />
+      <div className="flex items-start justify-between">
+        <span className="text-[9px] font-semibold tracking-wider text-zinc-500 uppercase">Service</span>
         {canViewLogs
           ? <Link to="/logs" search={{ service: loggableName }} title="View logs" aria-label={`View logs for ${service.name}`}>{badge}</Link>
           : badge
         }
       </div>
-      <p className="text-sm font-medium text-zinc-800 dark:text-zinc-200 font-mono mb-2">{service.name}</p>
-      <div className="border-t border-zinc-200 dark:border-white/10 pt-2">
-        <span className={cn('text-xs font-medium', running ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400')}>
+      <p className="text-xs font-medium text-zinc-800 dark:text-zinc-200 font-mono truncate">{service.name}</p>
+      <div className="border-t border-zinc-200 dark:border-white/10 pt-1.5">
+        <span className={cn('text-[11px] font-medium', running ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400')}>
           {service.status}
         </span>
       </div>

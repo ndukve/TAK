@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Generate a client certificate for a machine service (e.g. EFDI moon-pod).
+# Generate a client certificate for a machine service (e.g. a sensor bridge).
 # Outputs PEM cert + key + CA cert to ./certs/<name>/ for use with Python ssl.
 # Usage: ./generate_service_cert.sh [name]   (prompts interactively if omitted)
 set -euo pipefail
@@ -15,7 +15,7 @@ ENV_FILE="$SCRIPT_DIR/takserver.env"
 NAME="${1:-}"
 if [ -z "$NAME" ]; then
     while true; do
-        printf "  Service name (e.g. efdi-pod): "
+        printf "  Service name (e.g. sensor-bridge): "
         read -r NAME
         [[ "$NAME" =~ ^[a-zA-Z0-9_-]+$ ]] && break
         printf "  ${R}Invalid — only letters, numbers, hyphens, underscores${NC}\n"

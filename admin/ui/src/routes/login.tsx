@@ -45,7 +45,7 @@ function LoginPage() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-zinc-50 dark:bg-[#000000] hud-grid-bg">
+    <div className="min-h-screen flex items-center justify-center bg-zinc-50 dark:bg-hud-0 hud-grid-bg">
       <div className="hud-frame w-full max-w-sm space-y-6 p-8 rounded-md border border-zinc-200 dark:border-white/10 bg-white dark:bg-[#111113] hud-glass">
         <HudCorners />
         <div>
