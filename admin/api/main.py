@@ -42,7 +42,7 @@ async def lifespan(app: FastAPI):
     yield
 
 
-app = FastAPI(title="TAK Admin API", version="1.0.0", lifespan=lifespan)
+app = FastAPI(title="TAK Admin API", version="1.0.5", lifespan=lifespan)
 
 # Prod serves the UI from the same origin (via admin_proxy) — no CORS needed
 # there at all. Only wire up the middleware when explicitly running the Vite
