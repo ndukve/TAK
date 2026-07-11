@@ -4,7 +4,7 @@ import { useRoute } from '@/store/route'
 import { apiJson, errorMessage } from '@/lib/api'
 import { Terminal } from '@xterm/xterm'
 import { FitAddon } from '@xterm/addon-fit'
-import { toast } from 'sonner'
+import { notify } from '@/lib/notify'
 import { ShieldAlert } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
@@ -39,7 +39,7 @@ export function ShellSession() {
       setTicket(data.ticket)
       setPassword('')
     } catch (err) {
-      toast.error(errorMessage(err))
+      notify.error(errorMessage(err))
     } finally {
       setLoading(false)
     }
@@ -101,7 +101,7 @@ export function ShellSession() {
   return (
     <div
       className={cn(
-        'fixed inset-y-0 right-0 z-10 top-14 md:top-0 md:left-56 left-0 bg-zinc-950 p-6 flex flex-col',
+        'fixed inset-y-0 right-0 z-10 top-14 md:top-0 md:left-56 left-0 bg-zinc-50 dark:bg-[#000000] p-6 flex flex-col',
         onShellPage ? 'block' : 'hidden'
       )}
     >
@@ -109,9 +109,9 @@ export function ShellSession() {
 
       {!ticket && (
         <div className="max-w-sm space-y-4">
-          <div className="flex items-start gap-3 p-4 rounded-lg border border-yellow-700/50 bg-yellow-900/20">
-            <ShieldAlert size={16} className="text-yellow-400 shrink-0 mt-0.5" />
-            <p className="text-sm text-yellow-200">
+          <div className="flex items-start gap-3 p-4 rounded-md border border-yellow-300 dark:border-yellow-700/50 bg-yellow-50 dark:bg-yellow-900/20">
+            <ShieldAlert size={16} className="text-yellow-600 dark:text-yellow-400 shrink-0 mt-0.5" />
+            <p className="text-sm text-yellow-800 dark:text-yellow-200">
               Re-enter your password to unlock shell access. Session expires in 5 minutes.
             </p>
           </div>
@@ -122,7 +122,7 @@ export function ShellSession() {
               onChange={(e) => setPassword(e.target.value)}
               placeholder="Your admin password"
               required
-              className="w-full px-3 py-2 rounded-md bg-zinc-800 border border-zinc-700 text-white text-sm focus:outline-none focus:ring-2 focus:ring-accent-ring"
+              className="w-full px-3 py-2 rounded-md bg-zinc-200 dark:bg-[#1a1a1d] border border-zinc-300 dark:border-white/10 text-zinc-900 dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-accent-ring"
             />
             <button
               type="submit"
@@ -138,7 +138,7 @@ export function ShellSession() {
       {ticket && (
         <div
           ref={termRef}
-          className="flex-1 rounded-lg overflow-hidden border border-zinc-800"
+          className="flex-1 rounded-md overflow-hidden border border-zinc-200 dark:border-white/10"
           style={{ minHeight: '500px' }}
         />
       )}

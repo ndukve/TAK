@@ -1,6 +1,11 @@
 # Secrets — never commit
 .env
 takserver.env
+dev.env
+
+# Local dev environment runtime state (dev.sh)
+.dev-api.pid
+.dev-api.log
 
 # Backup output (DB dumps, certs, secrets) — never commit
 backups/
@@ -31,6 +36,7 @@ certs/
 # neither belongs in git (regenerated on every install/build)
 node_modules/
 admin/ui/dist/
+admin/ui/.vite/
 
 # Python bytecode cache
 __pycache__/
@@ -38,3 +44,6 @@ __pycache__/
 
 # Offline install bundle (scripts/build steps regenerate this)
 offline-bundle/
+
+# Internal SDD planning docs (brainstorm/spec/plan) — not part of the shipped repo
+docs/

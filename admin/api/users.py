@@ -23,7 +23,7 @@ CLIENTPKGS = f"{TAK_DATA}/clientpkgs"
 SERVER_ADDR = os.environ.get("TAK_SERVER_ADDRESS", "localhost")
 
 _USERNAME_RE = re.compile(r'^[A-Za-z0-9_-]+$')
-_NEW_USERNAME_RE = re.compile(r'^[A-Za-z0-9_-]+-(ATAK|WinTAK|iTAK)$')
+_NEW_USERNAME_RE = re.compile(r'^[A-Za-z0-9_-]+-(ATAK|WinTAK|iTAK|Service)$')
 
 
 def _validate_username(username: str) -> str:
@@ -41,7 +41,7 @@ def _validate_new_username(username: str) -> str:
     if not _NEW_USERNAME_RE.fullmatch(username):
         raise HTTPException(
             status_code=400,
-            detail="Username must end in -ATAK, -WinTAK, or -iTAK (e.g. alpha1-iTAK)",
+            detail="Username must end in -ATAK, -WinTAK, -iTAK, or -Service (e.g. alpha1-iTAK)",
         )
     return username
 
@@ -63,7 +63,7 @@ def _cert_days_remaining(username: str) -> int | None:
 
 
 def _base_callsign(username: str) -> str:
-    for suffix in ("-ATAK", "-WinTAK", "-iTAK"):
+    for suffix in ("-ATAK", "-WinTAK", "-iTAK", "-Service"):
         if username.endswith(suffix):
             return username[: -len(suffix)]
     return username

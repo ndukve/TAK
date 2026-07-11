@@ -1,10 +1,11 @@
 import os
 from contextlib import asynccontextmanager
 
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from sqlalchemy import text
+from starlette.exceptions import HTTPException
 from starlette.types import Scope
 
 from . import models  # noqa: F401 — ensures models register with Base
@@ -12,10 +13,13 @@ from .admin_users import router as admin_users_router
 from .audit import router as audit_router
 from .auth import _ensure_first_user
 from .auth import router as auth_router
+from .branding import router as branding_router
 from .db import Base, engine, ensure_database
 from .health import router as health_router
+from .live_map import router as live_map_router
 from .logs import router as logs_router
 from .packages import router as packages_router
+from .replay import router as replay_router
 from .shell import router as shell_router
 from .users import router as users_router
 
@@ -30,6 +34,9 @@ async def lifespan(app: FastAPI):
         ))
         await conn.execute(text(
             "ALTER TABLE admin_users ADD COLUMN IF NOT EXISTS password_changed_at TIMESTAMPTZ NOT NULL DEFAULT NOW()"
+        ))
+        await conn.execute(text(
+            "ALTER TABLE brand_settings ADD COLUMN IF NOT EXISTS logo_filename VARCHAR(128)"
         ))
     await _ensure_first_user()
     yield
@@ -58,6 +65,9 @@ app.include_router(packages_router)
 app.include_router(logs_router)
 app.include_router(shell_router)
 app.include_router(audit_router)
+app.include_router(branding_router)
+app.include_router(replay_router)
+app.include_router(live_map_router)
 
 class SPAStaticFiles(StaticFiles):
     """Fall back to index.html for unknown client-side routes (e.g. /logs,

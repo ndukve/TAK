@@ -2,10 +2,10 @@
 
 Jums reikės:
 
-- Kompiuterio su **Ubuntu 22.04** (serverio leidimas, minimalus diegimas) ir interneto ryšiu
-- TAK kliento programėlės: **iTAK** (iOS), **ATAK** (Android) arba **WinTAK** (Windows)
+- Kompiuterio arba virtualios mašinos su **Ubuntu 22.04** (serverio leidimas, minimalus diegimas) ir interneto ryšiu
+- TAK kliento programėlės: **ATAK** (Android), **iTAK** (iOS) arba **WinTAK** (Windows)
 
-**Minimalūs serverio reikalavimai:** 4 CPU branduoliai · 8 GB RAM · 40 GB disko vietos
+**Minimalūs serverio reikalavimai:** 4 CPU branduoliai · 8 GB RAM · 64 GB disko vietos
 
 **Pasirinkite, kaip įrenginiai pasiekia serverį:**
 
@@ -26,7 +26,7 @@ Jei telefonai, nešiojami kompiuteriai ir TAK serveris yra tame pačiame Wi-Fi a
 
 Pereikite prie 2 žingsnio. Diegimo metu pasirinksite **„Enter address manually"** ir įvesite serverio LAN IP.
 
-### B variantas — Nuotolinis prisijungimas (NetBird)
+### B variantas — Nuotolinis prisijungimas (NetBird/Tailscale)
 
 Jei įrenginiai jungiasi iš kito tinklo, naudokite NetBird šifruotam tuneliui sukurti.
 
@@ -39,7 +39,7 @@ Jei įrenginiai jungiasi iš kito tinklo, naudokite NetBird šifruotam tuneliui 
 
 ## 2 žingsnis — Paleisti diegimo skriptą
 
-Ubuntu kompiuteryje atidarykite terminalą ir paleiskite:
+Ubuntu kompiuteryje/virtualioje mašinoje atidarykite terminalą ir paleiskite:
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/ndukve/TAK/main/install.sh | bash
@@ -91,7 +91,7 @@ Kiekvienas vartotojas gauna duomenų paketą (`.zip`), kuriame yra:
 
 Abu sertifikatų failai būtini. Kliento sertifikatas autentifikuoja įrenginį serveriui; pasitikėjimo saugykla — serverį įrenginiui.
 
-**Šaukinys privalo baigtis `-ATAK`, `-WinTAK` arba `-iTAK`** — pvz. `Alpha1-iTAK`. Tai ne kosmetika: iTAK importavimo funkcijai reikia kitokios zip failo struktūros (sertifikatų failai šaknyje), nei ATAK/WinTAK naudojamas Mission Package formatas (sudėti į `content/` aplanką). Priesaga nurodo, kurį formatą sukurti. Pasirinkus netinkamą kliento tipą, paketas importuosis tyliai, bet serverio įrašas neatsiras.
+**Šaukinys privalo baigtis `-ATAK`, `-WinTAK`, `-iTAK` arba `-Service`** — pvz. `Alpha1-iTAK`. Tai ne kosmetika: pvz. iTAK importavimo funkcijai reikia kitokios zip failo struktūros (sertifikatų failai šaknyje), nei ATAK/WinTAK naudojamas Mission Package formatas (sudėti į `content/` aplanką). Priesaga nurodo, kurį formatą sukurti. Pasirinkus netinkamą kliento tipą, paketas importuosis tyliai, bet serverio įrašas neatsiras.
 
 ### Standartinis būdas (generuoti ir suteikti prieigą vienu žingsniu)
 
@@ -171,7 +171,7 @@ Serverio įrašas atsiras automatiškai. Paspauskite **Connect**.
 
 ## Kliento papildiniai
 
-ATAK papildiniai — tai APK failai, diegiami Android įrenginiuose, o ne serveryje. TAK serveris automatiškai palaiko visus standartinius papildinius per savo vidinius API.
+ATAK plėtiniai — tai APK failai, diegiami Android įrenginiuose, o ne serveryje. TAK serveris automatiškai palaiko visus standartinius papildinius per savo vidinius API.
 
 ### Papildinių įkėlimas į serverį platinimui
 
@@ -284,5 +284,5 @@ Jei administravimo skydelis kada nors taptų nepasiekiamas, du skriptai repozito
 
 > **Ryšys nutrūksta užgęsus ekranui**
 > Išjunkite energijos taupymo optimizaciją TAK programėlei.
-> - **Android:** Settings → Apps → ATAK → Battery → **Unrestricted**
-> - **iOS:** išjunkite **Low Power Mode** Settings → Battery
+>- **Android:** Settings → Apps → ATAK → Battery → **Unrestricted**
+>- **iOS:** išjunkite **Low Power Mode** Settings → Battery

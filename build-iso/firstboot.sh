@@ -53,8 +53,9 @@ if [[ "$ADMIN_PASS" != "$ADMIN_PASS2" ]]; then
     exit 1
 fi
 
-read -rp "    PostgreSQL password [$(openssl rand -hex 12)]: " POSTGRES_PASS < /dev/tty
-POSTGRES_PASS="${POSTGRES_PASS:-$(openssl rand -hex 16)}"
+POSTGRES_PASS_DEFAULT=$(openssl rand -hex 16)
+read -rp "    PostgreSQL password [$POSTGRES_PASS_DEFAULT]: " POSTGRES_PASS < /dev/tty
+POSTGRES_PASS="${POSTGRES_PASS:-$POSTGRES_PASS_DEFAULT}"
 
 # ── Write takserver.env ──────────────────────────────────────────────────────
 print_tty ""
@@ -78,6 +79,7 @@ ADMIN_SECRET_KEY=${ADMIN_SECRET}
 ADMIN_FIRST_USER=${ADMIN_USER}
 ADMIN_FIRST_PASS=${ADMIN_PASS}
 EOF
+chmod 600 takserver.env
 
 # ── Start TAK server ─────────────────────────────────────────────────────────
 print_tty "[4/4] Starting TAK Server..."
@@ -89,8 +91,7 @@ print_tty "  Setup complete!"
 print_tty ""
 print_tty "  TAK CoT (SSL):  ${SERVER_IP}:8089"
 print_tty "  TAK HTTPS API:  https://${SERVER_IP}:8443"
-print_tty "  Package server: http://${SERVER_IP}:8888"
-print_tty "  Admin panel:    https://${SERVER_IP}:8889"
+print_tty "  Admin panel:    https://${SERVER_IP}:8889 (packages under /packages)"
 print_tty ""
 print_tty "  Admin login: ${ADMIN_USER}"
 print_tty "=========================================="

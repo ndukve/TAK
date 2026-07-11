@@ -1,6 +1,5 @@
 #!/bin/sh
 set -e
-apk add --no-cache openssl >/dev/null 2>&1
 mkdir -p /etc/nginx/ssl
 
 ADDR="${TAK_SERVER_ADDRESS:-localhost}"

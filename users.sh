@@ -21,19 +21,19 @@ ENV_FILE="$SCRIPT_DIR/takserver.env"
 DC="docker compose"
 docker info &>/dev/null 2>&1 || DC="sudo docker compose"
 
-_NAME_RE='^[a-zA-Z0-9_-]+-(ATAK|WinTAK|iTAK)$'
+_NAME_RE='^[a-zA-Z0-9_-]+-(ATAK|WinTAK|iTAK|Service)$'
 
 cmd_create() {
     local USERNAME="${1:-}"
     if [ -z "$USERNAME" ]; then
         while true; do
-            printf "  Callsign, ending in -ATAK, -WinTAK, or -iTAK (e.g. alpha1-iTAK): "
+            printf "  Callsign, ending in -ATAK, -WinTAK, -iTAK, or -Service (e.g. alpha1-iTAK): "
             read -r USERNAME
             [[ "$USERNAME" =~ $_NAME_RE ]] && break
-            printf "  ${R}Invalid — must end in -ATAK, -WinTAK, or -iTAK${NC}\n"
+            printf "  ${R}Invalid — must end in -ATAK, -WinTAK, -iTAK, or -Service${NC}\n"
         done
     elif [[ ! "$USERNAME" =~ $_NAME_RE ]]; then
-        fail "Callsign must end in -ATAK, -WinTAK, or -iTAK (e.g. alpha1-iTAK)"
+        fail "Callsign must end in -ATAK, -WinTAK, -iTAK, or -Service (e.g. alpha1-iTAK)"
     fi
 
     local TAK_SERVER_ADDRESS
@@ -65,7 +65,7 @@ cmd_create() {
     printf "  ${G}│${NC}  ${W}%s${NC} is ready                              ${G}│${NC}\n" "$USERNAME"
     printf "  ${G}└────────────────────────────────────────────────┘${NC}\n"
     printf "\n"
-    printf "  ${DIM}Download:${NC}  http://${TAK_SERVER_ADDRESS}:8888/${USERNAME}.zip\n"
+    printf "  ${DIM}Download:${NC}  https://${TAK_SERVER_ADDRESS}:8889/packages -> ${USERNAME}.zip (admin login required)\n"
     printf "\n"
     printf "  ${DIM}Import in TAK client:${NC}\n"
     printf "  ${DIM}  iTAK  :${NC}  Settings → Network → Servers → + → Upload Server Package\n"

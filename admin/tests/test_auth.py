@@ -28,6 +28,26 @@ async def test_login_unknown_username_is_rejected(client):
     assert resp.json()["detail"] == "Invalid credentials"
 
 
+async def test_login_unknown_username_still_runs_password_hash_compare(client, monkeypatch):
+    # A nonexistent username must not short-circuit past the bcrypt compare —
+    # skipping it makes login measurably faster for bad usernames than bad
+    # passwords, letting an attacker enumerate valid accounts by timing.
+    from api import auth as auth_module
+
+    calls = []
+    real_verify = auth_module.pwd_ctx.verify
+
+    def spy_verify(secret, hash_):
+        calls.append(hash_)
+        return real_verify(secret, hash_)
+
+    monkeypatch.setattr(auth_module.pwd_ctx, "verify", spy_verify)
+
+    resp = await client.post("/auth/login", json={"username": "nobody", "password": "whatever"})
+    assert resp.status_code == 401
+    assert calls == [auth_module._DUMMY_PASSWORD_HASH]
+
+
 async def test_login_inactive_user_is_rejected(client, session_factory, admin_user):
     async with session_factory() as session:
         user = await session.get(AdminUser, admin_user.id)

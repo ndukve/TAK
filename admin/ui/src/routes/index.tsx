@@ -1,10 +1,19 @@
-import { createFileRoute, redirect } from '@tanstack/react-router'
+import { createFileRoute, redirect, Link } from '@tanstack/react-router'
 import { useEffect, useState } from 'react'
 import { Layout } from '@/components/Layout'
+import { PageHeader } from '@/components/PageHeader'
 import { apiJson } from '@/lib/api'
 import { useAuth } from '@/store/auth'
-import { CheckCircle, XCircle } from 'lucide-react'
+import { CheckCircle, XCircle, Cpu, MemoryStick, HardDrive, Clock, Activity, Network, type LucideIcon } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { Skeleton } from '@/components/Skeleton'
+import { HudCorners } from '@/components/HudCorners'
+import { LiveMapWidget } from '@/components/LiveMapWidget'
+
+const LOGGABLE_SERVICES = new Set([
+  'takserver_config', 'takserver_messaging', 'takserver_api',
+  'takserver_retention', 'takserver_pluginmanager', 'takdb', 'admin',
+])
 
 export const Route = createFileRoute('/')({
   beforeLoad: () => {
@@ -29,18 +38,19 @@ interface CertInfo {
 
 interface SystemStats {
   cpu_percent: number | null
-  mem_used_mb: number
-  mem_total_mb: number
-  disk_used_gb: number
-  disk_total_gb: number
-  uptime_seconds: number
-  load_avg: [number, number, number]
+  mem_used_mb: number | null
+  mem_total_mb: number | null
+  disk_used_gb: number | null
+  disk_total_gb: number | null
+  uptime_seconds: number | null
+  load_avg: [number, number, number] | null
   net_rx_bytes_per_sec: number | null
   net_tx_bytes_per_sec: number | null
   certs: CertInfo[]
 }
 
-function formatUptime(seconds: number): string {
+function formatUptime(seconds: number | null): string {
+  if (seconds === null) return '—'
   const days = Math.floor(seconds / 86400)
   const hours = Math.floor((seconds % 86400) / 3600)
   const mins = Math.floor((seconds % 3600) / 60)
@@ -57,6 +67,7 @@ function formatBytesPerSec(bytes: number | null): string {
 }
 
 function DashboardPage() {
+  const { role } = useAuth()
   const [services, setServices] = useState<ServiceState[]>([])
   const [system, setSystem] = useState<SystemStats | null>(null)
 
@@ -76,30 +87,51 @@ function DashboardPage() {
     return () => clearInterval(id)
   }, [])
 
-  const diskPercent = system ? (system.disk_used_gb / system.disk_total_gb) * 100 : 0
-  const diskState = diskPercent >= 95 ? 'critical' : diskPercent >= 85 ? 'warn' : 'ok'
+  const diskAvailable = system?.disk_used_gb !== null && system?.disk_total_gb !== null
+  const diskPercent = system && diskAvailable ? (system.disk_used_gb! / system.disk_total_gb!) * 100 : 0
+  const diskState = !diskAvailable ? 'ok' : diskPercent >= 95 ? 'critical' : diskPercent >= 85 ? 'warn' : 'ok'
 
   return (
     <Layout>
       <div className="p-6">
-        <h1 className="text-xl font-semibold mb-6">Dashboard</h1>
+        <PageHeader title="Dashboard" />
 
-        {system && (
-          <>
-            <div className="grid grid-cols-2 lg:grid-cols-6 gap-4 mb-6">
-              <SystemStatCard label="CPU" value={system.cpu_percent !== null ? `${system.cpu_percent}%` : '—'} />
-              <SystemStatCard label="RAM" value={`${(system.mem_used_mb / 1024).toFixed(1)} / ${(system.mem_total_mb / 1024).toFixed(1)} GB`} />
-              <SystemStatCard label="Disk" value={`${system.disk_used_gb.toFixed(1)} / ${system.disk_total_gb.toFixed(1)} GB`} state={diskState} />
-              <SystemStatCard label="Uptime" value={formatUptime(system.uptime_seconds)} />
-              <SystemStatCard label="Load avg" value={system.load_avg.map(n => n.toFixed(2)).join(' / ')} />
-              <SystemStatCard label="Network" value={`↓${formatBytesPerSec(system.net_rx_bytes_per_sec)} ↑${formatBytesPerSec(system.net_tx_bytes_per_sec)}`} />
+        <div className="grid grid-cols-2 lg:grid-cols-6 gap-4 mb-6 hud-enter">
+          {system ? (
+            <>
+              <SystemStatCard icon={Cpu} label="CPU" value={system.cpu_percent !== null ? `${system.cpu_percent}%` : '—'} />
+              <SystemStatCard icon={MemoryStick} label="RAM" value={system.mem_used_mb !== null && system.mem_total_mb !== null ? `${(system.mem_used_mb / 1024).toFixed(1)} / ${(system.mem_total_mb / 1024).toFixed(1)} GB` : 'N/A'} />
+              <SystemStatCard icon={HardDrive} label="Disk" value={diskAvailable ? `${system.disk_used_gb!.toFixed(1)} / ${system.disk_total_gb!.toFixed(1)} GB` : 'N/A'} state={diskState} />
+              <SystemStatCard icon={Clock} label="Uptime" value={formatUptime(system.uptime_seconds)} />
+              <SystemStatCard icon={Activity} label="Load avg" value={system.load_avg ? system.load_avg.map(n => n.toFixed(2)).join(' / ') : 'N/A'} />
+              <SystemStatCard icon={Network} label="Network" value={`↓${formatBytesPerSec(system.net_rx_bytes_per_sec)} ↑${formatBytesPerSec(system.net_tx_bytes_per_sec)}`} />
+            </>
+          ) : (
+            Array.from({ length: 6 }).map((_, i) => (
+              <div key={i} className="rounded-md border border-zinc-200 dark:border-white/10 bg-white dark:bg-[#111113] p-4 hud-card">
+                <div className="flex items-start justify-between mb-3">
+                  <Skeleton className="h-2.5 w-10" />
+                  <Skeleton className="w-7 h-7 rounded-md" />
+                </div>
+                <Skeleton className="h-4 w-24" />
+              </div>
+            ))
+          )}
+        </div>
+        {system && <CertList certs={system.certs} />}
+
+        {role !== 'readonly' && (
+          <div className="mb-6">
+            <div className="flex items-center justify-between mb-3">
+              <h2 className="hud-label text-sm font-semibold text-zinc-600 dark:text-zinc-400">Live Map</h2>
+              <Link to="/live-map" className="text-xs text-accent-ring hover:underline">Open full map →</Link>
             </div>
-            <CertList certs={system.certs} />
-          </>
+            <LiveMapWidget height="320px" pollMs={8000} />
+          </div>
         )}
 
-        <h2 className="text-sm font-semibold text-zinc-400 uppercase tracking-wider mb-3">Services</h2>
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        <h2 className="hud-label text-sm font-semibold text-zinc-600 dark:text-zinc-400 mb-3">Services</h2>
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 hud-enter hud-enter-delay-1">
           {services.map(s => (
             <ServiceCard key={s.name} service={s} />
           ))}
@@ -109,14 +141,17 @@ function DashboardPage() {
   )
 }
 
-function SystemStatCard({ label, value, state = 'ok' }: { label: string; value: string; state?: 'ok' | 'warn' | 'critical' }) {
-  const badgeClass = state === 'critical' ? 'border-red-800 bg-red-500/10' : state === 'warn' ? 'border-yellow-800 bg-yellow-500/10' : 'border-zinc-700 bg-zinc-800/50'
-  const textClass = state === 'critical' ? 'text-red-400' : state === 'warn' ? 'text-yellow-400' : 'text-zinc-200'
+function SystemStatCard({ icon: Icon, label, value, state = 'ok' }: { icon: LucideIcon; label: string; value: string; state?: 'ok' | 'warn' | 'critical' }) {
+  const badgeClass = state === 'critical' ? 'border-red-300 dark:border-red-800 bg-red-100 dark:bg-red-500/10' : state === 'warn' ? 'border-yellow-300 dark:border-yellow-800 bg-yellow-100 dark:bg-yellow-500/10' : 'border-zinc-300 dark:border-white/10 bg-zinc-200/50 dark:bg-white/[0.04]'
+  const textClass = state === 'critical' ? 'text-red-600 dark:text-red-400' : state === 'warn' ? 'text-yellow-600 dark:text-yellow-400' : 'text-zinc-800 dark:text-zinc-200'
   return (
-    <div className="rounded-lg border border-zinc-800 bg-zinc-900 p-4">
+    <div className="hud-frame rounded-md border border-zinc-200 dark:border-white/10 bg-white dark:bg-[#111113] p-4 hud-card">
+      <HudCorners />
       <div className="flex items-start justify-between mb-3">
         <span className="text-[10px] font-semibold tracking-wider text-zinc-500 uppercase">{label}</span>
-        <div className={cn('w-7 h-7 rounded-md border shrink-0', badgeClass)} />
+        <div className={cn('w-7 h-7 rounded-md border flex items-center justify-center shrink-0', badgeClass)}>
+          <Icon size={14} className={textClass} />
+        </div>
       </div>
       <p className={cn('text-sm font-medium font-mono', textClass)}>{value}</p>
     </div>
@@ -126,15 +161,15 @@ function SystemStatCard({ label, value, state = 'ok' }: { label: string; value: 
 function CertList({ certs }: { certs: CertInfo[] }) {
   if (certs.length === 0) return null
   return (
-    <div className="rounded-lg border border-zinc-800 bg-zinc-900 p-4 mb-6">
+    <div className="rounded-md border border-zinc-200 dark:border-white/10 bg-white dark:bg-[#111113] p-4 mb-6 hud-card">
       <span className="text-[10px] font-semibold tracking-wider text-zinc-500 uppercase">Certificates</span>
       <div className="mt-3 space-y-2">
         {certs.map(c => {
           const state = c.days_remaining < 7 ? 'critical' : c.days_remaining < 30 ? 'warn' : 'ok'
-          const textClass = state === 'critical' ? 'text-red-400' : state === 'warn' ? 'text-yellow-400' : 'text-green-400'
+          const textClass = state === 'critical' ? 'text-red-600 dark:text-red-400' : state === 'warn' ? 'text-yellow-600 dark:text-yellow-400' : 'text-green-600 dark:text-green-400'
           return (
             <div key={c.name} className="flex items-center justify-between text-sm">
-              <span className="font-mono text-zinc-300">{c.name}</span>
+              <span className="font-mono text-zinc-700 dark:text-zinc-300">{c.name}</span>
               <span className="text-zinc-500">{c.expires_at}</span>
               <span className={cn('font-mono text-xs', textClass)}>{c.days_remaining}d remaining</span>
             </div>
@@ -146,24 +181,36 @@ function CertList({ certs }: { certs: CertInfo[] }) {
 }
 
 function ServiceCard({ service }: { service: ServiceState }) {
+  const { role } = useAuth()
   const running = service.status === 'running'
+  const loggableName = service.name.split(':')[0]
+  const canViewLogs = role === 'superadmin' && LOGGABLE_SERVICES.has(loggableName)
+
+  const badge = (
+    <div className={cn(
+      'w-7 h-7 rounded-md border flex items-center justify-center shrink-0',
+      running ? 'border-green-300 dark:border-green-800 bg-green-100 dark:bg-green-500/10' : 'border-red-300 dark:border-red-800 bg-red-100 dark:bg-red-500/10',
+      canViewLogs && 'hover:ring-2 hover:ring-accent-ring cursor-pointer transition-shadow'
+    )}>
+      {running
+        ? <CheckCircle size={14} className="text-green-600 dark:text-green-500" />
+        : <XCircle size={14} className="text-red-600 dark:text-red-500" />
+      }
+    </div>
+  )
+
   return (
-    <div className="rounded-lg border border-zinc-800 bg-zinc-900 p-4">
+    <div className="rounded-md border border-zinc-200 dark:border-white/10 bg-white dark:bg-[#111113] p-4 hud-card">
       <div className="flex items-start justify-between mb-3">
         <span className="text-[10px] font-semibold tracking-wider text-zinc-500 uppercase">Service</span>
-        <div className={cn(
-          'w-7 h-7 rounded-md border flex items-center justify-center shrink-0',
-          running ? 'border-green-800 bg-green-500/10' : 'border-red-800 bg-red-500/10'
-        )}>
-          {running
-            ? <CheckCircle size={14} className="text-green-500" />
-            : <XCircle size={14} className="text-red-500" />
-          }
-        </div>
+        {canViewLogs
+          ? <Link to="/logs" search={{ service: loggableName }} title="View logs" aria-label={`View logs for ${service.name}`}>{badge}</Link>
+          : badge
+        }
       </div>
-      <p className="text-sm font-medium text-zinc-200 font-mono mb-2">{service.name}</p>
-      <div className="border-t border-zinc-800 pt-2">
-        <span className={cn('text-xs font-medium', running ? 'text-green-400' : 'text-red-400')}>
+      <p className="text-sm font-medium text-zinc-800 dark:text-zinc-200 font-mono mb-2">{service.name}</p>
+      <div className="border-t border-zinc-200 dark:border-white/10 pt-2">
+        <span className={cn('text-xs font-medium', running ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400')}>
           {service.status}
         </span>
       </div>

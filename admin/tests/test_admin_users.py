@@ -80,6 +80,12 @@ async def test_patch_user_cannot_change_own_role(superadmin_client, superadmin_u
     assert resp.json()["detail"] == "Cannot change your own role"
 
 
+async def test_patch_user_cannot_deactivate_self(superadmin_client, superadmin_user):
+    resp = await superadmin_client.patch(f"/api/admin-users/{superadmin_user.id}", json={"is_active": False})
+    assert resp.status_code == 400
+    assert resp.json()["detail"] == "Cannot deactivate your own account"
+
+
 async def test_patch_user_deactivates(superadmin_client, session_factory, admin_user):
     resp = await superadmin_client.patch(f"/api/admin-users/{admin_user.id}", json={"is_active": False})
     assert resp.status_code == 200
@@ -139,3 +145,38 @@ async def test_change_own_password_rejects_weak_new_password(admin_client):
         "current_password": ADMIN_PASSWORD, "new_password": "short",
     })
     assert resp.status_code == 400
+
+
+async def test_change_own_username_success(admin_client, session_factory, admin_user):
+    resp = await admin_client.post("/api/admin-users/me/change-username", json={
+        "current_password": ADMIN_PASSWORD, "new_username": "renamed-admin",
+    })
+    assert resp.status_code == 200
+    assert "access_token" in resp.json()
+
+    async with session_factory() as session:
+        user = await session.get(AdminUser, admin_user.id)
+        assert user.username == "renamed-admin"
+
+
+async def test_change_own_username_wrong_current_password(admin_client):
+    resp = await admin_client.post("/api/admin-users/me/change-username", json={
+        "current_password": "not-the-right-password", "new_username": "renamed-admin",
+    })
+    assert resp.status_code == 400
+    assert resp.json()["detail"] == "Current password is incorrect"
+
+
+async def test_change_own_username_rejects_invalid_format(admin_client):
+    resp = await admin_client.post("/api/admin-users/me/change-username", json={
+        "current_password": ADMIN_PASSWORD, "new_username": "has a space",
+    })
+    assert resp.status_code == 400
+
+
+async def test_change_own_username_rejects_duplicate(admin_client, superadmin_user):
+    resp = await admin_client.post("/api/admin-users/me/change-username", json={
+        "current_password": ADMIN_PASSWORD, "new_username": superadmin_user.username,
+    })
+    assert resp.status_code == 409
+    assert resp.json()["detail"] == "Username already taken"

@@ -23,19 +23,23 @@ PGUSER=$(grep '^POSTGRES_USER=' "$ENV_FILE" | cut -d= -f2)
 PGUSER="${PGUSER:-martiuser}"
 
 run_spin "Dumping admin database" "admin database dumped" bash -c \
-    "docker compose --env-file '$ENV_FILE' exec -T takdb pg_dump -U '$PGUSER' admin > '$OUT_DIR/admin_db.sql'" \
+    'docker compose --env-file "$1" exec -T takdb pg_dump -U "$2" admin > "$3"' _ \
+    "$ENV_FILE" "$PGUSER" "$OUT_DIR/admin_db.sql" \
     || fail "admin database dump failed (see output above)."
 
 run_spin "Dumping cot database" "cot database dumped" bash -c \
-    "docker compose --env-file '$ENV_FILE' exec -T takdb pg_dump -U '$PGUSER' cot > '$OUT_DIR/cot_db.sql'" \
+    'docker compose --env-file "$1" exec -T takdb pg_dump -U "$2" cot > "$3"' _ \
+    "$ENV_FILE" "$PGUSER" "$OUT_DIR/cot_db.sql" \
     || fail "cot database dump failed (see output above)."
 
 run_spin "Archiving certs and packages" "certs/packages archived" bash -c \
-    "docker compose --env-file '$ENV_FILE' exec -T admin tar czf - -C /opt/tak/data . > '$OUT_DIR/takserver_data.tar.gz'" \
+    'docker compose --env-file "$1" exec -T admin tar czf - -C /opt/tak/data . > "$2"' _ \
+    "$ENV_FILE" "$OUT_DIR/takserver_data.tar.gz" \
     || fail "takserver_data archive failed (see output above)."
 
 run_spin "Archiving plugins" "plugins archived" bash -c \
-    "docker compose --env-file '$ENV_FILE' exec -T admin tar czf - -C /opt/tak/plugins . > '$OUT_DIR/tak_plugins.tar.gz'" \
+    'docker compose --env-file "$1" exec -T admin tar czf - -C /opt/tak/plugins . > "$2"' _ \
+    "$ENV_FILE" "$OUT_DIR/tak_plugins.tar.gz" \
     || fail "tak_plugins archive failed (see output above)."
 
 info "Archiving maps..."

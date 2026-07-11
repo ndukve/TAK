@@ -4,13 +4,13 @@
 
 # TAK Server
 
-Production deployment of the official Java TAK Server 5.7, containerised with Docker Compose and integrated with NetBird for secure overlay networking. Supports ATAK, iTAK, and WinTAK clients.
+Production-style deployment of the official Java TAK Server 5.7, containerized with docker compose, integrated with NetBird for secure overlay networking and managed from the WebUI.
 
-![TAK Server](https://img.shields.io/badge/TAK_Server-5.7-blue)
-![Docker](https://img.shields.io/badge/Docker-Compose-2496ED?logo=docker&logoColor=white)
-![FastAPI](https://img.shields.io/badge/FastAPI-admin_API-009688?logo=fastapi&logoColor=white)
-![React](https://img.shields.io/badge/React-admin_UI-61DAFB?logo=react&logoColor=black)
-![PostgreSQL](https://img.shields.io/badge/PostgreSQL-PostGIS-4169E1?logo=postgresql&logoColor=white)
+[![TAK Server](https://img.shields.io/badge/TAK_Server-5.7-blue)](https://tak.gov/)
+[![Docker](https://img.shields.io/badge/Docker-Compose-2496ED?logo=docker&logoColor=white)](https://www.docker.com/)
+[![FastAPI](https://img.shields.io/badge/FastAPI-admin_API-009688?logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com/)
+[![React](https://img.shields.io/badge/React-admin_UI-61DAFB?logo=react&logoColor=black)](https://react.dev/)
+[![PostgreSQL](https://img.shields.io/badge/PostgreSQL-PostGIS-4169E1?logo=postgresql&logoColor=white)](https://www.postgresql.org/)
 
 [![shellcheck](https://img.shields.io/github/actions/workflow/status/ndukve/TAK/shellcheck.yml?branch=main&label=shellcheck&logo=github&logoColor=white)](https://github.com/ndukve/TAK/actions/workflows/shellcheck.yml)
 [![python-lint](https://img.shields.io/github/actions/workflow/status/ndukve/TAK/python-lint.yml?branch=main&label=python-lint&logo=github&logoColor=white)](https://github.com/ndukve/TAK/actions/workflows/python-lint.yml)
@@ -33,13 +33,12 @@ Production deployment of the official Java TAK Server 5.7, containerised with Do
 | `takserver_api` | REST API for mission packages, data feeds |
 | `takserver_retention` | Prunes stale data per retention policy |
 | `takserver_pluginmanager` | Plugin lifecycle management |
-| `pkg_server` | Lightweight HTTP server — distributes client packages on 8888 |
 
 Client onboarding uses mutual TLS. Each user gets a signed certificate bundled into a TAK data package (`.zip`) containing server config, trust anchor, and ATAK preference defaults. Packages are served over HTTP and imported directly into the TAK client.
 
 ## Networking
 
-All client traffic runs over a NetBird WireGuard overlay (`wt0`). No ports need to be exposed to the public internet — devices connect to the server via their shared NetBird IP.
+All client traffic runs over a NetBird WireGuard overlay (`wt0`). No ports need to be exposed to the public internet — devices connect to the server via their shared NetBird authentification.
 
 ## Ports
 
@@ -68,8 +67,8 @@ templates/
 
 ## Quick Start
 
-See [INSTALL.md](INSTALL.md) for English setup guide.
-Lithuanian: [DIEGIMAS.md](DIEGIMAS.md).
+See [INSTALL.md](INSTALL.md) for the English setup guide.
+See [DIEGIMAS.md](DIEGIMAS.md) for the Lithuanian setup guide.
 
 ## Operations
 

@@ -4,30 +4,40 @@ import { useAuth } from '@/store/auth'
 import { useRoute } from '@/store/route'
 import { cn } from '@/lib/utils'
 import { apiFetch, errorMessage } from '@/lib/api'
-import { brand } from '@/brand'
+import { notify } from '@/lib/notify'
+import { useBranding } from '@/store/branding'
+import { useTheme } from '@/store/theme'
+import { useNotifications } from '@/store/notifications'
 import {
   LayoutDashboard, Users, Package, Puzzle, Map,
-  ScrollText, Terminal, ShieldUser, LogOut, KeyRound, Menu, History
+  ScrollText, Terminal, ShieldUser, LogOut, Menu, History, Settings, Sun, Moon, Bell, Radio, Satellite
 } from 'lucide-react'
 
 const navItems = [
   { to: '/', label: 'Dashboard', icon: LayoutDashboard },
-  { to: '/users', label: 'Users', icon: Users },
   { to: '/packages', label: 'Packages', icon: Package },
   { to: '/plugins', label: 'Plugins', icon: Puzzle },
   { to: '/maps', label: 'Maps', icon: Map },
-  { to: '/logs', label: 'Logs', icon: ScrollText },
 ]
+
+// Live Map shows real-time contact positions — admin/superadmin only (backend
+// enforces this too), so it's kept out of navItems rather than shown to
+// readonly users as a dead link.
+const liveMapItem = { to: '/live-map', label: 'Live Map', icon: Satellite }
 
 const fieldItems = [
   { to: '/packages', label: 'Packages', icon: Package },
+  { to: '/plugins', label: 'Plugins', icon: Puzzle },
   { to: '/maps', label: 'Maps', icon: Map },
 ]
 
 const superAdminItems = [
-  { to: '/shell', label: 'Shell', icon: Terminal },
+  { to: '/users', label: 'Users', icon: Users },
   { to: '/admin-users', label: 'Admin Users', icon: ShieldUser },
-  { to: '/audit-log', label: 'Audit Log', icon: History },
+  { to: '/replay', label: 'Replay', icon: Radio },
+  { to: '/shell', label: 'Shell', icon: Terminal },
+  { to: '/logs', label: 'Logs', icon: ScrollText },
+  { to: '/audit-log', label: 'Audit Logs', icon: History },
 ]
 
 function passwordStrength(p: string): { score: number; label: string; color: string } {
@@ -38,13 +48,13 @@ function passwordStrength(p: string): { score: number; label: string; color: str
   if (/[a-z]/.test(p)) score++
   if (/\d/.test(p)) score++
   if (/[^A-Za-z0-9]/.test(p)) score++
-  if (score <= 2) return { score, label: 'Weak', color: 'bg-red-500' }
-  if (score <= 4) return { score, label: 'Fair', color: 'bg-yellow-500' }
+  if (score <= 2) return { score, label: 'Weak', color: 'bg-red-600 dark:bg-red-500' }
+  if (score <= 4) return { score, label: 'Fair', color: 'bg-yellow-600 dark:bg-yellow-500' }
   if (score === 5) return { score, label: 'Good', color: 'bg-blue-500' }
-  return { score, label: 'Strong', color: 'bg-green-500' }
+  return { score, label: 'Strong', color: 'bg-green-600 dark:bg-green-500' }
 }
 
-function ChangePasswordModal({ onClose, forced }: { onClose: () => void; forced?: boolean }) {
+function ChangePasswordFields({ onClose, forced }: { onClose: () => void; forced?: boolean }) {
   const [current, setCurrent] = useState('')
   const [next, setNext] = useState('')
   const [confirm, setConfirm] = useState('')
@@ -58,8 +68,9 @@ function ChangePasswordModal({ onClose, forced }: { onClose: () => void; forced?
     if (next !== confirm) { setError('Passwords do not match'); return }
     if (next.length < 12) { setError('New password must be at least 12 characters'); return }
     try {
-      const res = await apiFetch('/admin-users/me/change-password', {
+      const res = await apiFetch('/api/admin-users/me/change-password', {
         method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ current_password: current, new_password: next }),
       })
       if (!res.ok) {
@@ -72,45 +83,115 @@ function ChangePasswordModal({ onClose, forced }: { onClose: () => void; forced?
     }
   }
 
+  if (ok) {
+    return (
+      <div className="space-y-4">
+        <p className="text-green-600 dark:text-green-400 text-sm">Password changed successfully.</p>
+        {!forced && <button onClick={onClose} className="w-full py-2 rounded bg-zinc-300 dark:bg-[#232326] hover:bg-zinc-400 dark:hover:bg-[#2b2b2f] text-sm">Close</button>}
+      </div>
+    )
+  }
+
+  return (
+    <form onSubmit={handleSubmit} className="space-y-3">
+      {forced && (
+        <p className="text-xs text-yellow-600 dark:text-yellow-400 mb-1">Your password has expired and must be changed before continuing.</p>
+      )}
+      <input type="password" placeholder="Current password" value={current} onChange={e => setCurrent(e.target.value)}
+        className="w-full bg-zinc-200 dark:bg-[#1a1a1d] border border-zinc-300 dark:border-white/10 rounded px-3 py-2 text-sm" required />
+      <div className="space-y-1">
+        <input type="password" placeholder="New password (min 12 chars)" value={next} onChange={e => setNext(e.target.value)}
+          className="w-full bg-zinc-200 dark:bg-[#1a1a1d] border border-zinc-300 dark:border-white/10 rounded px-3 py-2 text-sm" required />
+        {next.length > 0 && (
+          <div className="space-y-1">
+            <div className="flex gap-1 h-1">
+              {[1,2,3,4,5,6].map(i => (
+                <div key={i} className={`flex-1 rounded-full ${i <= strength.score ? strength.color : 'bg-zinc-300 dark:bg-[#232326]'}`} />
+              ))}
+            </div>
+            <p className="text-xs text-zinc-600 dark:text-zinc-400">{strength.label} · must have uppercase, lowercase, digit, special char</p>
+          </div>
+        )}
+      </div>
+      <input type="password" placeholder="Confirm new password" value={confirm} onChange={e => setConfirm(e.target.value)}
+        className="w-full bg-zinc-200 dark:bg-[#1a1a1d] border border-zinc-300 dark:border-white/10 rounded px-3 py-2 text-sm" required />
+      {error && <p className="text-red-600 dark:text-red-400 text-xs">{error}</p>}
+      <div className="flex gap-2 pt-1">
+        {!forced && <button type="button" onClick={onClose} className="flex-1 py-2 rounded bg-zinc-300 dark:bg-[#232326] hover:bg-zinc-400 dark:hover:bg-[#2b2b2f] text-sm">Cancel</button>}
+        <button type="submit" className="flex-1 py-2 rounded bg-accent-fill hover:bg-accent-fill-hover text-accent-text text-sm">Change</button>
+      </div>
+    </form>
+  )
+}
+
+function ChangePasswordModal({ onClose, forced }: { onClose: () => void; forced?: boolean }) {
   return (
     <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-[60]">
-      <div className="bg-zinc-900 border border-zinc-700 rounded-lg p-6 w-full max-w-sm">
+      <div className="bg-zinc-100 dark:bg-[#111113] border border-zinc-300 dark:border-white/10 rounded-md p-6 w-full max-w-sm">
         <h2 className="text-lg font-semibold mb-4">Change Password</h2>
-        {forced && !ok && (
-          <p className="text-xs text-yellow-400 mb-3">Your password has expired and must be changed before continuing.</p>
-        )}
-        {ok ? (
-          <div className="space-y-4">
-            <p className="text-green-400 text-sm">Password changed successfully.</p>
-            <button onClick={onClose} className="w-full py-2 rounded bg-zinc-700 hover:bg-zinc-600 text-sm">Close</button>
-          </div>
-        ) : (
-          <form onSubmit={handleSubmit} className="space-y-3">
-            <input type="password" placeholder="Current password" value={current} onChange={e => setCurrent(e.target.value)}
-              className="w-full bg-zinc-800 border border-zinc-700 rounded px-3 py-2 text-sm" required />
-            <div className="space-y-1">
-              <input type="password" placeholder="New password (min 12 chars)" value={next} onChange={e => setNext(e.target.value)}
-                className="w-full bg-zinc-800 border border-zinc-700 rounded px-3 py-2 text-sm" required />
-              {next.length > 0 && (
-                <div className="space-y-1">
-                  <div className="flex gap-1 h-1">
-                    {[1,2,3,4,5,6].map(i => (
-                      <div key={i} className={`flex-1 rounded-full ${i <= strength.score ? strength.color : 'bg-zinc-700'}`} />
-                    ))}
-                  </div>
-                  <p className="text-xs text-zinc-400">{strength.label} · must have uppercase, lowercase, digit, special char</p>
-                </div>
-              )}
-            </div>
-            <input type="password" placeholder="Confirm new password" value={confirm} onChange={e => setConfirm(e.target.value)}
-              className="w-full bg-zinc-800 border border-zinc-700 rounded px-3 py-2 text-sm" required />
-            {error && <p className="text-red-400 text-xs">{error}</p>}
-            <div className="flex gap-2 pt-1">
-              {!forced && <button type="button" onClick={onClose} className="flex-1 py-2 rounded bg-zinc-700 hover:bg-zinc-600 text-sm">Cancel</button>}
-              <button type="submit" className="flex-1 py-2 rounded bg-accent-fill hover:bg-accent-fill-hover text-accent-text text-sm">Change</button>
-            </div>
-          </form>
-        )}
+        <ChangePasswordFields onClose={onClose} forced={forced} />
+      </div>
+    </div>
+  )
+}
+
+function UserSettingsModal({ onClose }: { onClose: () => void }) {
+  const { username: currentUsername, setToken, role } = useAuth()
+  const [newUsername, setNewUsername] = useState(currentUsername ?? '')
+  const [usernamePassword, setUsernamePassword] = useState('')
+  const [usernameError, setUsernameError] = useState('')
+  const [usernameOk, setUsernameOk] = useState(false)
+
+  async function handleUsernameSubmit(e: React.FormEvent) {
+    e.preventDefault()
+    setUsernameError('')
+    try {
+      const res = await apiFetch('/api/admin-users/me/change-username', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ current_password: usernamePassword, new_username: newUsername }),
+      })
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({ detail: res.statusText }))
+        throw new Error(err.detail ?? res.statusText)
+      }
+      const data: { access_token: string } = await res.json()
+      setToken(data.access_token, role ?? '', newUsername)
+      setUsernameOk(true)
+      notify.success('Username updated')
+    } catch (err) {
+      setUsernameError(errorMessage(err) || 'Failed')
+    }
+  }
+
+  return (
+    <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-[60]">
+      <div className="bg-zinc-100 dark:bg-[#111113] border border-zinc-300 dark:border-white/10 rounded-md p-6 w-full max-w-sm space-y-6">
+        <div className="flex items-center justify-between">
+          <h2 className="text-lg font-semibold">User Settings</h2>
+          <button onClick={onClose} className="text-zinc-500 hover:text-zinc-900 dark:hover:text-white text-sm">Close</button>
+        </div>
+
+        <div>
+          <h3 className="hud-label text-sm font-semibold text-zinc-600 dark:text-zinc-400 mb-2">Change Username</h3>
+          {usernameOk ? (
+            <p className="text-green-600 dark:text-green-400 text-sm">Username changed successfully.</p>
+          ) : (
+            <form onSubmit={handleUsernameSubmit} className="space-y-3">
+              <input type="text" placeholder="New username" value={newUsername} onChange={e => setNewUsername(e.target.value)}
+                className="w-full bg-zinc-200 dark:bg-[#1a1a1d] border border-zinc-300 dark:border-white/10 rounded px-3 py-2 text-sm" required />
+              <input type="password" placeholder="Current password" value={usernamePassword} onChange={e => setUsernamePassword(e.target.value)}
+                className="w-full bg-zinc-200 dark:bg-[#1a1a1d] border border-zinc-300 dark:border-white/10 rounded px-3 py-2 text-sm" required />
+              {usernameError && <p className="text-red-600 dark:text-red-400 text-xs">{usernameError}</p>}
+              <button type="submit" className="w-full py-2 rounded bg-accent-fill hover:bg-accent-fill-hover text-accent-text text-sm">Change Username</button>
+            </form>
+          )}
+        </div>
+
+        <div className="border-t border-zinc-300 dark:border-white/10 pt-6">
+          <h3 className="hud-label text-sm font-semibold text-zinc-600 dark:text-zinc-400 mb-2">Change Password</h3>
+          <ChangePasswordFields onClose={onClose} />
+        </div>
       </div>
     </div>
   )
@@ -118,31 +199,49 @@ function ChangePasswordModal({ onClose, forced }: { onClose: () => void; forced?
 
 export function Layout({ children }: { children: React.ReactNode }) {
   const { role, username, clear, passwordExpired, setPasswordExpired } = useAuth()
+  const orgName = useBranding((s) => s.orgName)
+  const logoUrl = useBranding((s) => s.logoUrl)
+  const theme = useTheme((s) => s.theme)
+  const toggleTheme = useTheme((s) => s.toggleTheme)
   const navigate = useNavigate()
   const routerState = useRouterState()
   const current = routerState.location.pathname
   const setPathname = useRoute((s) => s.setPathname)
-  const [showChangePw, setShowChangePw] = useState(false)
+  const [showUserSettings, setShowUserSettings] = useState(false)
   const [sidebarOpen, setSidebarOpen] = useState(false)
+  const notifications = useNotifications((s) => s.items)
+  const clearNotifications = useNotifications((s) => s.clear)
+  const [notifOpen, setNotifOpen] = useState(false)
 
   useEffect(() => {
     setPathname(current)
   }, [current, setPathname])
 
   async function handleLogout() {
-    await apiFetch('/auth/logout', { method: 'POST' })
-    clear()
-    navigate({ to: '/login' })
+    try {
+      await apiFetch('/auth/logout', { method: 'POST' })
+    } catch (err) {
+      notify.error(`Sign out request failed: ${errorMessage(err)}`)
+    } finally {
+      clear()
+      navigate({ to: '/login' })
+    }
   }
 
-  const items = role === 'field' ? fieldItems : navItems
+  const items = role === 'field' ? fieldItems : role === 'readonly' ? navItems : [...navItems, liveMapItem]
   const adminItems = role === 'superadmin' ? superAdminItems : []
 
   return (
-    <div className="flex h-screen bg-zinc-950 text-zinc-100">
+    <div className="flex h-screen bg-zinc-50 dark:bg-[#000000] text-zinc-900 dark:text-zinc-100 hud-grid-bg">
+      <a
+        href="#main-content"
+        className="sr-only focus:not-sr-only focus:absolute focus:top-2 focus:left-2 focus:z-50 focus:px-3 focus:py-2 focus:rounded-md focus:bg-accent-fill focus:text-accent-text focus:text-sm"
+      >
+        Skip to content
+      </a>
       <button
         onClick={() => setSidebarOpen(v => !v)}
-        className="md:hidden fixed top-3 left-3 z-50 p-2 rounded-md bg-zinc-900 border border-zinc-800 text-zinc-300"
+        className="md:hidden fixed top-3 left-3 z-50 p-2 rounded-md bg-zinc-100 dark:bg-[#111113] border border-zinc-200 dark:border-white/10 text-zinc-700 dark:text-zinc-300"
         aria-label="Toggle menu"
       >
         <Menu size={18} />
@@ -151,12 +250,62 @@ export function Layout({ children }: { children: React.ReactNode }) {
         <div className="md:hidden fixed inset-0 bg-black/50 z-30" onClick={() => setSidebarOpen(false)} />
       )}
       <aside className={cn(
-        'w-56 flex-shrink-0 border-r border-zinc-800 flex flex-col',
-        'fixed inset-y-0 left-0 z-40 bg-zinc-950 transition-transform md:relative md:translate-x-0',
+        'w-56 flex-shrink-0 border-r border-zinc-200 dark:border-white/10 flex flex-col hud-glass',
+        'fixed inset-y-0 left-0 z-40 bg-zinc-50 transition-transform md:relative md:translate-x-0',
         sidebarOpen ? 'translate-x-0' : '-translate-x-full'
       )}>
-        <div className="p-4 border-b border-zinc-800">
-          <span className="font-bold text-lg tracking-tight">{brand.orgName}</span>
+        <div className="p-4 border-b border-zinc-200 dark:border-white/10 flex items-center gap-2">
+          {logoUrl && <img src={logoUrl} alt="" className="w-6 h-6 rounded object-contain" />}
+          <span className="font-bold text-lg tracking-tight">{orgName}</span>
+          <div className="relative ml-auto">
+            <button
+              onClick={() => setNotifOpen((v) => !v)}
+              aria-label="Notifications"
+              className="p-1.5 rounded hover:bg-zinc-200 dark:hover:bg-[#1a1a1d] text-zinc-600 dark:text-zinc-400 relative focus:outline-none focus:ring-2 focus:ring-accent-ring"
+            >
+              <Bell size={16} />
+              {notifications.length > 0 && (
+                <span className="absolute top-0.5 right-0.5 w-2 h-2 rounded-full bg-red-500" />
+              )}
+            </button>
+            {notifOpen && (
+              <div className="fixed top-14 left-4 right-4 w-auto md:absolute md:top-auto md:left-0 md:right-auto md:mt-2 md:w-72 rounded-md border border-zinc-200 dark:border-white/10 bg-white dark:bg-[#111113] shadow-lg z-50 max-h-80 overflow-y-auto">
+                <div className="flex items-center justify-between px-3 py-2 border-b border-zinc-200 dark:border-white/10">
+                  <span className="hud-label text-xs font-semibold text-zinc-600 dark:text-zinc-400">Notifications</span>
+                  <button onClick={clearNotifications} className="text-xs text-accent-ring hover:underline">Clear all</button>
+                </div>
+                {notifications.length === 0 ? (
+                  <p className="px-3 py-4 text-sm text-zinc-500 text-center">No notifications yet</p>
+                ) : (
+                  notifications.map((n) => {
+                    const content = (
+                      <>
+                        <span className={`w-1.5 h-1.5 rounded-full mt-1.5 ${n.type === 'success' ? 'bg-green-500' : 'bg-red-500'}`} />
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm text-zinc-900 dark:text-zinc-200 break-words">{n.message}</p>
+                          <p className="text-xs text-zinc-500">{new Date(n.timestamp).toLocaleTimeString()}</p>
+                        </div>
+                      </>
+                    )
+                    return role === 'superadmin' ? (
+                      <button
+                        key={n.id}
+                        onClick={() => { setNotifOpen(false); navigate({ to: '/logs' }) }}
+                        title="View logs"
+                        className="flex items-start gap-2 w-full text-left px-3 py-2 border-b border-zinc-100 dark:border-white/5 last:border-0 hover:bg-zinc-100 dark:hover:bg-white/[0.05] transition-colors"
+                      >
+                        {content}
+                      </button>
+                    ) : (
+                      <div key={n.id} className="flex items-start gap-2 px-3 py-2 border-b border-zinc-100 dark:border-white/5 last:border-0">
+                        {content}
+                      </div>
+                    )
+                  })
+                )}
+              </div>
+            )}
+          </div>
         </div>
         <nav className="flex-1 p-2 space-y-1">
           {items.map(({ to, label, icon: Icon }) => (
@@ -167,8 +316,8 @@ export function Layout({ children }: { children: React.ReactNode }) {
               className={cn(
                 'flex items-center gap-3 px-3 py-2 rounded-md text-sm transition-colors',
                 current === to
-                  ? 'bg-zinc-800 text-white'
-                  : 'text-zinc-400 hover:text-white hover:bg-zinc-800/50'
+                  ? 'bg-zinc-200 dark:bg-[#1a1a1d] text-zinc-900 dark:text-white'
+                  : 'text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white hover:bg-zinc-200/50 dark:hover:bg-white/[0.05]'
               )}
             >
               <Icon size={16} />
@@ -177,7 +326,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
           ))}
           {adminItems.length > 0 && (
             <>
-              <div className="pt-3 pb-1 px-3 text-[10px] font-semibold tracking-wider text-zinc-600 uppercase">Admin</div>
+              <div className="hud-label pt-3 pb-1 px-3 text-[10px] font-semibold text-zinc-400 dark:text-zinc-600">Admin</div>
               {adminItems.map(({ to, label, icon: Icon }) => (
                 <Link
                   key={to}
@@ -186,8 +335,8 @@ export function Layout({ children }: { children: React.ReactNode }) {
                   className={cn(
                     'flex items-center gap-3 px-3 py-2 rounded-md text-sm transition-colors',
                     current === to
-                      ? 'bg-zinc-800 text-white'
-                      : 'text-zinc-400 hover:text-white hover:bg-zinc-800/50'
+                      ? 'bg-zinc-200 dark:bg-[#1a1a1d] text-zinc-900 dark:text-white'
+                      : 'text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white hover:bg-zinc-200/50 dark:hover:bg-white/[0.05]'
                   )}
                 >
                   <Icon size={16} />
@@ -197,34 +346,48 @@ export function Layout({ children }: { children: React.ReactNode }) {
             </>
           )}
         </nav>
-        <div className="px-3 py-3 border-t border-zinc-800 flex items-center gap-2">
+        <button
+          onClick={() => setShowUserSettings(true)}
+          className="px-3 py-3 border-t border-zinc-200 dark:border-white/10 flex items-center gap-2 w-full text-left hover:bg-zinc-200/50 dark:hover:bg-white/[0.05] transition-colors"
+        >
           <div className="w-7 h-7 rounded-full bg-accent-fill text-accent-text flex items-center justify-center text-xs font-semibold shrink-0">
             {(username ?? '?').slice(0, 2).toUpperCase()}
           </div>
           <div className="min-w-0">
-            <p className="text-sm text-zinc-200 truncate">{username}</p>
+            <p className="text-sm text-zinc-800 dark:text-zinc-200 truncate">{username}</p>
             <p className="text-xs text-zinc-500">{role}</p>
           </div>
-        </div>
-        <div className="p-2 border-t border-zinc-800 space-y-1">
+        </button>
+        <div className="p-2 border-t border-zinc-200 dark:border-white/10 space-y-1">
           <button
-            onClick={() => setShowChangePw(true)}
-            className="flex items-center gap-3 w-full px-3 py-2 rounded-md text-sm text-zinc-400 hover:text-white hover:bg-zinc-800/50 transition-colors"
+            onClick={toggleTheme}
+            className="flex items-center gap-3 w-full px-3 py-2 rounded-md text-sm text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white hover:bg-zinc-200/50 dark:hover:bg-white/[0.05] transition-colors"
           >
-            <KeyRound size={16} />
-            Change Password
+            {theme === 'dark' ? <Sun size={16} /> : <Moon size={16} />}
+            {theme === 'dark' ? 'Light mode' : 'Dark mode'}
           </button>
+          {role === 'superadmin' && (
+            <Link
+              to="/branding"
+              onClick={() => setSidebarOpen(false)}
+              className="flex items-center gap-3 w-full px-3 py-2 rounded-md text-sm text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white hover:bg-zinc-200/50 dark:hover:bg-white/[0.05] transition-colors"
+            >
+              <Settings size={16} />
+              Settings
+            </Link>
+          )}
           <button
             onClick={handleLogout}
-            className="flex items-center gap-3 w-full px-3 py-2 rounded-md text-sm text-zinc-400 hover:text-white hover:bg-zinc-800/50 transition-colors"
+            className="flex items-center gap-3 w-full px-3 py-2 rounded-md text-sm text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white hover:bg-zinc-200/50 dark:hover:bg-white/[0.05] transition-colors"
           >
             <LogOut size={16} />
             Sign out
           </button>
+          <p className="px-3 pt-2 text-[10px] text-zinc-400 dark:text-zinc-600 text-center">TAK Admin {__APP_VERSION__}</p>
         </div>
       </aside>
-      <main className="flex-1 overflow-auto pt-14 md:pt-0">{children}</main>
-      {showChangePw && <ChangePasswordModal onClose={() => setShowChangePw(false)} />}
+      <main id="main-content" tabIndex={-1} className="flex-1 overflow-auto pt-14 md:pt-0">{children}</main>
+      {showUserSettings && <UserSettingsModal onClose={() => setShowUserSettings(false)} />}
       {passwordExpired && <ChangePasswordModal forced onClose={() => setPasswordExpired(false)} />}
     </div>
   )

@@ -18,9 +18,23 @@ REFRESH_TOKEN_EXPIRE_DAYS = 7
 LOCKOUT_ATTEMPTS = 5
 LOCKOUT_MINUTES = 15
 SHELL_TICKET_EXPIRE_MINUTES = 5
+WS_TICKET_EXPIRE_SECONDS = 30
 
 # In-memory shell tickets {ticket_hash: (user_id, expires_at)} — acceptable for single-instance
 _shell_tickets: dict[str, tuple[str, datetime]] = {}
+
+# In-memory WS tickets {ticket_hash: (user_id, role, expires_at)} — short-lived,
+# single-use stand-in for the real JWT on WebSocket routes, which can't send an
+# Authorization header. Minted from an already-authenticated request (bearer
+# JWT in the header, never in a URL) so the long-lived access token itself
+# never has to travel in a query string that proxies/CDNs tend to log.
+_ws_tickets: dict[str, tuple[str, str, datetime]] = {}
+
+# Verified on every login attempt when no matching user exists, so a bcrypt
+# compare always runs — otherwise a nonexistent username short-circuits
+# before the slow hash check, and the timing gap lets an attacker enumerate
+# valid usernames.
+_DUMMY_PASSWORD_HASH = pwd_ctx.hash("no-such-user-timing-parity")
 
 
 @router.post("/login", response_model=TokenResponse)
@@ -33,7 +47,9 @@ async def login(body: LoginRequest, response: Response, db: AsyncSession = Depen
     if user and user.locked_until and user.locked_until.replace(tzinfo=UTC) > now:
         raise HTTPException(status_code=429, detail="Account temporarily locked")
 
-    if not user or not pwd_ctx.verify(body.password, user.password_hash):
+    password_hash = user.password_hash if user else _DUMMY_PASSWORD_HASH
+    password_ok = pwd_ctx.verify(body.password, password_hash)
+    if not user or not password_ok:
         if user:
             user.failed_logins += 1
             if user.failed_logins >= LOCKOUT_ATTEMPTS:
@@ -139,6 +155,29 @@ def consume_shell_ticket(ticket: str) -> str | None:
     if datetime.now(UTC) > expires:
         return None
     return user_id
+
+
+@router.post("/ws-ticket")
+async def issue_ws_ticket(user: AdminUser = Depends(get_current_user)):
+    if user.role not in ("admin", "superadmin"):
+        raise HTTPException(status_code=403, detail="Forbidden")
+    ticket = secrets.token_urlsafe(32)
+    ticket_hash = hashlib.sha256(ticket.encode()).hexdigest()
+    expires = datetime.now(UTC) + timedelta(seconds=WS_TICKET_EXPIRE_SECONDS)
+    _ws_tickets[ticket_hash] = (user.id, user.role, expires)
+    return {"ticket": ticket}
+
+
+def consume_ws_ticket(ticket: str) -> str | None:
+    """Returns role if ticket is valid and not expired. Consumes it (single-use)."""
+    ticket_hash = hashlib.sha256(ticket.encode()).hexdigest()
+    entry = _ws_tickets.pop(ticket_hash, None)
+    if not entry:
+        return None
+    _user_id, role, expires = entry
+    if datetime.now(UTC) > expires:
+        return None
+    return role
 
 
 async def _ensure_first_user():

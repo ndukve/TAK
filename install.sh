@@ -44,6 +44,9 @@ if [ -f "$ENV_FILE" ]; then
         POSTGRES_DB=$(grep '^POSTGRES_DB=' "$ENV_FILE" | cut -d= -f2-)
 
         if ! command -v docker &>/dev/null; then
+            # Official vendor installer (get.docker.com) fetched fresh over HTTPS —
+            # not checksum-pinned since it's a live, auto-updating script; the
+            # trust boundary is the TLS connection to Docker's own domain.
             run_with_gauge "System Setup" "Installing Docker..." -- bash -c \
                 "curl -fsSL https://get.docker.com | sh && systemctl enable --now docker" \
                 || fail "Docker installation failed (see output above)."
@@ -74,7 +77,7 @@ if [ -f "$ENV_FILE" ]; then
             sleep 3
         done
 
-        wt_msg "Reinstall Complete" "TAK Server is starting up.\n\nSSL CoT     : ${TAK_SERVER_ADDRESS}:8089\nHTTPS API   : https://${TAK_SERVER_ADDRESS}:8443\nPackages    : http://${TAK_SERVER_ADDRESS}:8888/\nAdmin panel : https://${TAK_SERVER_ADDRESS}:8889/" 14 72
+        wt_msg "Reinstall Complete" "TAK Server is starting up.\n\nSSL CoT     : ${TAK_SERVER_ADDRESS}:8089\nHTTPS API   : https://${TAK_SERVER_ADDRESS}:8443\nAdmin panel : https://${TAK_SERVER_ADDRESS}:8889/ (packages under /packages)" 14 72
 
         clear
         printf "\n"
@@ -84,8 +87,7 @@ if [ -f "$ENV_FILE" ]; then
         printf "\n"
         printf "  ${DIM}%-18s${NC}  %s\n" "SSL CoT"     "${TAK_SERVER_ADDRESS}:8089"
         printf "  ${DIM}%-18s${NC}  %s\n" "HTTPS API"   "https://${TAK_SERVER_ADDRESS}:8443"
-        printf "  ${DIM}%-18s${NC}  %s\n" "Packages"    "http://${TAK_SERVER_ADDRESS}:8888/"
-        printf "  ${DIM}%-18s${NC}  %s\n" "Admin panel" "https://${TAK_SERVER_ADDRESS}:8889/"
+        printf "  ${DIM}%-18s${NC}  %s\n" "Admin panel" "https://${TAK_SERVER_ADDRESS}:8889/ (packages under /packages)"
         printf "\n"
         exit 0
     elif [ "${_EXISTING_ACTION:-cancel}" != "reconfigure" ]; then
@@ -120,6 +122,8 @@ else
     case "$_VPN_ACTION" in
         netbird)
             wt_password VPN_KEY "NetBird" "NetBird setup key (app.netbird.io → Keys):"
+            # Official vendor installer, same accepted trust model as the
+            # Docker install above — see comment there.
             run_with_gauge "NetBird" "Installing NetBird..." -- bash -c \
                 "curl -fsSL https://pkgs.netbird.io/install.sh | sh" \
                 || fail "NetBird installation failed (see output above)."
@@ -132,6 +136,8 @@ else
             ;;
         tailscale)
             wt_password VPN_KEY "Tailscale" "Tailscale auth key (login.tailscale.com → Settings → Keys):"
+            # Official vendor installer, same accepted trust model as the
+            # Docker install above — see comment there.
             run_with_gauge "Tailscale" "Installing Tailscale..." -- bash -c \
                 "curl -fsSL https://tailscale.com/install.sh | sh" \
                 || fail "Tailscale installation failed (see output above)."
@@ -187,6 +193,9 @@ if ! getent hosts debian.org >/dev/null 2>&1; then
 fi
 
 if ! command -v docker &>/dev/null; then
+    # Official vendor installer (get.docker.com) fetched fresh over HTTPS —
+    # not checksum-pinned since it's a live, auto-updating script; the
+    # trust boundary is the TLS connection to Docker's own domain.
     run_with_gauge "System Setup [5/7]" "Installing Docker..." -- bash -c \
         "curl -fsSL https://get.docker.com | sh && systemctl enable --now docker" \
         || fail "Docker installation failed (see output above)."
@@ -267,7 +276,7 @@ until docker compose --env-file "$ENV_FILE" exec -T takdb pg_isready -U martiuse
     sleep 3
 done
 
-wt_msg "Installation Complete" "TAK Server is starting up.\n\nSSL CoT     : ${TAK_SERVER_ADDRESS}:8089\nHTTPS API   : https://${TAK_SERVER_ADDRESS}:8443\nPackages    : http://${TAK_SERVER_ADDRESS}:8888/\nAdmin panel : https://${TAK_SERVER_ADDRESS}:8889/\n\nAdmin user     : ${ADMIN_FIRST_USER}\nAdmin password : ${ADMIN_FIRST_PASS}" 18 72
+wt_msg "Installation Complete" "TAK Server is starting up.\n\nSSL CoT     : ${TAK_SERVER_ADDRESS}:8089\nHTTPS API   : https://${TAK_SERVER_ADDRESS}:8443\nAdmin panel : https://${TAK_SERVER_ADDRESS}:8889/ (packages under /packages)\n\nAdmin user     : ${ADMIN_FIRST_USER}\nAdmin password : ${ADMIN_FIRST_PASS}" 18 72
 
 # ── Done (plain-text summary stays in scrollback) ────────────────────────────
 clear
@@ -278,8 +287,7 @@ printf "  ${G}└─────────────────────
 printf "\n"
 printf "  ${DIM}%-18s${NC}  %s\n" "SSL CoT"       "${TAK_SERVER_ADDRESS}:8089"
 printf "  ${DIM}%-18s${NC}  %s\n" "HTTPS API"     "https://${TAK_SERVER_ADDRESS}:8443"
-printf "  ${DIM}%-18s${NC}  %s\n" "Packages"      "http://${TAK_SERVER_ADDRESS}:8888/"
-printf "  ${DIM}%-18s${NC}  %s\n" "Admin panel"   "https://${TAK_SERVER_ADDRESS}:8889/"
+printf "  ${DIM}%-18s${NC}  %s\n" "Admin panel"   "https://${TAK_SERVER_ADDRESS}:8889/ (packages under /packages)"
 printf "\n"
 printf "  ${DIM}%-18s${NC}  ${W}%s${NC}\n" "Admin user"     "$ADMIN_FIRST_USER"
 printf "  ${DIM}%-18s${NC}  ${W}%s${NC}\n" "Admin password" "$ADMIN_FIRST_PASS"

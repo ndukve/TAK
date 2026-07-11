@@ -1,5 +1,13 @@
 # Local testing with host networking (use when bridge/veth is unavailable)
 # Usage: docker compose -f docker-compose.host.yml --env-file takserver.env up -d
+#
+# WARNING: host networking removes all container network isolation — every
+# service binds directly to every host interface, not just loopback/LAN.
+# takdb is restricted to 127.0.0.1 below since nothing outside this host
+# needs to reach it. The TAK services themselves (CoT/HTTPS/API ports) are
+# intentionally left open on all interfaces — that's how remote ATAK/WinTAK
+# clients and the admin panel reach them — but on any host with a public IP,
+# firewall everything except the ports you actually intend to expose.
 
 x-tak: &tak-base
   image: takserver:local
@@ -19,6 +27,7 @@ services:
       POSTGRES_DB: ${POSTGRES_DB:-cot}
       POSTGRES_USER: ${POSTGRES_USER:-martiuser}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    command: ["postgres", "-c", "listen_addresses=127.0.0.1"]
     volumes:
       - takdb_data:/var/lib/postgresql/data
     network_mode: host

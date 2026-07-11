@@ -50,3 +50,35 @@ class AuditLog(Base):
     action: Mapped[str] = mapped_column(String(128), nullable=False)
     detail: Mapped[str | None] = mapped_column(Text, nullable=True)
     timestamp: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(UTC))
+
+
+class BrandSettings(Base):
+    __tablename__ = "brand_settings"
+
+    id: Mapped[str] = mapped_column(String(16), primary_key=True, default=lambda: "singleton")
+    org_name: Mapped[str] = mapped_column(String(64), default="TAK Admin")
+    accent_fill: Mapped[str] = mapped_column(String(16), default="#2dd4bf")
+    accent_fill_hover: Mapped[str] = mapped_column(String(16), default="#5eead4")
+    accent_text: Mapped[str] = mapped_column(String(16), default="#052e2b")
+    accent_ring: Mapped[str] = mapped_column(String(16), default="#2dd4bf")
+    logo_filename: Mapped[str | None] = mapped_column(String(128), nullable=True)
+
+
+class ReplayChunk(Base):
+    __tablename__ = "replay_chunks"
+
+    id: Mapped[str] = mapped_column(String(64), primary_key=True, default=_uuid)
+    started_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(UTC))
+    ended_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    event_count: Mapped[int] = mapped_column(default=0)
+    size_bytes: Mapped[int] = mapped_column(default=0)
+
+
+class ReplaySettings(Base):
+    __tablename__ = "replay_settings"
+
+    id: Mapped[str] = mapped_column(String(16), primary_key=True, default=lambda: "singleton")
+    max_disk_mb: Mapped[int] = mapped_column(default=0)
+    min_free_disk_mb: Mapped[int] = mapped_column(default=1024)
+    chunk_minutes: Mapped[int] = mapped_column(default=15)
+    service_cert_ready: Mapped[bool] = mapped_column(Boolean, default=False)

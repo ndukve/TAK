@@ -3,9 +3,8 @@ import asyncio
 import docker
 from docker.errors import DockerException
 from fastapi import APIRouter, Query, WebSocket, WebSocketDisconnect
-from jose import JWTError, jwt
 
-from .deps import ALGORITHM, SECRET_KEY
+from .auth import consume_ws_ticket
 
 router = APIRouter(tags=["logs"])
 _client = docker.from_env()
@@ -17,18 +16,9 @@ ALLOWED_SERVICES = {
 }
 
 
-def _verify_ws_token(token: str) -> bool:
-    """Validate JWT before accepting WebSocket. Returns True if valid admin/superadmin."""
-    try:
-        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
-        return payload.get("role") in ("admin", "superadmin")
-    except JWTError:
-        return False
-
-
 @router.websocket("/api/logs")
-async def log_stream(ws: WebSocket, service: str = Query(...), token: str = Query(...)):
-    if not _verify_ws_token(token):
+async def log_stream(ws: WebSocket, service: str = Query(...), ticket: str = Query(...)):
+    if consume_ws_ticket(ticket) not in ("admin", "superadmin"):
         await ws.close(code=4401)
         return
 

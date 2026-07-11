@@ -11,11 +11,14 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as UsersRouteImport } from './routes/users'
 import { Route as ShellRouteImport } from './routes/shell'
+import { Route as ReplayRouteImport } from './routes/replay'
 import { Route as PluginsRouteImport } from './routes/plugins'
 import { Route as PackagesRouteImport } from './routes/packages'
 import { Route as MapsRouteImport } from './routes/maps'
 import { Route as LogsRouteImport } from './routes/logs'
 import { Route as LoginRouteImport } from './routes/login'
+import { Route as LiveMapRouteImport } from './routes/live-map'
+import { Route as BrandingRouteImport } from './routes/branding'
 import { Route as AuditLogRouteImport } from './routes/audit-log'
 import { Route as AdminUsersRouteImport } from './routes/admin-users'
 import { Route as IndexRouteImport } from './routes/index'
@@ -28,6 +31,11 @@ const UsersRoute = UsersRouteImport.update({
 const ShellRoute = ShellRouteImport.update({
   id: '/shell',
   path: '/shell',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ReplayRoute = ReplayRouteImport.update({
+  id: '/replay',
+  path: '/replay',
   getParentRoute: () => rootRouteImport,
 } as any)
 const PluginsRoute = PluginsRouteImport.update({
@@ -55,6 +63,16 @@ const LoginRoute = LoginRouteImport.update({
   path: '/login',
   getParentRoute: () => rootRouteImport,
 } as any)
+const LiveMapRoute = LiveMapRouteImport.update({
+  id: '/live-map',
+  path: '/live-map',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const BrandingRoute = BrandingRouteImport.update({
+  id: '/branding',
+  path: '/branding',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AuditLogRoute = AuditLogRouteImport.update({
   id: '/audit-log',
   path: '/audit-log',
@@ -75,11 +93,14 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/admin-users': typeof AdminUsersRoute
   '/audit-log': typeof AuditLogRoute
+  '/branding': typeof BrandingRoute
+  '/live-map': typeof LiveMapRoute
   '/login': typeof LoginRoute
   '/logs': typeof LogsRoute
   '/maps': typeof MapsRoute
   '/packages': typeof PackagesRoute
   '/plugins': typeof PluginsRoute
+  '/replay': typeof ReplayRoute
   '/shell': typeof ShellRoute
   '/users': typeof UsersRoute
 }
@@ -87,11 +108,14 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/admin-users': typeof AdminUsersRoute
   '/audit-log': typeof AuditLogRoute
+  '/branding': typeof BrandingRoute
+  '/live-map': typeof LiveMapRoute
   '/login': typeof LoginRoute
   '/logs': typeof LogsRoute
   '/maps': typeof MapsRoute
   '/packages': typeof PackagesRoute
   '/plugins': typeof PluginsRoute
+  '/replay': typeof ReplayRoute
   '/shell': typeof ShellRoute
   '/users': typeof UsersRoute
 }
@@ -100,11 +124,14 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/admin-users': typeof AdminUsersRoute
   '/audit-log': typeof AuditLogRoute
+  '/branding': typeof BrandingRoute
+  '/live-map': typeof LiveMapRoute
   '/login': typeof LoginRoute
   '/logs': typeof LogsRoute
   '/maps': typeof MapsRoute
   '/packages': typeof PackagesRoute
   '/plugins': typeof PluginsRoute
+  '/replay': typeof ReplayRoute
   '/shell': typeof ShellRoute
   '/users': typeof UsersRoute
 }
@@ -114,11 +141,14 @@ export interface FileRouteTypes {
     | '/'
     | '/admin-users'
     | '/audit-log'
+    | '/branding'
+    | '/live-map'
     | '/login'
     | '/logs'
     | '/maps'
     | '/packages'
     | '/plugins'
+    | '/replay'
     | '/shell'
     | '/users'
   fileRoutesByTo: FileRoutesByTo
@@ -126,11 +156,14 @@ export interface FileRouteTypes {
     | '/'
     | '/admin-users'
     | '/audit-log'
+    | '/branding'
+    | '/live-map'
     | '/login'
     | '/logs'
     | '/maps'
     | '/packages'
     | '/plugins'
+    | '/replay'
     | '/shell'
     | '/users'
   id:
@@ -138,11 +171,14 @@ export interface FileRouteTypes {
     | '/'
     | '/admin-users'
     | '/audit-log'
+    | '/branding'
+    | '/live-map'
     | '/login'
     | '/logs'
     | '/maps'
     | '/packages'
     | '/plugins'
+    | '/replay'
     | '/shell'
     | '/users'
   fileRoutesById: FileRoutesById
@@ -151,11 +187,14 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AdminUsersRoute: typeof AdminUsersRoute
   AuditLogRoute: typeof AuditLogRoute
+  BrandingRoute: typeof BrandingRoute
+  LiveMapRoute: typeof LiveMapRoute
   LoginRoute: typeof LoginRoute
   LogsRoute: typeof LogsRoute
   MapsRoute: typeof MapsRoute
   PackagesRoute: typeof PackagesRoute
   PluginsRoute: typeof PluginsRoute
+  ReplayRoute: typeof ReplayRoute
   ShellRoute: typeof ShellRoute
   UsersRoute: typeof UsersRoute
 }
@@ -174,6 +213,13 @@ declare module '@tanstack/react-router' {
       path: '/shell'
       fullPath: '/shell'
       preLoaderRoute: typeof ShellRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/replay': {
+      id: '/replay'
+      path: '/replay'
+      fullPath: '/replay'
+      preLoaderRoute: typeof ReplayRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/plugins': {
@@ -211,6 +257,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof LoginRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/live-map': {
+      id: '/live-map'
+      path: '/live-map'
+      fullPath: '/live-map'
+      preLoaderRoute: typeof LiveMapRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/branding': {
+      id: '/branding'
+      path: '/branding'
+      fullPath: '/branding'
+      preLoaderRoute: typeof BrandingRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/audit-log': {
       id: '/audit-log'
       path: '/audit-log'
@@ -239,11 +299,14 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AdminUsersRoute: AdminUsersRoute,
   AuditLogRoute: AuditLogRoute,
+  BrandingRoute: BrandingRoute,
+  LiveMapRoute: LiveMapRoute,
   LoginRoute: LoginRoute,
   LogsRoute: LogsRoute,
   MapsRoute: MapsRoute,
   PackagesRoute: PackagesRoute,
   PluginsRoute: PluginsRoute,
+  ReplayRoute: ReplayRoute,
   ShellRoute: ShellRoute,
   UsersRoute: UsersRoute,
 }

@@ -1,9 +1,11 @@
 import { createFileRoute, redirect } from '@tanstack/react-router'
 import { useEffect, useState } from 'react'
 import { Layout } from '@/components/Layout'
+import { PageHeader } from '@/components/PageHeader'
 import { apiJson, errorMessage } from '@/lib/api'
 import { useAuth } from '@/store/auth'
-import { toast } from 'sonner'
+import { notify } from '@/lib/notify'
+import { TableSkeletonRows } from '@/components/Skeleton'
 
 export const Route = createFileRoute('/audit-log')({
   beforeLoad: () => {
@@ -24,13 +26,16 @@ interface AuditEntry {
 
 function AuditLogPage() {
   const [entries, setEntries] = useState<AuditEntry[]>([])
+  const [loading, setLoading] = useState(true)
 
   async function load() {
     try {
       const data = await apiJson<{ entries: AuditEntry[] }>('/api/audit-log')
       setEntries(data.entries)
     } catch (e) {
-      toast.error(errorMessage(e))
+      notify.error(errorMessage(e))
+    } finally {
+      setLoading(false)
     }
   }
 
@@ -39,29 +44,32 @@ function AuditLogPage() {
   return (
     <Layout>
       <div className="p-6">
-        <h1 className="text-xl font-semibold mb-6">Audit Log</h1>
-        <div className="rounded-lg border border-zinc-800 overflow-x-auto">
+        <PageHeader title="Audit Logs" count={entries.length} countLabel="entries" />
+        <div className="rounded-md border border-zinc-200 dark:border-white/10 overflow-x-auto">
           <table className="w-full text-sm min-w-[640px]">
-            <thead className="bg-zinc-900 text-zinc-400">
+            <thead className="bg-zinc-100 dark:bg-[#111113] text-zinc-600 dark:text-zinc-400">
               <tr>
-                <th className="px-4 py-3 text-left font-medium">Time</th>
-                <th className="px-4 py-3 text-left font-medium">User</th>
-                <th className="px-4 py-3 text-left font-medium">Action</th>
-                <th className="px-4 py-3 text-left font-medium">Detail</th>
+                <th className="px-4 py-3 text-left font-medium hud-label text-xs">Time</th>
+                <th className="px-4 py-3 text-left font-medium hud-label text-xs">User</th>
+                <th className="px-4 py-3 text-left font-medium hud-label text-xs">Action</th>
+                <th className="px-4 py-3 text-left font-medium hud-label text-xs">Detail</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-zinc-800">
-              {entries.length === 0 && (
+            <tbody className="divide-y divide-zinc-200 dark:divide-white/10">
+              {loading ? (
+                <TableSkeletonRows columns={4} />
+              ) : entries.length === 0 ? (
                 <tr><td colSpan={4} className="px-4 py-8 text-center text-zinc-500">No activity recorded yet</td></tr>
+              ) : (
+                entries.map(e => (
+                  <tr key={e.id} className="bg-zinc-50 dark:bg-[#000000] hover:bg-zinc-100/50 dark:hover:bg-white/[0.03]">
+                    <td className="px-4 py-3 text-zinc-600 dark:text-zinc-400 whitespace-nowrap">{new Date(e.timestamp).toLocaleString()}</td>
+                    <td className="px-4 py-3 font-mono">{e.username}</td>
+                    <td className="px-4 py-3 text-zinc-700 dark:text-zinc-300">{e.action}</td>
+                    <td className="px-4 py-3 text-zinc-500 font-mono">{e.detail ?? '—'}</td>
+                  </tr>
+                ))
               )}
-              {entries.map(e => (
-                <tr key={e.id} className="bg-zinc-950 hover:bg-zinc-900/50">
-                  <td className="px-4 py-3 text-zinc-400 whitespace-nowrap">{new Date(e.timestamp).toLocaleString()}</td>
-                  <td className="px-4 py-3 font-mono">{e.username}</td>
-                  <td className="px-4 py-3 text-zinc-300">{e.action}</td>
-                  <td className="px-4 py-3 text-zinc-500 font-mono">{e.detail ?? '—'}</td>
-                </tr>
-              ))}
             </tbody>
           </table>
         </div>

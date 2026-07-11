@@ -1,19 +1,23 @@
+import re
 from datetime import UTC, datetime
 
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 from sqlalchemy import delete, select
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from .db import get_db
-from .deps import get_current_user, pwd_ctx, require_role, write_audit
+from .deps import create_access_token, get_current_user, pwd_ctx, require_role, write_audit
 from .models import AdminUser, RefreshToken
 from .password_policy import validate_password
+from .schemas import TokenResponse
 
 router = APIRouter(prefix="/api/admin-users", tags=["admin-users"])
 _superadmin = require_role("superadmin")
 
 VALID_ROLES = {"superadmin", "admin"}
+_USERNAME_RE = re.compile(r"^[a-zA-Z0-9_.-]+$")
 
 
 class CreateUserRequest(BaseModel):
@@ -31,6 +35,11 @@ class PatchUserRequest(BaseModel):
 class ChangePasswordRequest(BaseModel):
     current_password: str
     new_password: str
+
+
+class ChangeUsernameRequest(BaseModel):
+    current_password: str
+    new_username: str
 
 
 @router.get("")
@@ -81,6 +90,8 @@ async def patch_user(user_id: str, body: PatchUserRequest, db: AsyncSession = De
         user.password_hash = pwd_ctx.hash(body.password)
         user.password_changed_at = datetime.now(UTC)
     if body.is_active is not None:
+        if body.is_active != user.is_active and user.id == actor.id:
+            raise HTTPException(status_code=400, detail="Cannot deactivate your own account")
         user.is_active = body.is_active
     await db.commit()
     await write_audit(db, actor.id, "patch_admin_user", user_id)
@@ -119,3 +130,27 @@ async def change_own_password(
     await db.commit()
     await write_audit(db, actor.id, "change_own_password", actor.username)
     return {"status": "ok"}
+
+
+@router.post("/me/change-username", response_model=TokenResponse)
+async def change_own_username(
+    body: ChangeUsernameRequest,
+    db: AsyncSession = Depends(get_db),
+    actor: AdminUser = Depends(get_current_user),
+):
+    if not pwd_ctx.verify(body.current_password, actor.password_hash):
+        raise HTTPException(status_code=400, detail="Current password is incorrect")
+    if not (1 <= len(body.new_username) <= 64) or not _USERNAME_RE.match(body.new_username):
+        raise HTTPException(status_code=400, detail="Username must be 1-64 characters, letters/digits/./_/- only")
+
+    old_username = actor.username
+    actor.username = body.new_username
+    try:
+        await db.commit()
+    except IntegrityError as e:
+        await db.rollback()
+        raise HTTPException(status_code=409, detail="Username already taken") from e
+
+    await write_audit(db, actor.id, "change_own_username", f"{old_username} -> {actor.username}")
+    access_token = create_access_token({"sub": actor.id, "role": actor.role, "username": actor.username})
+    return TokenResponse(access_token=access_token)

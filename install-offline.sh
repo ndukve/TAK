@@ -230,7 +230,7 @@ until docker compose --env-file "$ENV_FILE" exec -T takdb pg_isready -U martiuse
     sleep 3
 done
 
-wt_msg "Installation Complete" "TAK Server is starting up.\n\nSSL CoT     : ${TAK_SERVER_ADDRESS}:8089\nHTTPS API   : https://${TAK_SERVER_ADDRESS}:8443\nPackages    : http://${TAK_SERVER_ADDRESS}:8888/\nAdmin panel : https://${TAK_SERVER_ADDRESS}:8889/\n\nAdmin user     : ${ADMIN_FIRST_USER}\nAdmin password : ${ADMIN_FIRST_PASS}" 18 72
+wt_msg "Installation Complete" "TAK Server is starting up.\n\nSSL CoT     : ${TAK_SERVER_ADDRESS}:8089\nHTTPS API   : https://${TAK_SERVER_ADDRESS}:8443\nAdmin panel : https://${TAK_SERVER_ADDRESS}:8889/ (packages under /packages)\n\nAdmin user     : ${ADMIN_FIRST_USER}\nAdmin password : ${ADMIN_FIRST_PASS}" 18 72
 
 clear
 printf "\n"
@@ -238,8 +238,7 @@ printf "  TAK Server is starting up\n"
 printf "\n"
 printf "  %-18s  %s\n" "SSL CoT"       "${TAK_SERVER_ADDRESS}:8089"
 printf "  %-18s  %s\n" "HTTPS API"     "https://${TAK_SERVER_ADDRESS}:8443"
-printf "  %-18s  %s\n" "Packages"      "http://${TAK_SERVER_ADDRESS}:8888/"
-printf "  %-18s  %s\n" "Admin panel"   "https://${TAK_SERVER_ADDRESS}:8889/"
+printf "  %-18s  %s\n" "Admin panel"   "https://${TAK_SERVER_ADDRESS}:8889/ (packages under /packages)"
 printf "\n"
 printf "  %-18s  %s\n" "Admin user"     "$ADMIN_FIRST_USER"
 printf "  %-18s  %s\n" "Admin password" "$ADMIN_FIRST_PASS"

@@ -124,11 +124,17 @@ services:
   #
   # CONTAINERS=1 + POST=1 together unlock every POST under /containers/*, not
   # just exec — including `create`/`start` with an attacker-chosen HostConfig
-  # (bind mounts, --privileged). The proxy has no finer-grained "exec-only"
-  # mode, so the real containment is network isolation: docker_proxy_net is
-  # `internal` (no route out) and shared with nothing except `admin` — a
-  # compromise of takdb/takserver_*/admin_proxy can't reach this proxy at all,
-  # since they're never on this network.
+  # (bind mounts, --privileged). Confirmed against the proxy's actual ACL
+  # source (haproxy.cfg): CONTAINERS matches the whole `/containers` path
+  # prefix with no finer split, and EXEC only covers the separate `/exec/*`
+  # start call — `docker exec` needs both, so there is no env-var combination
+  # of this proxy that allows exec while blocking create/start. The real
+  # containment is network isolation: docker_proxy_net is `internal` (no
+  # route out) and shared with nothing except `admin` — a compromise of
+  # takdb/takserver_*/admin_proxy can't reach this proxy at all, since
+  # they're never on this network. `admin` itself also runs with
+  # no-new-privileges to limit what an RCE inside it could escalate to
+  # before it even reaches this proxy.
   docker_socket_proxy:
     image: tecnativa/docker-socket-proxy:v0.4.2
     environment:
@@ -151,6 +157,8 @@ services:
     env_file: takserver.env
     environment:
       DOCKER_HOST: tcp://docker_socket_proxy:2375
+    security_opt:
+      - no-new-privileges:true
     volumes:
       - takserver_data:/opt/tak/data:rw
       - tak_plugins:/opt/tak/plugins:rw
@@ -171,7 +179,8 @@ services:
 
   # ── Admin TLS reverse proxy (port 8889 HTTPS) ────────────────────────────
   admin_proxy:
-    image: nginx:alpine
+    build:
+      context: ./admin/nginx
     env_file: takserver.env
     volumes:
       - ./admin/nginx/nginx.conf:/etc/nginx/conf.d/default.conf:ro

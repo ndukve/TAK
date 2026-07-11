@@ -1,0 +1,13 @@
+{
+    "mcpServers": {
+        "context7": {
+            "type": "remote",
+            "url": "https://mcp.context7.com/mcp"
+        },
+        "kubernetes": {
+            "type": "stdio",
+            "command": "npx",
+            "args": ["-y", "kubernetes-mcp-server@latest"]
+        }
+    }
+}

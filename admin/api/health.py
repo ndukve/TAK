@@ -70,9 +70,12 @@ def _get_states() -> list[dict]:
 
 def _get_cpu_percent() -> float | None:
     global _last_cpu
-    with open("/proc/stat") as f:
-        parts = f.readline().split()
-    values = [int(x) for x in parts[1:]]
+    try:
+        with open("/proc/stat") as f:
+            parts = f.readline().split()
+        values = [int(x) for x in parts[1:]]
+    except (OSError, ValueError, IndexError):
+        return None
     idle = values[3] + values[4]  # idle + iowait
     total = sum(values)
 
@@ -88,29 +91,40 @@ def _get_cpu_percent() -> float | None:
     return round((1 - idle_delta / total_delta) * 100, 1)
 
 
-def _get_memory() -> tuple[int, int]:
+def _get_memory() -> tuple[int | None, int | None]:
     total_kb = avail_kb = 0
-    with open("/proc/meminfo") as f:
-        for line in f:
-            if line.startswith("MemTotal:"):
-                total_kb = int(line.split()[1])
-            elif line.startswith("MemAvailable:"):
-                avail_kb = int(line.split()[1])
+    try:
+        with open("/proc/meminfo") as f:
+            for line in f:
+                if line.startswith("MemTotal:"):
+                    total_kb = int(line.split()[1])
+                elif line.startswith("MemAvailable:"):
+                    avail_kb = int(line.split()[1])
+    except (OSError, ValueError, IndexError):
+        return None, None
     return (total_kb - avail_kb) // 1024, total_kb // 1024
 
 
-def _get_uptime_seconds() -> int:
-    with open("/proc/uptime") as f:
-        return int(float(f.readline().split()[0]))
+def _get_uptime_seconds() -> int | None:
+    try:
+        with open("/proc/uptime") as f:
+            return int(float(f.readline().split()[0]))
+    except (OSError, ValueError, IndexError):
+        return None
 
 
-def _get_load_avg() -> list[float]:
-    with open("/proc/loadavg") as f:
-        parts = f.readline().split()
-    return [float(parts[0]), float(parts[1]), float(parts[2])]
+def _get_load_avg() -> list[float] | None:
+    try:
+        with open("/proc/loadavg") as f:
+            parts = f.readline().split()
+        return [float(parts[0]), float(parts[1]), float(parts[2])]
+    except (OSError, ValueError, IndexError):
+        return None
 
 
 def _get_disk_usage() -> dict:
+    if not os.path.isdir(DISK_PATH):
+        return {"disk_used_gb": None, "disk_total_gb": None}
     st = os.statvfs(DISK_PATH)
     total = st.f_blocks * st.f_frsize
     free = st.f_bfree * st.f_frsize

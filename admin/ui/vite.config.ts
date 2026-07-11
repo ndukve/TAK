@@ -3,6 +3,15 @@ import react from '@vitejs/plugin-react'
 import tailwindcss from '@tailwindcss/vite'
 import { TanStackRouterVite } from '@tanstack/router-plugin/vite'
 import path from 'path'
+import { execSync } from 'child_process'
+
+function gitVersion(): string {
+  try {
+    return execSync('git describe --tags --always', { cwd: __dirname }).toString().trim()
+  } catch {
+    return 'unknown'
+  }
+}
 
 export default defineConfig({
   plugins: [
@@ -12,6 +21,9 @@ export default defineConfig({
   ],
   resolve: {
     alias: { '@': path.resolve(__dirname, './src') },
+  },
+  define: {
+    __APP_VERSION__: JSON.stringify(gitVersion()),
   },
   server: {
     proxy: {

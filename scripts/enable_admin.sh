@@ -11,6 +11,8 @@ set -e
 TR=/opt/tak
 CONFIG=${TR}/data/CoreConfig.xml
 
+[ -n "$ADMIN_CERT_NAME" ] || fail "ADMIN_CERT_NAME not set"
+
 cd ${TR}
 . ./setenv.sh
 

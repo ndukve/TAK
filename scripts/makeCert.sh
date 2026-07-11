@@ -53,7 +53,7 @@ else
 ALTNAMEFIELD="DNS.1"
 fi
 
-cp ../config.cfg config-$SNAME.cfg
+cp ../config.cfg "config-${SNAME}.cfg"
 
 echo "
 
@@ -63,7 +63,7 @@ subjectAltName = @alt_names
 
 $ALTNAMEFIELD = $SNAME
 
-" >> config-$SNAME.cfg
+" >> "config-${SNAME}.cfg"
 
 CONFIG=config-$SNAME.cfg
 
@@ -129,11 +129,11 @@ read MVREQ
 
 if [[ "$MVREQ" == "y" || "$MVREQ" == "Y" ]]; then
 
-cp $SNAME.pem ca.pem
+cp "${SNAME}.pem" ca.pem
 
-cp $SNAME.key ca-do-not-share.key
+cp "${SNAME}.key" ca-do-not-share.key
 
-cp $SNAME-trusted.pem ca-trusted.pem
+cp "${SNAME}-trusted.pem" ca-trusted.pem
 
 else
 

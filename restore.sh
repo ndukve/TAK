@@ -32,16 +32,18 @@ info "Stopping admin (avoid writes during restore)..."
 docker compose --env-file "$ENV_FILE" stop admin admin_proxy || true
 
 run_spin "Restoring admin database" "admin database restored" bash -c \
-    "docker compose --env-file '$ENV_FILE' exec -T takdb psql -U '$PGUSER' -c 'DROP DATABASE IF EXISTS admin;' \
-    && docker compose --env-file '$ENV_FILE' exec -T takdb psql -U '$PGUSER' -c 'CREATE DATABASE admin;' \
-    && docker compose --env-file '$ENV_FILE' exec -T takdb psql -U '$PGUSER' admin < '$BACKUP_DIR/admin_db.sql'" \
+    'docker compose --env-file "$1" exec -T takdb psql -U "$2" -c "DROP DATABASE IF EXISTS admin;" \
+    && docker compose --env-file "$1" exec -T takdb psql -U "$2" -c "CREATE DATABASE admin;" \
+    && docker compose --env-file "$1" exec -T takdb psql -U "$2" admin < "$3"' _ \
+    "$ENV_FILE" "$PGUSER" "$BACKUP_DIR/admin_db.sql" \
     || fail "admin database restore failed (see output above)."
 
 if [ -f "$BACKUP_DIR/cot_db.sql" ]; then
     run_spin "Restoring cot database" "cot database restored" bash -c \
-        "docker compose --env-file '$ENV_FILE' exec -T takdb psql -U '$PGUSER' -c 'DROP DATABASE IF EXISTS cot;' \
-        && docker compose --env-file '$ENV_FILE' exec -T takdb psql -U '$PGUSER' -c 'CREATE DATABASE cot;' \
-        && docker compose --env-file '$ENV_FILE' exec -T takdb psql -U '$PGUSER' cot < '$BACKUP_DIR/cot_db.sql'" \
+        'docker compose --env-file "$1" exec -T takdb psql -U "$2" -c "DROP DATABASE IF EXISTS cot;" \
+        && docker compose --env-file "$1" exec -T takdb psql -U "$2" -c "CREATE DATABASE cot;" \
+        && docker compose --env-file "$1" exec -T takdb psql -U "$2" cot < "$3"' _ \
+        "$ENV_FILE" "$PGUSER" "$BACKUP_DIR/cot_db.sql" \
         || fail "cot database restore failed (see output above)."
 else
     warn "No cot_db.sql in backup — skipped"
@@ -49,7 +51,8 @@ fi
 
 if [ -f "$BACKUP_DIR/takserver_data.tar.gz" ]; then
     run_spin "Restoring certs and packages" "certs/packages restored" bash -c \
-        "cat '$BACKUP_DIR/takserver_data.tar.gz' | docker compose --env-file '$ENV_FILE' exec -T admin bash -c 'rm -rf /opt/tak/data/* && tar xzf - -C /opt/tak/data'" \
+        'cat "$1" | docker compose --env-file "$2" exec -T admin bash -c "rm -rf /opt/tak/data/* && tar xzf - -C /opt/tak/data"' _ \
+        "$BACKUP_DIR/takserver_data.tar.gz" "$ENV_FILE" \
         || fail "takserver_data restore failed (see output above)."
 else
     warn "No takserver_data.tar.gz in backup — skipped"
@@ -57,7 +60,8 @@ fi
 
 if [ -f "$BACKUP_DIR/tak_plugins.tar.gz" ]; then
     run_spin "Restoring plugins" "plugins restored" bash -c \
-        "cat '$BACKUP_DIR/tak_plugins.tar.gz' | docker compose --env-file '$ENV_FILE' exec -T admin bash -c 'rm -rf /opt/tak/plugins/* && tar xzf - -C /opt/tak/plugins'" \
+        'cat "$1" | docker compose --env-file "$2" exec -T admin bash -c "rm -rf /opt/tak/plugins/* && tar xzf - -C /opt/tak/plugins"' _ \
+        "$BACKUP_DIR/tak_plugins.tar.gz" "$ENV_FILE" \
         || fail "plugins restore failed (see output above)."
 else
     warn "No tak_plugins.tar.gz in backup — skipped"

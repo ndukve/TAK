@@ -1,7 +1,9 @@
-import { createFileRoute, redirect } from '@tanstack/react-router'
+import { createFileRoute, redirect, useSearch } from '@tanstack/react-router'
 import { useEffect, useRef, useState } from 'react'
 import { Layout } from '@/components/Layout'
+import { PageHeader } from '@/components/PageHeader'
 import { useAuth } from '@/store/auth'
+import { apiFetch } from '@/lib/api'
 import { Terminal } from '@xterm/xterm'
 import { FitAddon } from '@xterm/addon-fit'
 
@@ -11,6 +13,9 @@ export const Route = createFileRoute('/logs')({
     if (!token) throw redirect({ to: '/login' })
     if (role === 'field') throw redirect({ to: '/packages' })
   },
+  validateSearch: (search: Record<string, unknown>): { service?: string } => ({
+    service: typeof search.service === 'string' ? search.service : undefined,
+  }),
   component: LogsPage,
 })
 
@@ -45,10 +50,12 @@ function formatLogLine(raw: string): string {
 }
 
 function LogsPage() {
-  const [service, setService] = useState('takserver_config')
+  const search = useSearch({ from: '/logs' })
+  const [service, setService] = useState(
+    search.service && SERVICES.includes(search.service) ? search.service : 'takserver_config'
+  )
   const termRef = useRef<HTMLDivElement>(null)
   const wsRef = useRef<WebSocket | null>(null)
-  const { token } = useAuth()
 
   useEffect(() => {
     if (!termRef.current) return
@@ -66,10 +73,25 @@ function LogsPage() {
     let closedByUs = false
     let reconnectTimer: ReturnType<typeof setTimeout> | null = null
 
-    const connect = () => {
+    // WebSocket can't send an Authorization header, so the access token can't
+    // ride the handshake directly. Mint a short-lived, single-use ticket over
+    // an authenticated fetch (real JWT in the header, never in a URL) and put
+    // only that ticket in the WS query string.
+    const connect = async () => {
+      let ticket: string
+      try {
+        const res = await apiFetch('/auth/ws-ticket', { method: 'POST' })
+        if (!res.ok) throw new Error('ticket request failed')
+        ;({ ticket } = await res.json())
+      } catch {
+        term.writeln('\r\n[unable to authenticate — retrying in 2s]')
+        reconnectTimer = setTimeout(connect, 2000)
+        return
+      }
+
       const proto = window.location.protocol === 'https:' ? 'wss' : 'ws'
       const ws = new WebSocket(
-        `${proto}://${window.location.host}/api/logs?service=${service}&token=${token}`
+        `${proto}://${window.location.host}/api/logs?service=${service}&ticket=${ticket}`
       )
       wsRef.current = ws
 
@@ -78,7 +100,7 @@ function LogsPage() {
       ws.onclose = (e) => {
         if (closedByUs) return
         if (e.code === 4401) {
-          term.writeln('\r\n[unauthorized — token invalid]')
+          term.writeln('\r\n[unauthorized — ticket invalid or expired]')
           return
         }
         term.writeln('\r\n[disconnected — reconnecting in 2s]')
@@ -93,17 +115,17 @@ function LogsPage() {
       wsRef.current?.close()
       term.dispose()
     }
-  }, [service, token])
+  }, [service])
 
   return (
     <Layout>
       <div className="p-6 flex flex-col h-full">
+        <PageHeader title="Logs" />
         <div className="flex items-center gap-3 mb-4">
-          <h1 className="text-xl font-semibold flex-1">Logs</h1>
           <select
             value={service}
             onChange={(e) => setService(e.target.value)}
-            className="px-3 py-2 rounded-md bg-zinc-800 border border-zinc-700 text-white text-sm focus:outline-none"
+            className="px-3 py-2 rounded-md bg-zinc-200 dark:bg-[#1a1a1d] border border-zinc-300 dark:border-white/10 text-zinc-900 dark:text-white text-sm focus:outline-none"
           >
             {SERVICES.map((s) => (
               <option key={s} value={s}>
@@ -114,7 +136,7 @@ function LogsPage() {
         </div>
         <div
           ref={termRef}
-          className="flex-1 rounded-lg overflow-hidden border border-zinc-800"
+          className="flex-1 rounded-md overflow-hidden border border-zinc-200 dark:border-white/10"
           style={{ minHeight: '500px' }}
         />
       </div>

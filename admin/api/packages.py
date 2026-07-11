@@ -14,9 +14,9 @@ _admin_or_field = require_role("admin", "superadmin", "field")
 
 
 def _base_callsign(filename: str) -> str:
-    """Strip the trailing -ATAK/-WinTAK/-iTAK suffix. 'Alpha1-iTAK.zip' -> 'Alpha1'."""
+    """Strip the trailing -ATAK/-WinTAK/-iTAK/-Service suffix. 'Alpha1-iTAK.zip' -> 'Alpha1'."""
     name = filename.rsplit(".", 1)[0]
-    for suffix in ("-ATAK", "-WinTAK", "-iTAK"):
+    for suffix in ("-ATAK", "-WinTAK", "-iTAK", "-Service"):
         if name.endswith(suffix):
             return name[: -len(suffix)]
     return name
@@ -45,6 +45,37 @@ def _sha256_compute_and_store(data: bytes, path: str) -> str:
     except OSError:
         pass
     return digest
+
+
+async def _stream_upload_to_disk(file: UploadFile, dest: str, max_bytes: int) -> tuple[int, str]:
+    """Copies an upload to disk in chunks instead of buffering the whole file
+    in memory — needed for multi-gigabyte .mbtiles packages, where file.read()
+    with no size cap would hold the entire upload as one bytes object."""
+    digest = hashlib.sha256()
+    total = 0
+    oversized = False
+    chunk_size = 8 * 1024 * 1024
+    async with aiofiles.open(dest, "wb") as f:
+        while True:
+            chunk = await file.read(chunk_size)
+            if not chunk:
+                break
+            total += len(chunk)
+            if total > max_bytes:
+                oversized = True
+                break
+            digest.update(chunk)
+            await f.write(chunk)
+    if oversized:
+        os.remove(dest)
+        raise HTTPException(status_code=413, detail=f"File too large (max {max_bytes // (1024**3)} GB)")
+    hexdigest = digest.hexdigest()
+    try:
+        with open(dest + ".sha256", "w") as f:
+            f.write(hexdigest)
+    except OSError:
+        pass
+    return total, hexdigest
 
 
 def _size(path: str) -> str:
@@ -85,7 +116,7 @@ async def download_package(name: str, actor=Depends(_admin_or_field)):
 
 @router.post("/api/packages/upload", status_code=201)
 async def upload_package(file: UploadFile = File(...), db: AsyncSession = Depends(get_db), actor=Depends(_admin)):
-    if not file.filename.endswith(".zip"):
+    if not (file.filename or "").endswith(".zip"):
         raise HTTPException(status_code=400, detail="Only .zip files allowed")
     os.makedirs(PKGS_DIR, exist_ok=True)
     safe_name = os.path.basename(file.filename)
@@ -110,7 +141,7 @@ async def delete_package(name: str, db: AsyncSession = Depends(get_db), actor=De
 
 
 @router.get("/api/plugins")
-async def list_plugins(_=Depends(_admin)):
+async def list_plugins(_=Depends(_admin_or_field)):
     if not os.path.isdir(PLUGINS_DIR):
         return {"plugins": []}
     files = sorted(f for f in os.listdir(PLUGINS_DIR) if f.endswith(".apk") or f.endswith(".zip"))
@@ -118,7 +149,7 @@ async def list_plugins(_=Depends(_admin)):
 
 
 @router.get("/api/plugins/{filename}/download")
-async def download_plugin(filename: str, _=Depends(_admin)):
+async def download_plugin(filename: str, _=Depends(_admin_or_field)):
     safe_name = os.path.basename(filename)
     path = os.path.join(PLUGINS_DIR, safe_name)
     if not os.path.isfile(path):
@@ -133,23 +164,20 @@ async def upload_plugin(
     db: AsyncSession = Depends(get_db),
     actor=Depends(_admin),
 ):
-    if not (file.filename.endswith(".apk") or file.filename.endswith(".zip")):
+    filename = file.filename or ""
+    if not (filename.endswith(".apk") or filename.endswith(".zip")):
         raise HTTPException(status_code=400, detail="Only .apk or .zip files allowed")
     os.makedirs(PLUGINS_DIR, exist_ok=True)
     dest = os.path.join(PLUGINS_DIR, os.path.basename(file.filename))
     data = await file.read(MAX_UPLOAD_BYTES + 1)
     if len(data) > MAX_UPLOAD_BYTES:
         raise HTTPException(status_code=413, detail="File too large (max 100 MB)")
-    actual_sha256 = _sha256_compute_and_store(data, dest)
+    actual_sha256 = hashlib.sha256(data).hexdigest()
     if expected_sha256 and expected_sha256.lower() != actual_sha256:
-        try:
-            os.remove(dest)
-            os.remove(dest + ".sha256")
-        except OSError:
-            pass
         raise HTTPException(status_code=400, detail=f"SHA-256 mismatch — got {actual_sha256}")
     async with aiofiles.open(dest, "wb") as f:
         await f.write(data)
+    _sha256_compute_and_store(data, dest)
     await write_audit(db, actor.id, "upload_plugin", file.filename)
     return {"filename": file.filename, "size": _size(dest), "sha256": actual_sha256}
 
@@ -164,6 +192,10 @@ async def delete_plugin(filename: str, db: AsyncSession = Depends(get_db), actor
     await write_audit(db, actor.id, "delete_plugin", safe_name)
 
 
+MAX_MBTILES_BYTES = 6 * 1024 * 1024 * 1024  # 6 GB — offline tile packages run far larger than XML pointers
+_MAP_EXTENSIONS = (".xml", ".mbtiles")
+
+
 @router.get("/api/maps")
 async def list_maps(_=Depends(_admin_or_field)):
     result = []
@@ -172,9 +204,10 @@ async def list_maps(_=Depends(_admin_or_field)):
             pdir = os.path.join(MAPS_DIR, provider)
             if not os.path.isdir(pdir):
                 continue
-            for fname in sorted(f for f in os.listdir(pdir) if f.endswith(".xml")):
+            for fname in sorted(f for f in os.listdir(pdir) if f.endswith(_MAP_EXTENSIONS)):
                 fpath = os.path.join(pdir, fname)
-                result.append({"provider": provider, "filename": fname, "size": _size(fpath), "sha256": _sha256_stored(fpath)})
+                kind = "mbtiles" if fname.endswith(".mbtiles") else "xml"
+                result.append({"provider": provider, "filename": fname, "kind": kind, "size": _size(fpath), "sha256": _sha256_stored(fpath)})
     return {"maps": result}
 
 
@@ -187,7 +220,8 @@ async def download_map(provider: str, filename: str, _=Depends(_admin_or_field))
         raise HTTPException(status_code=403, detail="Invalid path")
     if not os.path.isfile(path):
         raise HTTPException(status_code=404, detail="Map not found")
-    return FileResponse(path, filename=safe_filename, media_type="text/xml")
+    media_type = "text/xml" if safe_filename.endswith(".xml") else "application/octet-stream"
+    return FileResponse(path, filename=safe_filename, media_type=media_type)
 
 
 @router.post("/api/maps", status_code=201)
@@ -197,21 +231,27 @@ async def upload_map(
     db: AsyncSession = Depends(get_db),
     actor=Depends(_admin),
 ):
-    if not file.filename.endswith(".xml"):
-        raise HTTPException(status_code=400, detail="Only .xml files allowed")
+    filename = file.filename or ""
+    if not filename.endswith(_MAP_EXTENSIONS):
+        raise HTTPException(status_code=400, detail="Only .xml or .mbtiles files allowed")
     if not provider.replace("-", "").replace("_", "").isalnum():
         raise HTTPException(status_code=400, detail="Provider name must be alphanumeric")
     dest_dir = os.path.join(MAPS_DIR, provider)
     os.makedirs(dest_dir, exist_ok=True)
-    dest = os.path.join(dest_dir, os.path.basename(file.filename))
-    data = await file.read(MAX_UPLOAD_BYTES + 1)
-    if len(data) > MAX_UPLOAD_BYTES:
-        raise HTTPException(status_code=413, detail="File too large (max 100 MB)")
-    sha256 = _sha256_compute_and_store(data, dest)
-    async with aiofiles.open(dest, "wb") as f:
-        await f.write(data)
-    await write_audit(db, actor.id, "upload_map", f"{provider}/{file.filename}")
-    return {"provider": provider, "filename": file.filename, "size": _size(dest), "sha256": sha256}
+    dest = os.path.join(dest_dir, os.path.basename(filename))
+
+    if filename.endswith(".mbtiles"):
+        _, sha256 = await _stream_upload_to_disk(file, dest, MAX_MBTILES_BYTES)
+    else:
+        data = await file.read(MAX_UPLOAD_BYTES + 1)
+        if len(data) > MAX_UPLOAD_BYTES:
+            raise HTTPException(status_code=413, detail="File too large (max 100 MB)")
+        sha256 = _sha256_compute_and_store(data, dest)
+        async with aiofiles.open(dest, "wb") as f:
+            await f.write(data)
+
+    await write_audit(db, actor.id, "upload_map", f"{provider}/{filename}")
+    return {"provider": provider, "filename": filename, "size": _size(dest), "sha256": sha256}
 
 
 @router.delete("/api/maps/{provider}/{filename}", status_code=204)
