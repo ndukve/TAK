@@ -1,0 +1,7 @@
+[allowlist]
+description = "Generated UI bundles and planning documents contain detector-like code/color tokens, not credentials"
+paths = [
+  '''(^|/)\.superpowers/''',
+  '''(^|/)docs/superpowers/''',
+  '''(^|/)admin/ui/dist/''',
+]

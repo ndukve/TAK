@@ -1,5 +1,6 @@
 from datetime import UTC, datetime, timedelta
 
+import jwt
 from sqlalchemy import select
 
 from api.models import AdminUser, RefreshToken
@@ -14,6 +15,8 @@ async def test_login_success_returns_access_token_and_refresh_cookie(client, adm
     assert body["token_type"] == "bearer"
     assert body["access_token"]
     assert "refresh_token" in resp.cookies
+    claims = jwt.decode(body["access_token"], options={"verify_signature": False})
+    assert claims["auth_provider"] == "local"
 
 
 async def test_login_invalid_password_is_rejected(client, admin_user):

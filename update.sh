@@ -11,6 +11,8 @@ ENV_FILE="$SCRIPT_DIR/takserver.env"
 . "$SCRIPT_DIR/scripts/_selftest.sh"
 # shellcheck source=scripts/refresh_vendor.sh
 . "$SCRIPT_DIR/scripts/refresh_vendor.sh"
+# shellcheck source=scripts/scrub_admin_secret.sh
+. "$SCRIPT_DIR/scripts/scrub_admin_secret.sh"
 
 # ── Preflight ─────────────────────────────────────────────────────────────────
 [ -f "$ENV_FILE" ] || fail "takserver.env not found — run ./install.sh first"
@@ -32,11 +34,11 @@ if ! git fetch origin "$BRANCH" > "$_PULL_LOG" 2>&1; then
     rm -f "$_PULL_LOG"
     fail "git fetch failed — check network/remote (output above)"
 fi
-if ! git reset --hard "origin/$BRANCH" >> "$_PULL_LOG" 2>&1; then
+if ! git merge --ff-only "origin/$BRANCH" >> "$_PULL_LOG" 2>&1; then
     spin_stop ""
     cat "$_PULL_LOG"
     rm -f "$_PULL_LOG"
-    fail "git reset failed (output above)"
+    fail "fast-forward update failed; preserve or move local changes, then retry (output above)"
 fi
 rm -f "$_PULL_LOG"
 spin_stop "Up to date: $(git log -1 --format='%h %s')"
@@ -44,8 +46,7 @@ spin_stop "Up to date: $(git log -1 --format='%h %s')"
 if [ "$_OLD_HEAD" != "$(git rev-parse HEAD)" ]; then
     git --no-pager diff --stat "$_OLD_HEAD" HEAD
     printf "\n"
-    # update.sh just rewrote itself on disk (git reset --hard touches every
-    # tracked file, this script included). Bash reads a running script
+    # update.sh may just have rewritten itself on disk. Bash reads a running script
     # incrementally from disk by byte offset — continuing to execute the
     # rest of THIS process after the underlying file changed size/content
     # reads from a now-meaningless offset and corrupts execution partway
@@ -71,6 +72,17 @@ backfill() {
 backfill "ADMIN_SECRET_KEY" "$(openssl rand -hex 32)"
 backfill "ADMIN_FIRST_USER" "admin"
 backfill "ADMIN_FIRST_PASS" "$(openssl rand -base64 16 | tr -d '/+=' | head -c 20)"
+DOCKER_SOCKET_GID=$(stat -c '%g' /var/run/docker.sock 2>/dev/null || true)
+if [ -z "$DOCKER_SOCKET_GID" ]; then
+    DOCKER_SOCKET_GID=$(getent group docker 2>/dev/null | cut -d: -f3 || true)
+fi
+DOCKER_SOCKET_GID=${DOCKER_SOCKET_GID:-0}
+if grep -q '^DOCKER_SOCKET_GID=' "$ENV_FILE"; then
+    sed -i "s/^DOCKER_SOCKET_GID=.*/DOCKER_SOCKET_GID=${DOCKER_SOCKET_GID}/" "$ENV_FILE"
+else
+    printf 'DOCKER_SOCKET_GID=%s\n' "$DOCKER_SOCKET_GID" >> "$ENV_FILE"
+    ok "Added DOCKER_SOCKET_GID"
+fi
 
 # ── Admin DB ──────────────────────────────────────────────────────────────────
 info "Ensuring admin database exists..."
@@ -101,6 +113,9 @@ info "Restarting containers..."
 docker compose --env-file "$ENV_FILE" up -d --remove-orphans \
     || fail "Container restart failed (see output above)."
 ok "Containers restarted"
+
+scrub_admin_bootstrap_secret "$ENV_FILE" \
+    || fail "Admin bootstrap credential could not be removed safely."
 
 # admin_proxy (nginx) resolves the "admin" hostname once and holds that IP
 # for the life of its worker process. If only "admin" got recreated above,

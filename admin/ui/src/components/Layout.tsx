@@ -8,9 +8,10 @@ import { notify } from '@/lib/notify'
 import { useBranding } from '@/store/branding'
 import { useTheme } from '@/store/theme'
 import { useNotifications } from '@/store/notifications'
+import { PasswordInput } from '@/components/PasswordInput'
 import {
   LayoutDashboard, Users, Package, Puzzle, Map,
-  ScrollText, Terminal, ShieldUser, LogOut, History, Settings, Sun, Moon, Bell, Radio, Satellite
+  ScrollText, Terminal, ShieldUser, LogOut, History, Settings, Sun, Moon, Bell, Radio, Satellite, ShieldCheck
 } from 'lucide-react'
 
 // Three-bar icon that morphs into an X on open — plain CSS transitions on
@@ -55,6 +56,7 @@ const fieldItems = [
 const superAdminItems = [
   { to: '/users', label: 'Users', icon: Users },
   { to: '/admin-users', label: 'Admin Users', icon: ShieldUser },
+  { to: '/certificates', label: 'Certificates', icon: ShieldCheck },
   { to: '/replay', label: 'Replay', icon: Radio },
   { to: '/shell', label: 'Shell', icon: Terminal },
   { to: '/logs', label: 'Logs', icon: ScrollText },
@@ -118,11 +120,11 @@ function ChangePasswordFields({ onClose, forced }: { onClose: () => void; forced
       {forced && (
         <p className="text-xs text-yellow-600 dark:text-yellow-400 mb-1">Your password has expired and must be changed before continuing.</p>
       )}
-      <input type="password" placeholder="Current password" value={current} onChange={e => setCurrent(e.target.value)}
-        className="w-full bg-zinc-200 dark:bg-[#1a1a1d] border border-zinc-300 dark:border-white/10 rounded px-3 py-2 text-sm" required />
+      <PasswordInput placeholder="Current password" value={current} onChange={e => setCurrent(e.target.value)}
+        className="w-full bg-zinc-200 dark:bg-[#141416] border border-zinc-300 dark:border-white/10 rounded px-3 py-2 text-sm" required />
       <div className="space-y-1">
-        <input type="password" placeholder="New password (min 12 chars)" value={next} onChange={e => setNext(e.target.value)}
-          className="w-full bg-zinc-200 dark:bg-[#1a1a1d] border border-zinc-300 dark:border-white/10 rounded px-3 py-2 text-sm" required />
+        <PasswordInput placeholder="New password (min 12 chars)" value={next} onChange={e => setNext(e.target.value)}
+          className="w-full bg-zinc-200 dark:bg-[#141416] border border-zinc-300 dark:border-white/10 rounded px-3 py-2 text-sm" required />
         {next.length > 0 && (
           <div className="space-y-1">
             <div className="flex gap-1 h-1">
@@ -134,8 +136,8 @@ function ChangePasswordFields({ onClose, forced }: { onClose: () => void; forced
           </div>
         )}
       </div>
-      <input type="password" placeholder="Confirm new password" value={confirm} onChange={e => setConfirm(e.target.value)}
-        className="w-full bg-zinc-200 dark:bg-[#1a1a1d] border border-zinc-300 dark:border-white/10 rounded px-3 py-2 text-sm" required />
+      <PasswordInput placeholder="Confirm new password" value={confirm} onChange={e => setConfirm(e.target.value)}
+        className="w-full bg-zinc-200 dark:bg-[#141416] border border-zinc-300 dark:border-white/10 rounded px-3 py-2 text-sm" required />
       {error && <p className="text-red-600 dark:text-red-400 text-xs">{error}</p>}
       <div className="flex gap-2 pt-1">
         {!forced && <button type="button" onClick={onClose} className="flex-1 py-2 rounded bg-zinc-300 dark:bg-[#232326] hover:bg-zinc-400 dark:hover:bg-[#2b2b2f] text-sm">Cancel</button>}
@@ -148,7 +150,7 @@ function ChangePasswordFields({ onClose, forced }: { onClose: () => void; forced
 function ChangePasswordModal({ onClose, forced }: { onClose: () => void; forced?: boolean }) {
   return (
     <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-[60]">
-      <div className="bg-zinc-100 dark:bg-[#111113] border border-zinc-300 dark:border-white/10 rounded-md p-6 w-full max-w-sm">
+      <div className="bg-zinc-100 dark:bg-[#0c0c0e] border border-zinc-300 dark:border-white/10 rounded-md p-6 w-full max-w-sm">
         <h2 className="text-lg font-semibold mb-4">Change Password</h2>
         <ChangePasswordFields onClose={onClose} forced={forced} />
       </div>
@@ -157,7 +159,7 @@ function ChangePasswordModal({ onClose, forced }: { onClose: () => void; forced?
 }
 
 function UserSettingsModal({ onClose }: { onClose: () => void }) {
-  const { username: currentUsername, setToken, role } = useAuth()
+  const { username: currentUsername, setToken, role, authProvider } = useAuth()
   const [newUsername, setNewUsername] = useState(currentUsername ?? '')
   const [usernamePassword, setUsernamePassword] = useState('')
   const [usernameError, setUsernameError] = useState('')
@@ -177,7 +179,7 @@ function UserSettingsModal({ onClose }: { onClose: () => void }) {
         throw new Error(err.detail ?? res.statusText)
       }
       const data: { access_token: string } = await res.json()
-      setToken(data.access_token, role ?? '', newUsername)
+      setToken(data.access_token, role ?? '', newUsername, authProvider ?? 'local')
       setUsernameOk(true)
       notify.success('Username updated')
     } catch (err) {
@@ -187,7 +189,7 @@ function UserSettingsModal({ onClose }: { onClose: () => void }) {
 
   return (
     <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-[60]">
-      <div className="bg-zinc-100 dark:bg-[#111113] border border-zinc-300 dark:border-white/10 rounded-md p-6 w-full max-w-sm space-y-6">
+      <div className="bg-zinc-100 dark:bg-[#0c0c0e] border border-zinc-300 dark:border-white/10 rounded-md p-6 w-full max-w-sm space-y-6">
         <div className="flex items-center justify-between">
           <h2 className="text-lg font-semibold">User Settings</h2>
           <button onClick={onClose} className="text-zinc-500 hover:text-zinc-900 dark:hover:text-white text-sm">Close</button>
@@ -200,9 +202,9 @@ function UserSettingsModal({ onClose }: { onClose: () => void }) {
           ) : (
             <form onSubmit={handleUsernameSubmit} className="space-y-3">
               <input type="text" placeholder="New username" value={newUsername} onChange={e => setNewUsername(e.target.value)}
-                className="w-full bg-zinc-200 dark:bg-[#1a1a1d] border border-zinc-300 dark:border-white/10 rounded px-3 py-2 text-sm" required />
-              <input type="password" placeholder="Current password" value={usernamePassword} onChange={e => setUsernamePassword(e.target.value)}
-                className="w-full bg-zinc-200 dark:bg-[#1a1a1d] border border-zinc-300 dark:border-white/10 rounded px-3 py-2 text-sm" required />
+                className="w-full bg-zinc-200 dark:bg-[#141416] border border-zinc-300 dark:border-white/10 rounded px-3 py-2 text-sm" required />
+              <PasswordInput placeholder="Current password" value={usernamePassword} onChange={e => setUsernamePassword(e.target.value)}
+                className="w-full bg-zinc-200 dark:bg-[#141416] border border-zinc-300 dark:border-white/10 rounded px-3 py-2 text-sm" required />
               {usernameError && <p className="text-red-600 dark:text-red-400 text-xs">{usernameError}</p>}
               <button type="submit" className="w-full py-2 rounded bg-accent-fill hover:bg-accent-fill-hover text-accent-text text-sm">Change Username</button>
             </form>
@@ -219,7 +221,7 @@ function UserSettingsModal({ onClose }: { onClose: () => void }) {
 }
 
 export function Layout({ children }: { children: React.ReactNode }) {
-  const { role, username, clear, passwordExpired, setPasswordExpired } = useAuth()
+  const { role, username, authProvider, clear, passwordExpired, setPasswordExpired } = useAuth()
   const orgName = useBranding((s) => s.orgName)
   const logoUrl = useBranding((s) => s.logoUrl)
   const theme = useTheme((s) => s.theme)
@@ -233,6 +235,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
   const notifications = useNotifications((s) => s.items)
   const clearNotifications = useNotifications((s) => s.clear)
   const [notifOpen, setNotifOpen] = useState(false)
+  const [userMenuOpen, setUserMenuOpen] = useState(false)
 
   useEffect(() => {
     setPathname(current)
@@ -250,7 +253,9 @@ export function Layout({ children }: { children: React.ReactNode }) {
   }
 
   const items = role === 'field' ? fieldItems : role === 'readonly' ? navItems : [...navItems, liveMapItem]
-  const adminItems = role === 'superadmin' ? superAdminItems : []
+  const adminItems = role === 'superadmin'
+    ? superAdminItems.filter((item) => authProvider === 'local' || item.to !== '/shell')
+    : []
 
   return (
     <div className="flex h-screen bg-zinc-50 dark:bg-hud-0 text-zinc-900 dark:text-zinc-100">
@@ -263,7 +268,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
       <header className="fixed top-0 left-0 right-0 z-50 h-14 pl-16 pr-4 flex items-center gap-2 min-w-0 border-b border-zinc-200 dark:border-white/10 bg-white/97 dark:bg-hud-1/97 backdrop-blur-xl">
         <button
           onClick={() => setSidebarOpen(v => !v)}
-          className="fixed top-3 left-3 z-50 p-2.5 rounded-md bg-zinc-100 dark:bg-[#111113] border border-zinc-200 dark:border-white/10 text-zinc-700 dark:text-zinc-300 hover:text-zinc-900 dark:hover:text-white transition-colors"
+          className="fixed top-3 left-3 z-50 p-2.5 rounded-md bg-zinc-100 dark:bg-[#0c0c0e] border border-zinc-200 dark:border-white/10 text-zinc-700 dark:text-zinc-300 hover:text-zinc-900 dark:hover:text-white transition-colors"
           aria-label="Toggle menu"
           aria-expanded={sidebarOpen}
         >
@@ -275,7 +280,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
           <button
             onClick={() => setNotifOpen((v) => !v)}
             aria-label="Notifications"
-            className="p-1.5 rounded hover:bg-zinc-200 dark:hover:bg-[#1a1a1d] text-zinc-600 dark:text-zinc-400 relative focus:outline-none focus:ring-2 focus:ring-accent-ring"
+            className="p-1.5 rounded hover:bg-zinc-200 dark:hover:bg-[#141416] text-zinc-600 dark:text-zinc-400 relative focus:outline-none focus:ring-2 focus:ring-accent-ring"
           >
             <Bell size={16} />
             {notifications.length > 0 && (
@@ -283,7 +288,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
             )}
           </button>
           {notifOpen && (
-            <div className="fixed top-14 left-4 right-4 w-auto md:absolute md:top-auto md:left-0 md:right-auto md:mt-2 md:w-72 rounded-md border border-zinc-200 dark:border-white/10 bg-white dark:bg-[#111113] shadow-lg z-50 max-h-80 overflow-y-auto">
+            <div className="fixed top-14 left-4 right-4 w-auto md:absolute md:top-auto md:left-auto md:right-0 md:mt-2 md:w-72 rounded-md border border-zinc-200 dark:border-white/10 bg-white dark:bg-[#0c0c0e] shadow-lg z-50 max-h-80 overflow-y-auto">
               <div className="flex items-center justify-between px-3 py-2 border-b border-zinc-200 dark:border-white/10">
                 <span className="hud-label text-xs font-semibold text-zinc-600 dark:text-zinc-400">Notifications</span>
                 <button onClick={clearNotifications} className="text-xs text-accent-ring hover:underline">Clear all</button>
@@ -320,6 +325,60 @@ export function Layout({ children }: { children: React.ReactNode }) {
             </div>
           )}
         </div>
+
+        <div className="relative">
+          <button
+            onClick={() => setUserMenuOpen((v) => !v)}
+            aria-label="User menu"
+            aria-expanded={userMenuOpen}
+            className="w-7 h-7 rounded-full bg-accent-fill text-accent-text flex items-center justify-center text-xs font-semibold shrink-0 focus:outline-none focus:ring-2 focus:ring-accent-ring"
+          >
+            {(username ?? '?').slice(0, 2).toUpperCase()}
+          </button>
+          {userMenuOpen && (
+            <div className="absolute top-full right-0 mt-2 w-56 rounded-md border border-zinc-200 dark:border-white/10 bg-white dark:bg-[#0c0c0e] shadow-lg z-50 overflow-hidden">
+              <div className="px-3 py-2.5 border-b border-zinc-200 dark:border-white/10">
+                <p className="text-sm text-zinc-800 dark:text-zinc-200 truncate">{username}</p>
+                <p className="text-xs text-zinc-500">{role}</p>
+              </div>
+              <div className="p-1">
+                <button
+                  onClick={() => { toggleTheme(); setUserMenuOpen(false) }}
+                  className="flex items-center gap-3 w-full px-3 py-2 rounded-md text-sm text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white hover:bg-zinc-200/50 dark:hover:bg-white/[0.05] transition-colors"
+                >
+                  {theme === 'dark' ? <Sun size={16} /> : <Moon size={16} />}
+                  {theme === 'dark' ? 'Light mode' : 'Dark mode'}
+                </button>
+                {authProvider === 'local' && (
+                  <button
+                    onClick={() => { setUserMenuOpen(false); setShowUserSettings(true) }}
+                    className="flex items-center gap-3 w-full px-3 py-2 rounded-md text-sm text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white hover:bg-zinc-200/50 dark:hover:bg-white/[0.05] transition-colors"
+                  >
+                    <Users size={16} />
+                    Account settings
+                  </button>
+                )}
+                {role === 'superadmin' && (
+                  <Link
+                    to="/branding"
+                    onClick={() => setUserMenuOpen(false)}
+                    className="flex items-center gap-3 w-full px-3 py-2 rounded-md text-sm text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white hover:bg-zinc-200/50 dark:hover:bg-white/[0.05] transition-colors"
+                  >
+                    <Settings size={16} />
+                    Settings
+                  </Link>
+                )}
+                <button
+                  onClick={() => { setUserMenuOpen(false); handleLogout() }}
+                  className="flex items-center gap-3 w-full px-3 py-2 rounded-md text-sm text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white hover:bg-zinc-200/50 dark:hover:bg-white/[0.05] transition-colors"
+                >
+                  <LogOut size={16} />
+                  Sign out
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
       </header>
       {sidebarOpen && (
         <div className="fixed inset-0 top-14 bg-black/50 z-30" onClick={() => setSidebarOpen(false)} />
@@ -338,7 +397,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
               className={cn(
                 'flex items-center gap-3 px-3 py-2 rounded-md text-sm transition-colors',
                 current === to
-                  ? 'bg-zinc-200 dark:bg-[#1a1a1d] text-zinc-900 dark:text-white'
+                  ? 'bg-zinc-200 dark:bg-[#141416] text-zinc-900 dark:text-white'
                   : 'text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white hover:bg-zinc-200/50 dark:hover:bg-white/[0.05]'
               )}
             >
@@ -357,7 +416,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
                   className={cn(
                     'flex items-center gap-3 px-3 py-2 rounded-md text-sm transition-colors',
                     current === to
-                      ? 'bg-zinc-200 dark:bg-[#1a1a1d] text-zinc-900 dark:text-white'
+                      ? 'bg-zinc-200 dark:bg-[#141416] text-zinc-900 dark:text-white'
                       : 'text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white hover:bg-zinc-200/50 dark:hover:bg-white/[0.05]'
                   )}
                 >
@@ -368,49 +427,13 @@ export function Layout({ children }: { children: React.ReactNode }) {
             </>
           )}
         </nav>
-        <button
-          onClick={() => setShowUserSettings(true)}
-          className="px-3 py-3 border-t border-zinc-200 dark:border-white/10 flex items-center gap-2 w-full text-left hover:bg-zinc-200/50 dark:hover:bg-white/[0.05] transition-colors"
-        >
-          <div className="w-7 h-7 rounded-full bg-accent-fill text-accent-text flex items-center justify-center text-xs font-semibold shrink-0">
-            {(username ?? '?').slice(0, 2).toUpperCase()}
-          </div>
-          <div className="min-w-0">
-            <p className="text-sm text-zinc-800 dark:text-zinc-200 truncate">{username}</p>
-            <p className="text-xs text-zinc-500">{role}</p>
-          </div>
-        </button>
-        <div className="p-2 border-t border-zinc-200 dark:border-white/10 space-y-1">
-          <button
-            onClick={toggleTheme}
-            className="flex items-center gap-3 w-full px-3 py-2 rounded-md text-sm text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white hover:bg-zinc-200/50 dark:hover:bg-white/[0.05] transition-colors"
-          >
-            {theme === 'dark' ? <Sun size={16} /> : <Moon size={16} />}
-            {theme === 'dark' ? 'Light mode' : 'Dark mode'}
-          </button>
-          {role === 'superadmin' && (
-            <Link
-              to="/branding"
-              onClick={() => setSidebarOpen(false)}
-              className="flex items-center gap-3 w-full px-3 py-2 rounded-md text-sm text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white hover:bg-zinc-200/50 dark:hover:bg-white/[0.05] transition-colors"
-            >
-              <Settings size={16} />
-              Settings
-            </Link>
-          )}
-          <button
-            onClick={handleLogout}
-            className="flex items-center gap-3 w-full px-3 py-2 rounded-md text-sm text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white hover:bg-zinc-200/50 dark:hover:bg-white/[0.05] transition-colors"
-          >
-            <LogOut size={16} />
-            Sign out
-          </button>
-          <p className="px-3 pt-2 text-[10px] text-zinc-400 dark:text-zinc-600 text-center">TAK Admin {__APP_VERSION__}</p>
+        <div className="p-2 border-t border-zinc-200 dark:border-white/10">
+          <p className="px-3 pt-1 text-[10px] text-zinc-400 dark:text-zinc-600 text-center">TAK Admin {__APP_VERSION__}</p>
         </div>
       </aside>
       <main id="main-content" tabIndex={-1} className="flex-1 overflow-auto pt-14 isolate hud-grid-bg">{children}</main>
       {showUserSettings && <UserSettingsModal onClose={() => setShowUserSettings(false)} />}
-      {passwordExpired && <ChangePasswordModal forced onClose={() => setPasswordExpired(false)} />}
+      {authProvider === 'local' && passwordExpired && <ChangePasswordModal forced onClose={() => setPasswordExpired(false)} />}
     </div>
   )
 }

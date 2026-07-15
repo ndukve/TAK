@@ -6,6 +6,7 @@ import { apiJson, apiFetch, downloadFile, errorMessage } from '@/lib/api'
 import { useAuth } from '@/store/auth'
 import { notify } from '@/lib/notify'
 import { TableSkeletonRows } from '@/components/Skeleton'
+import { HudCorners } from '@/components/HudCorners'
 import { Trash2, Upload, Copy, Check, Download } from 'lucide-react'
 
 function CopyHash({ hash }: { hash: string }) {
@@ -122,7 +123,7 @@ function MapsPage() {
             placeholder="Provider (e.g. Google)"
             value={provider}
             onChange={e => setProvider(e.target.value)}
-            className="px-3 py-2 bg-zinc-100 dark:bg-[#111113] border border-zinc-300 dark:border-white/10 rounded-md text-sm text-zinc-900 dark:text-white placeholder-zinc-500 w-48"
+            className="px-3 py-2 bg-zinc-100 dark:bg-[#0c0c0e] border border-zinc-300 dark:border-white/10 rounded-md text-sm text-zinc-900 dark:text-white placeholder-zinc-500 w-48"
           />
           <button
             onClick={handleUploadClick}
@@ -141,9 +142,11 @@ function MapsPage() {
           />
         </div>
 
-        <div className="rounded-md border border-zinc-200 dark:border-white/10 overflow-x-auto">
+        <div className="hud-frame relative rounded-md border border-zinc-200 dark:border-white/10 bg-white dark:bg-[#0c0c0e]">
+          <HudCorners />
+          <div className="overflow-x-auto">
           <table className="w-full text-sm min-w-[600px]">
-            <thead className="bg-zinc-100 dark:bg-[#111113] text-zinc-600 dark:text-zinc-400">
+            <thead className="bg-zinc-100 dark:bg-[#141416] text-zinc-600 dark:text-zinc-400">
               <tr>
                 <th className="px-4 py-3 text-left font-medium hud-label text-xs">Provider</th>
                 <th className="px-4 py-3 text-left font-medium hud-label text-xs">File</th>
@@ -157,7 +160,7 @@ function MapsPage() {
               {loading ? (
                 <TableSkeletonRows columns={6} />
               ) : maps.length === 0 ? (
-                <tr>
+                <tr className="bg-zinc-50 dark:bg-[#0c0c0e]">
                   <td colSpan={6} className="px-4 py-8 text-center text-zinc-500">
                     No map sources loaded
                   </td>
@@ -178,14 +181,14 @@ function MapsPage() {
                       <div className="flex justify-end gap-1">
                         <button
                           onClick={() => handleDownload(m)}
-                          className="p-1.5 rounded hover:bg-zinc-200 dark:hover:bg-[#1a1a1d] text-accent-ring"
+                          className="p-1.5 rounded hover:bg-zinc-200 dark:hover:bg-[#141416] text-accent-ring"
                           title="Download"
                         >
                           <Download size={14} />
                         </button>
                         <button
                           onClick={() => handleDelete(m)}
-                          className="p-1.5 rounded hover:bg-zinc-200 dark:hover:bg-[#1a1a1d] text-red-600 dark:text-red-400"
+                          className="p-1.5 rounded hover:bg-zinc-200 dark:hover:bg-[#141416] text-red-600 dark:text-red-400"
                           title="Delete"
                         >
                           <Trash2 size={14} />
@@ -197,6 +200,7 @@ function MapsPage() {
               )}
             </tbody>
           </table>
+          </div>
         </div>
       </div>
     </Layout>

@@ -4,8 +4,9 @@ interface AuthState {
   token: string | null
   role: string | null
   username: string | null
+  authProvider: string | null
   passwordExpired: boolean
-  setToken: (token: string, role: string, username: string) => void
+  setToken: (token: string, role: string, username: string, authProvider?: string) => void
   setPasswordExpired: (v: boolean) => void
   clear: () => void
 }
@@ -18,8 +19,9 @@ export const useAuth = create<AuthState>()((set) => ({
   token: null,
   role: null,
   username: null,
+  authProvider: null,
   passwordExpired: false,
-  setToken: (token, role, username) => set({ token, role, username }),
+  setToken: (token, role, username, authProvider = 'local') => set({ token, role, username, authProvider }),
   setPasswordExpired: (v) => set({ passwordExpired: v }),
-  clear: () => set({ token: null, role: null, username: null, passwordExpired: false }),
+  clear: () => set({ token: null, role: null, username: null, authProvider: null, passwordExpired: false }),
 }))

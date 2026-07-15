@@ -91,6 +91,21 @@ Kiekvienas vartotojas gauna duomenų paketą (`.zip`), kuriame yra:
 
 Abu sertifikatų failai būtini. Kliento sertifikatas autentifikuoja įrenginį serveriui; pasitikėjimo saugykla — serverį įrenginiui.
 
+### Sertifikatai, maršrutizavimo grupės, priklausomybė ir komandos spalvos
+
+Tai yra atskiros TAK sąvokos:
+
+| Sąvoka | Pavyzdys | Paskirtis |
+|---|---|---|
+| Kliento sertifikatas | `Alpha1-iTAK` | Unikaliai autentifikuoja vieną kliento diegimą. Nenaudokite jo kitame įrenginyje. |
+| Serverio maršrutizavimo grupė | `TAK-USERS` | Nustato, kurie autentifikuoti klientai gali keistis CoT duomenimis. Šis diegimas suteikia IN ir OUT teises. |
+| CoT priklausomybė | Draugiškas, priešiškas, neutralus, nežinomas | Valdo taktinę simboliką, pvz., draugiškus stačiakampius ar priešiškus rombus. |
+| TAK komandos spalva | Žydra, raudona, žalia, geltona | Kliento operacinės komandos atributas; jis nesuteikia prieigos prie serverio. |
+
+Kiekvienas klientas ir toliau gauna atskirą sertifikatą. Klientai mato vienas kitą todėl, kad šie atskiri sertifikatai priklauso tai pačiai `TAK-USERS` maršrutizavimo grupei, o ne todėl, kad dalijasi prisijungimo duomenimis ar komandos spalva. Vidiniai CoT duomenys, gaunami TCP 8087 prievadu, priskiriami tai pačiai grupei.
+
+`TAK-USERS` yra numatytasis pavadinimas. Norėdami naudoti kitą prieigos grupės pavadinimą, `takserver.env` faile nustatykite `TAK_USER_GROUP=<pavadinimas>`, perkurkite ir paleiskite TAK konteinerius iš naujo, tada pataisykite esamų sertifikatų narystę, kaip parodyta toliau. Šis pakeitimas nekeičia žemėlapio simbolių, priklausomybės ar komandos spalvų.
+
 **Šaukinys privalo baigtis `-ATAK`, `-WinTAK`, `-iTAK` arba `-Service`** — pvz. `Alpha1-iTAK`. Tai ne kosmetika: pvz. iTAK importavimo funkcijai reikia kitokios zip failo struktūros (sertifikatų failai šaknyje), nei ATAK/WinTAK naudojamas Mission Package formatas (sudėti į `content/` aplanką). Priesaga nurodo, kurį formatą sukurti. Pasirinkus netinkamą kliento tipą, paketas importuosis tyliai, bet serverio įrašas neatsiras.
 
 ### Standartinis būdas (generuoti ir suteikti prieigą vienu žingsniu)
@@ -121,6 +136,14 @@ docker compose exec -T -e USER_CERT_NAME=Alpha1-iTAK takserver_config \
 ```
 
 Kai paketas paruoštas, atsisiųskite jį iš administravimo skydelio adresu `https://<SERVERIO_IP>:8889` — skiltis **Packages**.
+
+Jei diegimas buvo sukurtas prieš įjungiant bendrą maršrutizavimo grupę, atnaujinę ir iš naujo paleidę serverį vieną kartą vykdykite:
+
+```bash
+./users.sh repair-groups
+```
+
+Komanda visiems paketą turintiems ATAK, iTAK ir WinTAK sertifikatams iš naujo pritaiko autorizaciją su `TAK-USERS` IN ir OUT naryste. Ji nekeičia sertifikatų ir neverčia klientų dalytis privačiais raktais.
 
 Vietoje `<SERVERIO_IP>` naudokite:
 - **A variantas:** serverio LAN IP (pvz. `192.168.1.50`)

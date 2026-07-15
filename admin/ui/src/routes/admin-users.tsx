@@ -6,6 +6,8 @@ import { apiJson, apiFetch, errorMessage } from '@/lib/api'
 import { useAuth } from '@/store/auth'
 import { notify } from '@/lib/notify'
 import { TableSkeletonRows } from '@/components/Skeleton'
+import { HudCorners } from '@/components/HudCorners'
+import { PasswordInput } from '@/components/PasswordInput'
 import { UserPlus, Trash2 } from 'lucide-react'
 
 export const Route = createFileRoute('/admin-users')({
@@ -51,23 +53,23 @@ function NewAdminModal({ onClose, onCreated }: { onClose: () => void; onCreated:
 
   return (
     <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50">
-      <div className="bg-white dark:bg-[#111113] border border-zinc-200 dark:border-white/10 rounded-md p-6 w-full max-w-sm">
+      <div className="bg-white dark:bg-[#0c0c0e] border border-zinc-200 dark:border-white/10 rounded-md p-6 w-full max-w-sm">
         <h2 className="text-lg font-semibold mb-4">New Admin User</h2>
         <form onSubmit={handleSubmit} className="space-y-3">
           <div className="space-y-1">
             <label className="text-sm text-zinc-700 dark:text-zinc-300">Username</label>
             <input type="text" value={username} onChange={e => setUsername(e.target.value)} required
-              className="w-full px-3 py-2 rounded-md bg-zinc-200 dark:bg-[#1a1a1d] border border-zinc-300 dark:border-white/10 text-zinc-900 dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-accent-ring" />
+              className="w-full px-3 py-2 rounded-md bg-zinc-200 dark:bg-[#141416] border border-zinc-300 dark:border-white/10 text-zinc-900 dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-accent-ring" />
           </div>
           <div className="space-y-1">
             <label className="text-sm text-zinc-700 dark:text-zinc-300">Password (min 12 chars)</label>
-            <input type="password" value={password} onChange={e => setPassword(e.target.value)} required
-              className="w-full px-3 py-2 rounded-md bg-zinc-200 dark:bg-[#1a1a1d] border border-zinc-300 dark:border-white/10 text-zinc-900 dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-accent-ring" />
+            <PasswordInput value={password} onChange={e => setPassword(e.target.value)} required
+              className="w-full px-3 py-2 rounded-md bg-zinc-200 dark:bg-[#141416] border border-zinc-300 dark:border-white/10 text-zinc-900 dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-accent-ring" />
           </div>
           <div className="space-y-1">
             <label className="text-sm text-zinc-700 dark:text-zinc-300">Role</label>
             <select value={role} onChange={e => setRole(e.target.value as 'admin' | 'superadmin')}
-              className="w-full px-3 py-2 rounded-md bg-zinc-200 dark:bg-[#1a1a1d] border border-zinc-300 dark:border-white/10 text-zinc-900 dark:text-white text-sm focus:outline-none">
+              className="w-full px-3 py-2 rounded-md bg-zinc-200 dark:bg-[#141416] border border-zinc-300 dark:border-white/10 text-zinc-900 dark:text-white text-sm focus:outline-none">
               <option value="admin">admin</option>
               <option value="superadmin">superadmin</option>
             </select>
@@ -155,9 +157,11 @@ function AdminUsersPage() {
             </button>
           }
         />
-        <div className="rounded-md border border-zinc-200 dark:border-white/10 overflow-hidden">
+        <div className="hud-frame relative rounded-md border border-zinc-200 dark:border-white/10 bg-white dark:bg-[#0c0c0e]">
+          <HudCorners />
+          <div className="overflow-hidden">
           <table className="w-full text-sm">
-            <thead className="bg-zinc-100 dark:bg-[#111113] text-zinc-600 dark:text-zinc-400">
+            <thead className="bg-zinc-100 dark:bg-[#141416] text-zinc-600 dark:text-zinc-400">
               <tr>
                 <th className="px-4 py-3 text-left font-medium hud-label text-xs">Username</th>
                 <th className="px-4 py-3 text-left font-medium hud-label text-xs">Role</th>
@@ -169,7 +173,7 @@ function AdminUsersPage() {
               {loading ? (
                 <TableSkeletonRows columns={4} />
               ) : users.length === 0 ? (
-                <tr><td colSpan={4} className="px-4 py-8 text-center text-zinc-500">No admin users</td></tr>
+                <tr className="bg-zinc-50 dark:bg-[#0c0c0e]"><td colSpan={4} className="px-4 py-8 text-center text-zinc-500">No admin users</td></tr>
               ) : (
                 users.map(u => (
                   <tr key={u.id} className="bg-zinc-50 dark:bg-[#000000] hover:bg-zinc-100/50 dark:hover:bg-white/[0.03]">
@@ -184,13 +188,14 @@ function AdminUsersPage() {
                       </button>
                     </td>
                     <td className="px-4 py-3 flex justify-end">
-                      <button onClick={() => deleteUser(u.id, u.username)} disabled={pendingIds.has(u.id)} title="Delete" aria-label="Delete" className="p-1.5 rounded hover:bg-zinc-200 dark:hover:bg-[#1a1a1d] text-red-600 dark:text-red-400 focus:outline-none focus:ring-2 focus:ring-accent-ring disabled:opacity-50"><Trash2 size={14} /></button>
+                      <button onClick={() => deleteUser(u.id, u.username)} disabled={pendingIds.has(u.id)} title="Delete" aria-label="Delete" className="p-1.5 rounded hover:bg-zinc-200 dark:hover:bg-[#141416] text-red-600 dark:text-red-400 focus:outline-none focus:ring-2 focus:ring-accent-ring disabled:opacity-50"><Trash2 size={14} /></button>
                     </td>
                   </tr>
                 ))
               )}
             </tbody>
           </table>
+          </div>
         </div>
       </div>
       {showNew && <NewAdminModal onClose={() => setShowNew(false)} onCreated={load} />}

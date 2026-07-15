@@ -75,9 +75,8 @@ else
     ok "Using existing admin certificate: ${ADMIN_CERT_NAME}"
 fi
 
-# Every container touching this volume runs as root (no USER directive
-# anywhere in this project's Dockerfiles), so world-writable was never
-# functionally necessary — root:root + owner/group access is sufficient.
+# TAK services share the fixed 10000:10000 runtime identity.  The permissions
+# initializer migrates older root-owned volumes before this script runs.
 chmod -R 750 ${TR}/data/
 
 info "Waiting for PostgreSQL"

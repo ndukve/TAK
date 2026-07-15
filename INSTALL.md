@@ -91,6 +91,21 @@ Each user needs a data package (`.zip`) that contains:
 
 Both certificate files are required. The client cert authenticates the device to the server; the trust store authenticates the server to the device.
 
+### Certificates, routing groups, affiliation, and team colors
+
+These are independent TAK concepts:
+
+| Concept | Example | Purpose |
+|---|---|---|
+| Client certificate | `Alpha1-iTAK` | Uniquely authenticates one client installation. Do not reuse it on another device. |
+| Server routing group | `TAK-USERS` | Controls which authenticated clients can exchange CoT. This deployment grants both IN and OUT access. |
+| CoT affiliation | Friendly, hostile, neutral, unknown | Controls tactical affiliation symbology such as friendly rectangles or hostile diamonds. |
+| TAK team color | Cyan, Red, Green, Yellow | A client-side operational team attribute; it does not grant server access. |
+
+Every client still receives its own certificate. Clients can see one another because those separate certificates share the `TAK-USERS` routing group, not because they share credentials or a team color. Internal CoT arriving on TCP port 8087 is assigned to the same routing group so those tracks follow the same TAK Server route.
+
+`TAK-USERS` is the default name. To use another access-group name, set `TAK_USER_GROUP=<name>` in `takserver.env`, rebuild/restart the TAK containers, and repair existing certificate memberships as shown below. Changing this value does not alter map symbols, affiliations, or team colors.
+
 **The callsign must end in `-ATAK`, `-WinTAK`, or `-iTAK`** — e.g. `Alpha1-iTAK`. This isn't cosmetic: iTAK's importer requires a different zip layout (cert files at the root) than ATAK/WinTAK's Mission Package format (nested under `content/`), and the suffix is how the package builder knows which one to produce. Using the wrong client type will import silently with no server entry appearing.
 
 ### Standard flow (generate + authorise in one step)
@@ -121,6 +136,14 @@ docker compose exec -T -e USER_CERT_NAME=Alpha1-iTAK takserver_config \
 ```
 
 Once the package is ready, download it from the admin panel at `https://<SERVER_IP>:8889` — **Packages** tab.
+
+For an existing deployment created before shared routing-group assignment was enabled, run this once after updating and restarting the server:
+
+```bash
+./users.sh repair-groups
+```
+
+It re-applies authorization to every packaged ATAK, iTAK, and WinTAK certificate with both IN and OUT membership in `TAK-USERS`. It does not replace certificates or make clients share private keys.
 
 Replace `<SERVER_IP>` with:
 - **Option A:** the server's LAN IP (e.g. `192.168.1.50`)

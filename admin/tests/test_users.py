@@ -52,9 +52,10 @@ def mock_container(monkeypatch):
     """Patches api.users.run_in_container. Call .set(code, out) to control
     what the next (and all subsequent, until changed) invocations return."""
 
-    state = {"code": 0, "out": ""}
+    state = {"code": 0, "out": "", "calls": []}
 
     async def _fake_run_in_container(cmd, env=None, workdir=None):
+        state["calls"].append({"cmd": cmd, "env": env, "workdir": workdir})
         return state["code"], state["out"]
 
     monkeypatch.setattr(users_module, "run_in_container", _fake_run_in_container)
@@ -63,6 +64,10 @@ def mock_container(monkeypatch):
         def set(self, code, out):
             state["code"] = code
             state["out"] = out
+
+        @property
+        def calls(self):
+            return state["calls"]
 
     return Controller()
 
@@ -127,6 +132,10 @@ async def test_enable_user(admin_client, mock_container):
     mock_container.set(0, "")
     resp = await admin_client.post("/api/users/enable", json={"username": "alpha1-ATAK"})
     assert resp.status_code == 200
+    assert mock_container.calls[-1]["env"] == {
+        "USER_CERT_NAME": "alpha1-ATAK",
+        "TAK_USER_GROUP": "TAK-USERS",
+    }
 
 
 async def test_disable_user(admin_client, mock_container):

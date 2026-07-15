@@ -6,8 +6,8 @@ Only the latest tagged release receives security fixes. Older tags are not backp
 
 | Version | Supported |
 |---------|-----------|
-| latest (`v1.0.4`) | ✅ |
-| < v1.0.4 | ❌ |
+| latest (`v1.0.5`) | ✅ |
+| < v1.0.5 | ❌ |
 
 ## Reporting a Vulnerability
 

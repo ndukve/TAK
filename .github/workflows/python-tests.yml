@@ -14,7 +14,13 @@ jobs:
         with:
           python-version: "3.11"
       - name: Install dependencies
-        run: pip install -r requirements.txt -r requirements-dev.txt
+        run: |
+          pip install --require-hashes -r requirements.lock
+          pip install -r requirements-dev.txt
+        working-directory: admin
+      - uses: astral-sh/setup-uv@v6
+      - name: Audit locked Python dependencies
+        run: uvx pip-audit==2.10.1 -r requirements.lock --disable-pip
         working-directory: admin
       - name: Run pytest
         run: pytest

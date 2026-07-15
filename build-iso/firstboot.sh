@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # Runs once on first boot — loads Docker images and launches TAK server setup
 set -euo pipefail
+umask 077
 
 TTY=/dev/tty1
 exec > >(tee -a /var/log/tak-firstboot.log) 2>&1
@@ -40,6 +41,23 @@ read -rp "    Admin panel username [admin]: " ADMIN_USER < /dev/tty
 ADMIN_USER="${ADMIN_USER:-admin}"
 
 while true; do
+    read -rsp "    Host console password (min 12 chars): " HOST_PASS < /dev/tty
+    echo ""
+    [[ ${#HOST_PASS} -ge 12 ]] || { print_tty "    Password too short — must be at least 12 characters."; continue; }
+    read -rsp "    Confirm host console password: " HOST_PASS2 < /dev/tty
+    echo ""
+    [[ "$HOST_PASS" = "$HOST_PASS2" ]] && break
+    print_tty "    Passwords do not match. Try again."
+done
+
+# The autoinstall account is deliberately locked in user-data. Unlock it only
+# after a unique password has been entered locally, and force a change on the
+# first console login. SSH password authentication remains disabled.
+printf 'tak:%s\n' "$HOST_PASS" | chpasswd
+chage -d 0 tak
+unset HOST_PASS HOST_PASS2
+
+while true; do
     read -rsp "    Admin panel password (min 12 chars): " ADMIN_PASS < /dev/tty
     echo ""
     if [[ ${#ADMIN_PASS} -ge 12 ]]; then break; fi
@@ -53,9 +71,12 @@ if [[ "$ADMIN_PASS" != "$ADMIN_PASS2" ]]; then
     exit 1
 fi
 
-POSTGRES_PASS_DEFAULT=$(openssl rand -hex 16)
-read -rp "    PostgreSQL password [$POSTGRES_PASS_DEFAULT]: " POSTGRES_PASS < /dev/tty
-POSTGRES_PASS="${POSTGRES_PASS:-$POSTGRES_PASS_DEFAULT}"
+# Always generate the database credential. Printing it in a prompt would copy
+# it into /var/log/tak-firstboot.log via the setup transcript.
+POSTGRES_PASS=$(openssl rand -hex 16)
+ADMIN_CERT_PASS=$(openssl rand -hex 16)
+TAKSERVER_CERT_PASS=$(openssl rand -hex 16)
+CA_PASS=$(openssl rand -hex 16)
 
 # ── Write takserver.env ──────────────────────────────────────────────────────
 print_tty ""
@@ -64,16 +85,41 @@ print_tty "[3/4] Writing configuration..."
 cd /opt/tak-server
 
 ADMIN_SECRET=$(openssl rand -hex 32)
+DOCKER_SOCKET_GID=$(stat -c '%g' /var/run/docker.sock 2>/dev/null || true)
+if [ -z "$DOCKER_SOCKET_GID" ]; then
+    DOCKER_SOCKET_GID=$(getent group docker 2>/dev/null | cut -d: -f3 || true)
+fi
+DOCKER_SOCKET_GID=${DOCKER_SOCKET_GID:-0}
 
 cat > takserver.env << EOF
 # TAK Server configuration — generated on first boot $(date -u +%Y-%m-%dT%H:%M:%SZ)
 
 TAK_SERVER_ADDRESS=${SERVER_IP}
+TAK_SERVER_NAME=TAK Server
 
 POSTGRES_DB=cot
 POSTGRES_USER=martiuser
 POSTGRES_PASSWORD=${POSTGRES_PASS}
 POSTGRES_ADDRESS=takdb
+POSTGRES_SUPERUSER=martiuser
+POSTGRES_SUPER_PASSWORD=${POSTGRES_PASS}
+
+ADMIN_CERT_PASS=${ADMIN_CERT_PASS}
+ADMIN_CERT_NAME=admin
+TAKSERVER_CERT_PASS=${TAKSERVER_CERT_PASS}
+CA_NAME=takserver-ca
+CA_PASS=${CA_PASS}
+
+COUNTRY=US
+STATE=NA
+CITY=NA
+ORGANIZATION=TAK Server
+ORGANIZATIONAL_UNIT=Ops
+
+LOGGING_JSON_ENABLED=true
+LOGGING_CONFIG=/opt/tak/logback-stdout.xml
+
+DOCKER_SOCKET_GID=${DOCKER_SOCKET_GID}
 
 ADMIN_SECRET_KEY=${ADMIN_SECRET}
 ADMIN_FIRST_USER=${ADMIN_USER}
@@ -83,7 +129,11 @@ chmod 600 takserver.env
 
 # ── Start TAK server ─────────────────────────────────────────────────────────
 print_tty "[4/4] Starting TAK Server..."
-docker compose up -d
+docker compose up -d --no-build --pull never
+
+# shellcheck source=../scripts/scrub_admin_secret.sh
+. /opt/tak-server/scripts/scrub_admin_secret.sh
+scrub_admin_bootstrap_secret /opt/tak-server/takserver.env
 
 print_tty ""
 print_tty "=========================================="

@@ -21,7 +21,7 @@ jobs:
               ast.parse(p.read_text(), filename=str(p))
           "
       - name: Install ruff
-        run: pip install ruff
+        run: pip install ruff==0.15.20
       - name: Ruff check
         run: ruff check .
         working-directory: admin

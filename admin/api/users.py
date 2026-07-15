@@ -21,6 +21,7 @@ _admin = require_role("admin", "superadmin")
 TAK_DATA = "/opt/tak/data/certs/files"
 CLIENTPKGS = f"{TAK_DATA}/clientpkgs"
 SERVER_ADDR = os.environ.get("TAK_SERVER_ADDRESS", "localhost")
+TAK_USER_GROUP = os.environ.get("TAK_USER_GROUP", "TAK-USERS")
 
 _USERNAME_RE = re.compile(r'^[A-Za-z0-9_-]+$')
 _NEW_USERNAME_RE = re.compile(r'^[A-Za-z0-9_-]+-(ATAK|WinTAK|iTAK|Service)$')
@@ -236,7 +237,7 @@ async def enable_user(body: UsernameRequest, db: AsyncSession = Depends(get_db),
     username = _validate_username(body.username)
     code, out = await run_in_container(
         ["bash", "/opt/scripts/enable_user.sh"],
-        env={"USER_CERT_NAME": username},
+        env={"USER_CERT_NAME": username, "TAK_USER_GROUP": TAK_USER_GROUP},
     )
     if code != 0:
         raise HTTPException(status_code=500, detail=out)

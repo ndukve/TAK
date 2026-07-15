@@ -6,16 +6,19 @@ import time
 
 CERT_DIR = "/opt/tak/data/certs/files"
 DISK_PATH = "/opt/tak/data"
+CA_CERT_PATH = f"{CERT_DIR}/root-ca.pem"
 
 
 async def _open_cot_connection(cert_path: str, key_path: str, key_password: str, server_addr: str):
     """Open a TLS connection to the TAK server's CoT port using the service
     client cert. Isolated in its own function so tests (and live_map.py) can
     monkeypatch it without a real TAK server."""
-    ssl_ctx = ssl.SSLContext(ssl.PROTOCOL_TLS_CLIENT)
+    ssl_ctx = ssl.create_default_context(ssl.Purpose.SERVER_AUTH, cafile=CA_CERT_PATH)
     ssl_ctx.load_cert_chain(certfile=cert_path, keyfile=key_path, password=key_password)
+    ssl_ctx.minimum_version = ssl.TLSVersion.TLSv1_2
+    # Docker's internal service name need not appear in the TAK certificate,
+    # but the certificate chain must still terminate at this deployment's CA.
     ssl_ctx.check_hostname = False
-    ssl_ctx.verify_mode = ssl.CERT_NONE
     reader, writer = await asyncio.open_connection(server_addr, 8089, ssl=ssl_ctx)
     return reader, writer
 

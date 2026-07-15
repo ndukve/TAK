@@ -10,13 +10,15 @@ set -e
 
 TR=/opt/tak
 CONFIG=${TR}/data/CoreConfig.xml
+TAK_USER_GROUP=${TAK_USER_GROUP:-TAK-USERS}
 
 [ -n "$USER_CERT_NAME" ] || fail "USER_CERT_NAME not set"
+[[ "$TAK_USER_GROUP" =~ ^[A-Za-z0-9_.-]+$ ]] || fail "TAK_USER_GROUP must contain only letters, numbers, dots, hyphens, or underscores"
 
 cd ${TR}
 . ./setenv.sh
 
-info "Authorizing ${USER_CERT_NAME} on server"
+info "Authorizing ${USER_CERT_NAME} in ${TAK_USER_GROUP} (IN + OUT)"
 TAKCL_CORECONFIG_PATH="${CONFIG}" java -jar /opt/tak/utils/UserManager.jar \
-    certmod "/opt/tak/data/certs/files/${USER_CERT_NAME}.pem"
-ok "${USER_CERT_NAME} authorized"
+    certmod -g "${TAK_USER_GROUP}" "/opt/tak/data/certs/files/${USER_CERT_NAME}.pem"
+ok "${USER_CERT_NAME} authorized in ${TAK_USER_GROUP} (IN + OUT)"

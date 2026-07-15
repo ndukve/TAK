@@ -7,6 +7,7 @@
 #   ./users.sh create [callsign-XXX]    generate cert + package + authorize
 #   ./users.sh purge <name>             force-remove all cert/package files for a user
 #   ./users.sh get [name]               download a package (no name: list available)
+#   ./users.sh repair-groups             assign all packaged clients to the shared routing group
 #   ./users.sh grant-admin <cert-name>  grant TAK server admin rights to a cert
 #   ./users.sh revoke-admin <cert-name> revoke TAK server admin rights from a cert
 set -euo pipefail
@@ -17,6 +18,11 @@ ENV_FILE="$SCRIPT_DIR/takserver.env"
 . "$SCRIPT_DIR/scripts/_spinner.sh"
 
 [ -f "$ENV_FILE" ] || fail "takserver.env not found — run ./install.sh first"
+
+TAK_USER_GROUP=$(grep '^TAK_USER_GROUP=' "$ENV_FILE" | cut -d= -f2- || true)
+TAK_USER_GROUP=${TAK_USER_GROUP:-TAK-USERS}
+[[ "$TAK_USER_GROUP" =~ ^[A-Za-z0-9_.-]+$ ]] \
+    || fail "TAK_USER_GROUP must contain only letters, numbers, dots, hyphens, or underscores"
 
 DC="docker compose"
 docker info &>/dev/null 2>&1 || DC="sudo docker compose"
@@ -57,6 +63,7 @@ cmd_create() {
     run_spin "Authorizing on server" "Authorized" \
         $DC --env-file "$ENV_FILE" exec -T \
             -e USER_CERT_NAME="$USERNAME" \
+            -e TAK_USER_GROUP="$TAK_USER_GROUP" \
             takserver_config bash /opt/scripts/enable_user.sh \
         || fail "Authorization failed (see output above)."
 
@@ -72,6 +79,34 @@ cmd_create() {
     printf "  ${DIM}  ATAK  :${NC}  Hamburger → Settings → Network Preferences → TAK Servers → Import\n"
     printf "  ${DIM}  WinTAK:${NC}  Settings → Network Preferences → Server Connections → Import\n"
     printf "\n"
+}
+
+cmd_repair_groups() {
+    banner "Repair Client Routing Groups"
+
+    local USERS
+    USERS=$($DC --env-file "$ENV_FILE" exec -T takserver_config bash -c '
+        shopt -s nullglob
+        for package in /opt/tak/data/certs/files/clientpkgs/*.zip; do
+            basename "$package" .zip
+        done
+    ')
+
+    [ -n "$USERS" ] || { warn "No packaged TAK clients found."; return; }
+
+    local USERNAME COUNT=0
+    while IFS= read -r USERNAME; do
+        [[ "$USERNAME" =~ $_NAME_RE ]] || { warn "Skipping unexpected package name: $USERNAME"; continue; }
+        run_spin "Assigning $USERNAME to $TAK_USER_GROUP" "Assigned $USERNAME" \
+            $DC --env-file "$ENV_FILE" exec -T \
+                -e USER_CERT_NAME="$USERNAME" \
+                -e TAK_USER_GROUP="$TAK_USER_GROUP" \
+                takserver_config bash /opt/scripts/enable_user.sh \
+            || fail "Group assignment failed for $USERNAME (see output above)."
+        COUNT=$((COUNT + 1))
+    done <<< "$USERS"
+
+    ok "$COUNT client certificate(s) assigned to $TAK_USER_GROUP with IN + OUT access"
 }
 
 cmd_purge() {
@@ -134,6 +169,7 @@ case "${1:-}" in
     create)       shift; cmd_create "${1:-}" ;;
     purge)        shift; cmd_purge "${1:-}" ;;
     get)          shift; cmd_get "${1:-}" ;;
+    repair-groups) shift; cmd_repair_groups ;;
     grant-admin)  shift; cmd_grant_admin "${1:-}" ;;
     revoke-admin) shift; cmd_revoke_admin "${1:-}" ;;
     "")
@@ -143,20 +179,22 @@ case "${1:-}" in
             echo "1) Create user (cert + package + authorize)"
             echo "2) Purge user (force-remove cert/package files)"
             echo "3) Get package (list, or download by name)"
-            echo "4) Grant TAK admin rights to a cert"
-            echo "5) Revoke TAK admin rights from a cert"
-            echo "6) Exit"
+            echo "4) Repair shared client routing groups"
+            echo "5) Grant TAK admin rights to a cert"
+            echo "6) Revoke TAK admin rights from a cert"
+            echo "7) Exit"
             read -rp "> " CHOICE || { echo; exit 0; }
             case "$CHOICE" in
                 1) read -rp "Callsign (blank to be prompted): " N; cmd_create "$N" ;;
                 2) read -rp "Name to purge: " N; [ -n "$N" ] && cmd_purge "$N" || warn "No name given." ;;
                 3) read -rp "Package name (blank to list): " N; cmd_get "$N" ;;
-                4) read -rp "Cert name: " N; [ -n "$N" ] && cmd_grant_admin "$N" || warn "No name given." ;;
-                5) read -rp "Cert name: " N; [ -n "$N" ] && cmd_revoke_admin "$N" || warn "No name given." ;;
-                6) exit 0 ;;
+                4) cmd_repair_groups ;;
+                5) read -rp "Cert name: " N; [ -n "$N" ] && cmd_grant_admin "$N" || warn "No name given." ;;
+                6) read -rp "Cert name: " N; [ -n "$N" ] && cmd_revoke_admin "$N" || warn "No name given." ;;
+                7) exit 0 ;;
                 *) warn "Invalid choice." ;;
             esac
         done
         ;;
-    *) fail "Usage: $0 [create [callsign-XXX] | purge <name> | get [name] | grant-admin <name> | revoke-admin <name>]" ;;
+    *) fail "Usage: $0 [create [callsign-XXX] | purge <name> | get [name] | repair-groups | grant-admin <name> | revoke-admin <name>]" ;;
 esac

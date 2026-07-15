@@ -4,19 +4,16 @@ import socket
 import docker
 from docker.errors import DockerException
 from fastapi import APIRouter, Query, WebSocket, WebSocketDisconnect
+from sqlalchemy import select
 
 from .auth import consume_shell_ticket
+from .db import SessionLocal
+from .models import AdminUser
 
 router = APIRouter(tags=["shell"])
 _client = docker.from_env()
 _SERVICE = "takserver_config"
-
-
-def _get_container():
-    matches = _client.containers.list(filters={"label": f"com.docker.compose.service={_SERVICE}"})
-    if not matches:
-        raise DockerException(f"No running container for service '{_SERVICE}'")
-    return matches[0]
+_SESSION_MAX_SECONDS = 5 * 60
 
 
 @router.websocket("/api/shell/ws")
@@ -26,22 +23,31 @@ async def shell_ws(ws: WebSocket, t: str = Query(...)):
         await ws.close(code=4001)
         return
 
+    async with SessionLocal() as db:
+        result = await db.execute(select(AdminUser).where(
+            AdminUser.id == user_id,
+            AdminUser.is_active,
+            AdminUser.role == "superadmin",
+            AdminUser.auth_provider == "local",
+        ))
+        if result.scalar_one_or_none() is None:
+            await ws.close(code=4001)
+            return
+
     await ws.accept()
 
     loop = asyncio.get_running_loop()
     try:
-        container = _get_container()
+        exec_id = _client.api.exec_create(
+            _SERVICE,
+            ["/bin/bash"],
+            stdin=True, stdout=True, stderr=True, tty=True,
+        )
+        sock = _client.api.exec_start(exec_id["Id"], socket=True, tty=True)
     except DockerException as e:
         await ws.send_text(f"[error] {e}\r\n")
         await ws.close()
         return
-
-    exec_id = container.client.api.exec_create(
-        container.id,
-        ["/bin/bash"],
-        stdin=True, stdout=True, stderr=True, tty=True,
-    )
-    sock = container.client.api.exec_start(exec_id["Id"], socket=True, tty=True)
     raw_sock = sock._sock
 
     # Must stay blocking — recv()/sendall() run inside run_in_executor threads,
@@ -82,7 +88,16 @@ async def shell_ws(ws: WebSocket, t: str = Query(...)):
     # own, which used to leak a thread from the shared default executor
     # forever per abandoned session, eventually starving every other admin
     # operation that runs through that same executor.
-    await asyncio.wait({container_task, client_task}, return_when=asyncio.FIRST_COMPLETED)
+    done, _pending = await asyncio.wait(
+        {container_task, client_task},
+        timeout=_SESSION_MAX_SECONDS,
+        return_when=asyncio.FIRST_COMPLETED,
+    )
+    if not done:
+        try:
+            await ws.send_text("\r\n[session expired — re-authentication required]\r\n")
+        except Exception:
+            pass
 
     try:
         raw_sock.shutdown(socket.SHUT_RDWR)

@@ -11,7 +11,12 @@
 
 x-tak: &tak-base
   image: takserver:local
-  env_file: takserver.env
+  env_file: ${TAK_ENV_FILE:-takserver.env}
+  environment:
+    ADMIN_SECRET_KEY: ""
+    ADMIN_FIRST_USER: ""
+    ADMIN_FIRST_PASS: ""
+    OIDC_CLIENT_SECRET: ""
   volumes:
     - takserver_data:/opt/tak/data
   network_mode: host
@@ -22,7 +27,6 @@ services:
   # ── Database ────────────────────────────────────────────────────────────────
   takdb:
     image: postgis/postgis:15-3.3
-    env_file: takserver.env
     environment:
       POSTGRES_DB: ${POSTGRES_DB:-cot}
       POSTGRES_USER: ${POSTGRES_USER:-martiuser}
@@ -39,6 +43,26 @@ services:
       retries: 10
       start_period: 30s
 
+  # Migrate the bind-mounted data directory before the non-root TAK services
+  # start.  This service has no network and exits immediately after chowning.
+  tak_permissions:
+    image: takserver:local
+    user: "0:0"
+    entrypoint: ["/bin/sh", "/opt/scripts/prepare_tak_volumes.sh"]
+    read_only: true
+    network_mode: none
+    cap_drop:
+      - ALL
+    cap_add:
+      - CHOWN
+      - DAC_OVERRIDE
+      - FOWNER
+    security_opt:
+      - no-new-privileges:true
+    volumes:
+      - takserver_data:/opt/tak/data
+    restart: "no"
+
   # ── First-run initialisation (certs + DB schema) ───────────────────────────
   takserver_initialization:
     <<: *tak-base
@@ -46,11 +70,14 @@ services:
     depends_on:
       takdb:
         condition: service_healthy
+      tak_permissions:
+        condition: service_completed_successfully
     restart: "no"
 
   # ── Config service (TAK SSL CoT + HTTPS API) ───────────────────────────────
   takserver_config:
     <<: *tak-base
+    container_name: takserver_config
     command: ["/bin/bash", "/opt/scripts/start-tak.sh", "config"]
     depends_on:
       takserver_initialization:

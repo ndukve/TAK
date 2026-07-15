@@ -9,9 +9,9 @@ import docker
 from cryptography import x509
 from docker.errors import DockerException
 from fastapi import APIRouter, Depends, Query, WebSocket, WebSocketDisconnect
-from jose import JWTError, jwt
 
-from .deps import ALGORITHM, SECRET_KEY, require_role
+from .auth import consume_ws_ticket
+from .deps import require_role
 
 router = APIRouter(prefix="/api/health", tags=["health"])
 _client = docker.from_env()
@@ -33,14 +33,6 @@ HOST_PROC = "/host/proc"
 
 _last_net = None  # (timestamp, rx_bytes, tx_bytes) — None until second sample
 _last_cpu = None  # (total_jiffies, idle_jiffies) — None until second sample
-
-
-def _verify_ws_token(token: str) -> bool:
-    try:
-        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
-        return payload.get("role") in ("admin", "superadmin")
-    except JWTError:
-        return False
 
 
 def _get_states() -> list[dict]:
@@ -217,8 +209,10 @@ async def get_health(_=Depends(require_role("admin", "superadmin"))):
 
 
 @router.websocket("/stream")
-async def health_stream(ws: WebSocket, token: str = Query(...)):
-    if not _verify_ws_token(token):
+async def health_stream(ws: WebSocket, ticket: str = Query(...)):
+    # Use the same short-lived, single-use handshake tickets as log streams;
+    # access JWTs must never be placed in proxy-visible query strings.
+    if consume_ws_ticket(ticket) not in ("admin", "superadmin"):
         await ws.close(code=4401)
         return
     await ws.accept()

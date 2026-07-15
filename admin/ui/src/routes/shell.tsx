@@ -4,9 +4,9 @@ import { useAuth } from '@/store/auth'
 
 export const Route = createFileRoute('/shell')({
   beforeLoad: () => {
-    const { token, role } = useAuth.getState()
+    const { token, role, authProvider } = useAuth.getState()
     if (!token) throw redirect({ to: '/login' })
-    if (role !== 'superadmin') throw redirect({ to: '/' })
+    if (role !== 'superadmin' || authProvider !== 'local') throw redirect({ to: '/' })
   },
   component: ShellPage,
 })

@@ -18,6 +18,7 @@ import { Route as MapsRouteImport } from './routes/maps'
 import { Route as LogsRouteImport } from './routes/logs'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as LiveMapRouteImport } from './routes/live-map'
+import { Route as CertificatesRouteImport } from './routes/certificates'
 import { Route as BrandingRouteImport } from './routes/branding'
 import { Route as AuditLogRouteImport } from './routes/audit-log'
 import { Route as AdminUsersRouteImport } from './routes/admin-users'
@@ -68,6 +69,11 @@ const LiveMapRoute = LiveMapRouteImport.update({
   path: '/live-map',
   getParentRoute: () => rootRouteImport,
 } as any)
+const CertificatesRoute = CertificatesRouteImport.update({
+  id: '/certificates',
+  path: '/certificates',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const BrandingRoute = BrandingRouteImport.update({
   id: '/branding',
   path: '/branding',
@@ -94,6 +100,7 @@ export interface FileRoutesByFullPath {
   '/admin-users': typeof AdminUsersRoute
   '/audit-log': typeof AuditLogRoute
   '/branding': typeof BrandingRoute
+  '/certificates': typeof CertificatesRoute
   '/live-map': typeof LiveMapRoute
   '/login': typeof LoginRoute
   '/logs': typeof LogsRoute
@@ -109,6 +116,7 @@ export interface FileRoutesByTo {
   '/admin-users': typeof AdminUsersRoute
   '/audit-log': typeof AuditLogRoute
   '/branding': typeof BrandingRoute
+  '/certificates': typeof CertificatesRoute
   '/live-map': typeof LiveMapRoute
   '/login': typeof LoginRoute
   '/logs': typeof LogsRoute
@@ -125,6 +133,7 @@ export interface FileRoutesById {
   '/admin-users': typeof AdminUsersRoute
   '/audit-log': typeof AuditLogRoute
   '/branding': typeof BrandingRoute
+  '/certificates': typeof CertificatesRoute
   '/live-map': typeof LiveMapRoute
   '/login': typeof LoginRoute
   '/logs': typeof LogsRoute
@@ -142,6 +151,7 @@ export interface FileRouteTypes {
     | '/admin-users'
     | '/audit-log'
     | '/branding'
+    | '/certificates'
     | '/live-map'
     | '/login'
     | '/logs'
@@ -157,6 +167,7 @@ export interface FileRouteTypes {
     | '/admin-users'
     | '/audit-log'
     | '/branding'
+    | '/certificates'
     | '/live-map'
     | '/login'
     | '/logs'
@@ -172,6 +183,7 @@ export interface FileRouteTypes {
     | '/admin-users'
     | '/audit-log'
     | '/branding'
+    | '/certificates'
     | '/live-map'
     | '/login'
     | '/logs'
@@ -188,6 +200,7 @@ export interface RootRouteChildren {
   AdminUsersRoute: typeof AdminUsersRoute
   AuditLogRoute: typeof AuditLogRoute
   BrandingRoute: typeof BrandingRoute
+  CertificatesRoute: typeof CertificatesRoute
   LiveMapRoute: typeof LiveMapRoute
   LoginRoute: typeof LoginRoute
   LogsRoute: typeof LogsRoute
@@ -264,6 +277,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof LiveMapRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/certificates': {
+      id: '/certificates'
+      path: '/certificates'
+      fullPath: '/certificates'
+      preLoaderRoute: typeof CertificatesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/branding': {
       id: '/branding'
       path: '/branding'
@@ -300,6 +320,7 @@ const rootRouteChildren: RootRouteChildren = {
   AdminUsersRoute: AdminUsersRoute,
   AuditLogRoute: AuditLogRoute,
   BrandingRoute: BrandingRoute,
+  CertificatesRoute: CertificatesRoute,
   LiveMapRoute: LiveMapRoute,
   LoginRoute: LoginRoute,
   LogsRoute: LogsRoute,

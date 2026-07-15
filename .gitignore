@@ -37,6 +37,7 @@ certs/
 node_modules/
 admin/ui/dist/
 admin/ui/.vite/
+admin/ui/vite-dev.log
 
 # Python bytecode cache
 __pycache__/

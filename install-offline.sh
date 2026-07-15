@@ -21,6 +21,8 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]:-$0}")" 2>/dev/null && pwd || echo
 if [ "${1:-}" = "bundle" ]; then
     DOCKER_VERSION="29.6.1"
     COMPOSE_VERSION="v5.3.0"
+    DOCKER_SHA256="b0df4a43a98d7ecb708acbdb5a34a3416e13b6e39bcbbdf296f51f0f3442b29f"
+    COMPOSE_SHA256="fffb010206c952ee5e45d0cd05dc88d3ca063c4634d40eaad6b72677c4c7bbf0"
     # shellcheck source=scripts/refresh_vendor.sh
     . "$SCRIPT_DIR/scripts/refresh_vendor.sh"
 
@@ -33,6 +35,10 @@ if [ "${1:-}" = "bundle" ]; then
         -o "$BUNDLE_DIR/docker-bin/docker.tgz"
     curl -fsSL "https://github.com/docker/compose/releases/download/${COMPOSE_VERSION}/docker-compose-linux-x86_64" \
         -o "$BUNDLE_DIR/docker-bin/docker-compose"
+    echo "$DOCKER_SHA256  $BUNDLE_DIR/docker-bin/docker.tgz" | sha256sum -c - >/dev/null \
+        || { echo "Docker binary checksum verification failed" >&2; exit 1; }
+    echo "$COMPOSE_SHA256  $BUNDLE_DIR/docker-bin/docker-compose" | sha256sum -c - >/dev/null \
+        || { echo "Compose binary checksum verification failed" >&2; exit 1; }
     chmod +x "$BUNDLE_DIR/docker-bin/docker-compose"
     cp "$SCRIPT_DIR/docker/containerd.service" "$SCRIPT_DIR/docker/docker.service" "$BUNDLE_DIR/docker-bin/"
 
@@ -48,15 +54,17 @@ if [ "${1:-}" = "bundle" ]; then
     echo "Saving images into $BUNDLE_DIR/images ..."
     docker save -o "$BUNDLE_DIR/images/takserver.tar"           takserver:local
     docker save -o "$BUNDLE_DIR/images/admin.tar"               admin:local
-    docker save -o "$BUNDLE_DIR/images/nginx.tar"               nginx:alpine
+    docker save -o "$BUNDLE_DIR/images/admin-proxy.tar"         admin-proxy:local
     docker save -o "$BUNDLE_DIR/images/postgis.tar"             postgis/postgis:15-3.3
-    docker save -o "$BUNDLE_DIR/images/docker-socket-proxy.tar" tecnativa/docker-socket-proxy:v0.4.2
+    docker save -o "$BUNDLE_DIR/images/docker-socket-proxy.tar" tak-docker-socket-proxy:local
 
     echo "Copying deployment files..."
     cp docker-compose.yml install-offline.sh Makefile "$BUNDLE_DIR/"
     cp -r scripts templates "$BUNDLE_DIR/"
     mkdir -p "$BUNDLE_DIR/admin"
     cp -r admin/nginx "$BUNDLE_DIR/admin/"
+    mkdir -p "$BUNDLE_DIR/docker"
+    cp -r docker/socket-proxy "$BUNDLE_DIR/docker/"
     mkdir -p "$BUNDLE_DIR/packages/tak-maps"
 
     echo ""
@@ -112,6 +120,8 @@ sysctl -p >/dev/null 2>&1
 WT_BACKTITLE="TAK Server Offline Installer"
 # shellcheck source=scripts/_tui.sh
 . "$SCRIPT_DIR/scripts/_tui.sh"
+# shellcheck source=scripts/scrub_admin_secret.sh
+. "$SCRIPT_DIR/scripts/scrub_admin_secret.sh"
 
 gen_hex() { openssl rand -hex "${1:-16}"; }
 
@@ -177,6 +187,11 @@ ADMIN_CERT_PASS=$(gen_hex 16)
 TAKSERVER_CERT_PASS=$(gen_hex 16)
 CA_PASS=$(gen_hex 16)
 ADMIN_SECRET_KEY=$(gen_hex 32)
+DOCKER_SOCKET_GID=$(stat -c '%g' /var/run/docker.sock 2>/dev/null || true)
+if [ -z "$DOCKER_SOCKET_GID" ]; then
+    DOCKER_SOCKET_GID=$(getent group docker 2>/dev/null | cut -d: -f3 || true)
+fi
+DOCKER_SOCKET_GID=${DOCKER_SOCKET_GID:-0}
 
 cat > "$ENV_FILE" << ENVEOF
 # TAK Server configuration — generated $(date -u '+%Y-%m-%d %H:%M UTC')
@@ -207,6 +222,8 @@ ORGANIZATIONAL_UNIT=${ORGANIZATIONAL_UNIT}
 LOGGING_JSON_ENABLED=true
 LOGGING_CONFIG=/opt/tak/logback-stdout.xml
 
+DOCKER_SOCKET_GID=${DOCKER_SOCKET_GID}
+
 ADMIN_SECRET_KEY=${ADMIN_SECRET_KEY}
 ADMIN_FIRST_USER=${ADMIN_FIRST_USER}
 ADMIN_FIRST_PASS=${ADMIN_FIRST_PASS}
@@ -222,13 +239,16 @@ run_with_gauge "Images [6/6]" "Loading bundled images..." -- bash -c \
     || fail "Loading bundled images failed (see output above)."
 
 run_with_gauge "Start [6/6]" "Starting containers..." -- \
-    docker compose --env-file "$ENV_FILE" up -d \
+    docker compose --env-file "$ENV_FILE" up -d --no-build --pull never \
     || fail "Container startup failed (see output above)."
 
 whiptail --backtitle "$WT_BACKTITLE" --title "Database" --infobox "Waiting for database..." 8 50
 until docker compose --env-file "$ENV_FILE" exec -T takdb pg_isready -U martiuser -d cot >/dev/null 2>&1; do
     sleep 3
 done
+
+scrub_admin_bootstrap_secret "$ENV_FILE" \
+    || fail "Admin bootstrap credential could not be removed safely."
 
 wt_msg "Installation Complete" "TAK Server is starting up.\n\nSSL CoT     : ${TAK_SERVER_ADDRESS}:8089\nHTTPS API   : https://${TAK_SERVER_ADDRESS}:8443\nAdmin panel : https://${TAK_SERVER_ADDRESS}:8889/ (packages under /packages)\n\nAdmin user     : ${ADMIN_FIRST_USER}\nAdmin password : ${ADMIN_FIRST_PASS}" 18 72
 

@@ -1,10 +1,10 @@
 import os
 from datetime import UTC, datetime, timedelta
 
+import bcrypt
+import jwt
 from fastapi import Depends, HTTPException, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
-from jose import JWTError, jwt
-from passlib.context import CryptContext
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -12,13 +12,34 @@ from .db import get_db
 from .models import AdminUser, AuditLog
 
 SECRET_KEY = os.environ.get("ADMIN_SECRET_KEY", "")
-if not SECRET_KEY:
-    raise RuntimeError("ADMIN_SECRET_KEY environment variable is required and must not be empty")
+if len(SECRET_KEY.encode()) < 32:
+    raise RuntimeError("ADMIN_SECRET_KEY is required and must be at least 32 bytes")
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 15
 PASSWORD_ROTATION_DAYS = 90
 
-pwd_ctx = CryptContext(schemes=["bcrypt"], deprecated="auto")
+
+class BcryptContext:
+    """Small compatibility wrapper around bcrypt's standard $2b$ hashes.
+
+    This intentionally retains the ``hash``/``verify`` interface used by the
+    application and tests, without Passlib's obsolete bcrypt-version probe.
+    Existing password hashes remain fully compatible.
+    """
+
+    @staticmethod
+    def hash(password: str) -> str:
+        return bcrypt.hashpw(password.encode("utf-8"), bcrypt.gensalt()).decode("ascii")
+
+    @staticmethod
+    def verify(password: str, password_hash: str) -> bool:
+        try:
+            return bcrypt.checkpw(password.encode("utf-8"), password_hash.encode("ascii"))
+        except (TypeError, ValueError, UnicodeError):
+            return False
+
+
+pwd_ctx = BcryptContext()
 bearer = HTTPBearer(auto_error=False)
 
 
@@ -40,7 +61,7 @@ async def get_current_user(
         user_id: str = payload.get("sub")
         if not user_id:
             raise HTTPException(status_code=401, detail="Invalid token")
-    except JWTError as err:
+    except jwt.InvalidTokenError as err:
         raise HTTPException(status_code=401, detail="Invalid token") from err
 
     result = await db.execute(select(AdminUser).where(AdminUser.id == user_id, AdminUser.is_active))
@@ -55,6 +76,8 @@ async def get_current_user_active(user: AdminUser = Depends(get_current_user)) -
     change-password endpoint itself must depend on get_current_user directly
     (not this) — otherwise an expired-password user could never reach the
     one endpoint that lets them fix it."""
+    if user.auth_provider == "oidc":
+        return user
     age = datetime.now(UTC) - user.password_changed_at.replace(tzinfo=UTC)
     if age > timedelta(days=PASSWORD_ROTATION_DAYS):
         raise HTTPException(status_code=403, detail="password_expired")

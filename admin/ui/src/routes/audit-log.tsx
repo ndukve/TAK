@@ -6,6 +6,7 @@ import { apiJson, errorMessage } from '@/lib/api'
 import { useAuth } from '@/store/auth'
 import { notify } from '@/lib/notify'
 import { TableSkeletonRows } from '@/components/Skeleton'
+import { HudCorners } from '@/components/HudCorners'
 
 export const Route = createFileRoute('/audit-log')({
   beforeLoad: () => {
@@ -45,9 +46,11 @@ function AuditLogPage() {
     <Layout>
       <div className="p-6">
         <PageHeader title="Audit Logs" count={entries.length} countLabel="entries" />
-        <div className="rounded-md border border-zinc-200 dark:border-white/10 overflow-x-auto">
+        <div className="hud-frame relative rounded-md border border-zinc-200 dark:border-white/10 bg-white dark:bg-[#0c0c0e]">
+          <HudCorners />
+          <div className="overflow-x-auto">
           <table className="w-full text-sm min-w-[640px]">
-            <thead className="bg-zinc-100 dark:bg-[#111113] text-zinc-600 dark:text-zinc-400">
+            <thead className="bg-zinc-100 dark:bg-[#141416] text-zinc-600 dark:text-zinc-400">
               <tr>
                 <th className="px-4 py-3 text-left font-medium hud-label text-xs">Time</th>
                 <th className="px-4 py-3 text-left font-medium hud-label text-xs">User</th>
@@ -59,7 +62,7 @@ function AuditLogPage() {
               {loading ? (
                 <TableSkeletonRows columns={4} />
               ) : entries.length === 0 ? (
-                <tr><td colSpan={4} className="px-4 py-8 text-center text-zinc-500">No activity recorded yet</td></tr>
+                <tr className="bg-zinc-50 dark:bg-[#0c0c0e]"><td colSpan={4} className="px-4 py-8 text-center text-zinc-500">No activity recorded yet</td></tr>
               ) : (
                 entries.map(e => (
                   <tr key={e.id} className="bg-zinc-50 dark:bg-[#000000] hover:bg-zinc-100/50 dark:hover:bg-white/[0.03]">
@@ -72,6 +75,7 @@ function AuditLogPage() {
               )}
             </tbody>
           </table>
+          </div>
         </div>
       </div>
     </Layout>

@@ -15,21 +15,29 @@ OUTPUT_ISO="${SCRIPT_DIR}/tak-server-offline-$(date +%Y%m%d).iso"
 
 UBUNTU_ISO_URL="https://releases.ubuntu.com/22.04/ubuntu-22.04.5-live-server-amd64.iso"
 UBUNTU_ISO="${SCRIPT_DIR}/ubuntu-22.04-server.iso"
+UBUNTU_ISO_SHA256="9bc6028870aef3f74f4e16b900008179e78b130e6b0b9a140635434a46aa98b0"
 
 DOCKER_IMAGES=(
     "takserver:local"
+    "admin:local"
+    "admin-proxy:local"
+    "tak-docker-socket-proxy:local"
     "postgis/postgis:15-3.3"
-    "python:3.11-slim"
-    "nginx:alpine"
 )
 
 # Docker packages to download for offline install
 DOCKER_PKG_URL="https://download.docker.com/linux/ubuntu/dists/jammy/pool/stable/amd64"
 DOCKER_DEBS=(
-    "containerd.io_1.7.15-1_amd64.deb"
-    "docker-ce-cli_26.1.4-1~ubuntu.22.04~jammy_amd64.deb"
-    "docker-ce_26.1.4-1~ubuntu.22.04~jammy_amd64.deb"
-    "docker-compose-plugin_2.27.1-1~ubuntu.22.04~jammy_amd64.deb"
+    "containerd.io_2.2.6-1~ubuntu.22.04~jammy_amd64.deb"
+    "docker-ce-cli_29.6.1-1~ubuntu.22.04~jammy_amd64.deb"
+    "docker-ce_29.6.1-1~ubuntu.22.04~jammy_amd64.deb"
+    "docker-compose-plugin_5.3.0-1~ubuntu.22.04~jammy_amd64.deb"
+)
+DOCKER_DEB_SHA256=(
+    "a5fd776785cf8482d1a342479d5eed53cccd6daf534ef129012797b6e817dee6"
+    "e9297832aa97a667aed116c93f6f5ef6ee40572f21459d548959be01ef383565"
+    "fdd25e1a810ab5259434e97a654ad0b4e64ae4729979dd0b83dba66d0d055a15"
+    "20a9454e0a0ee26ccd6ba44ba83ac406730c42db9a623d5568d7836c6aae3c7d"
 )
 
 err() { echo "[ERROR] $*" >&2; exit 1; }
@@ -43,10 +51,16 @@ done
 info "Build directory: $WORK_DIR"
 
 # ── Download Ubuntu ISO ──────────────────────────────────────────────────────
+if [[ -f "$UBUNTU_ISO" ]] && ! echo "$UBUNTU_ISO_SHA256  $UBUNTU_ISO" | sha256sum -c - >/dev/null 2>&1; then
+    info "Cached Ubuntu ISO failed checksum; removing it."
+    rm -f "$UBUNTU_ISO"
+fi
 if [[ ! -f "$UBUNTU_ISO" ]]; then
     info "Downloading Ubuntu 22.04 server ISO (~1.5 GB)..."
     curl -L --progress-bar -o "$UBUNTU_ISO" "$UBUNTU_ISO_URL"
 fi
+echo "$UBUNTU_ISO_SHA256  $UBUNTU_ISO" | sha256sum -c - >/dev/null \
+    || err "Ubuntu ISO checksum verification failed"
 
 # ── Extract ISO ──────────────────────────────────────────────────────────────
 info "Extracting ISO..."
@@ -79,13 +93,20 @@ fi
 info "Downloading Docker packages for offline install..."
 DEB_DIR="$ISO_EXTRACT/docker-debs"
 mkdir -p "$DEB_DIR"
-for deb in "${DOCKER_DEBS[@]}"; do
+for i in "${!DOCKER_DEBS[@]}"; do
+    deb="${DOCKER_DEBS[$i]}"
+    expected="${DOCKER_DEB_SHA256[$i]}"
+    if [[ -f "$SCRIPT_DIR/cache/$deb" ]] && ! echo "$expected  $SCRIPT_DIR/cache/$deb" | sha256sum -c - >/dev/null 2>&1; then
+        rm -f "$SCRIPT_DIR/cache/$deb"
+    fi
     if [[ ! -f "$SCRIPT_DIR/cache/$deb" ]]; then
         mkdir -p "$SCRIPT_DIR/cache"
-        curl -L --progress-bar -o "$SCRIPT_DIR/cache/$deb" "$DOCKER_PKG_URL/$deb" || \
-            info "Warning: could not download $deb — may need internet on target"
+        curl -fL --progress-bar -o "$SCRIPT_DIR/cache/$deb" "$DOCKER_PKG_URL/$deb" \
+            || err "Could not download required Docker package: $deb"
     fi
-    cp "$SCRIPT_DIR/cache/$deb" "$DEB_DIR/" 2>/dev/null || true
+    echo "$expected  $SCRIPT_DIR/cache/$deb" | sha256sum -c - >/dev/null \
+        || err "Checksum verification failed for $deb"
+    cp "$SCRIPT_DIR/cache/$deb" "$DEB_DIR/"
 done
 
 # ── Save Docker images ───────────────────────────────────────────────────────

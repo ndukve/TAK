@@ -1,7 +1,7 @@
 import uuid
 from datetime import UTC, datetime
 
-from sqlalchemy import Boolean, DateTime, ForeignKey, String, Text
+from sqlalchemy import Boolean, DateTime, ForeignKey, Index, String, Text
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -14,11 +14,20 @@ def _uuid():
 
 class AdminUser(Base):
     __tablename__ = "admin_users"
+    __table_args__ = (
+        Index("ix_admin_users_oidc_identity", "oidc_issuer", "oidc_subject", unique=True),
+    )
 
     id: Mapped[str] = mapped_column(UUID(as_uuid=False), primary_key=True, default=_uuid)
     username: Mapped[str] = mapped_column(String(64), unique=True, nullable=False)
     password_hash: Mapped[str] = mapped_column(String(128), nullable=False)
     role: Mapped[str] = mapped_column(String(16), nullable=False)  # superadmin|admin|readonly
+    # "local" for password accounts, "oidc" for SSO-provisioned ones. The
+    # issuer/subject pair is the immutable external identity; usernames are
+    # display/login names and must never be used to auto-link an SSO account.
+    auth_provider: Mapped[str] = mapped_column(String(16), nullable=False, default="local")
+    oidc_issuer: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    oidc_subject: Mapped[str | None] = mapped_column(String(255), nullable=True)
     owned_callsign: Mapped[str | None] = mapped_column(String(64), nullable=True)
     created_by: Mapped[str | None] = mapped_column(String(64), nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(UTC))

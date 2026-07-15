@@ -18,6 +18,8 @@ from .db import Base, engine, ensure_database
 from .health import router as health_router
 from .live_map import router as live_map_router
 from .logs import router as logs_router
+from .oidc import OIDC_ENABLED
+from .oidc import router as oidc_router
 from .packages import router as packages_router
 from .replay import router as replay_router
 from .shell import router as shell_router
@@ -38,6 +40,27 @@ async def lifespan(app: FastAPI):
         await conn.execute(text(
             "ALTER TABLE brand_settings ADD COLUMN IF NOT EXISTS logo_filename VARCHAR(128)"
         ))
+        await conn.execute(text(
+            "ALTER TABLE admin_users ADD COLUMN IF NOT EXISTS auth_provider VARCHAR(16) NOT NULL DEFAULT 'local'"
+        ))
+        await conn.execute(text(
+            "ALTER TABLE admin_users ADD COLUMN IF NOT EXISTS oidc_subject VARCHAR(255)"
+        ))
+        await conn.execute(text(
+            "ALTER TABLE admin_users ADD COLUMN IF NOT EXISTS oidc_issuer VARCHAR(255)"
+        ))
+        # An early OIDC implementation indexed subject alone and linked by
+        # username. Identity is actually scoped by issuer, so replace that
+        # index before enabling the hardened provisioning path.
+        await conn.execute(text("DROP INDEX IF EXISTS ix_admin_users_oidc_subject"))
+        await conn.execute(text(
+            "ALTER TABLE admin_users DROP CONSTRAINT IF EXISTS admin_users_oidc_subject_key"
+        ))
+        await conn.execute(text(
+            "CREATE UNIQUE INDEX IF NOT EXISTS ix_admin_users_oidc_identity "
+            "ON admin_users (oidc_issuer, oidc_subject) "
+            "WHERE oidc_issuer IS NOT NULL AND oidc_subject IS NOT NULL"
+        ))
     await _ensure_first_user()
     yield
 
@@ -57,7 +80,23 @@ if _dev_origin:
         allow_headers=["*"],
     )
 
+# authlib stashes the OAuth state/nonce in a signed session cookie between the
+# login redirect and the callback — only mount it when OIDC is actually
+# configured, so default password-only deployments carry no extra cookie.
+if OIDC_ENABLED:
+    from starlette.middleware.sessions import SessionMiddleware
+
+    from .deps import SECRET_KEY
+    app.add_middleware(
+        SessionMiddleware,
+        secret_key=SECRET_KEY,
+        same_site="lax",
+        https_only=True,
+        max_age=600,
+    )
+
 app.include_router(auth_router)
+app.include_router(oidc_router)
 app.include_router(admin_users_router)
 app.include_router(users_router)
 app.include_router(health_router)

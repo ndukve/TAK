@@ -144,7 +144,7 @@ function ReplayPage() {
         <PageHeader title="Replay Mode" />
 
         {!status.service_cert_ready ? (
-          <div className="rounded-md border border-zinc-200 dark:border-white/10 bg-white dark:bg-[#111113] p-6">
+          <div className="rounded-md border border-zinc-200 dark:border-white/10 bg-white dark:bg-[#0c0c0e] p-6">
             <p className="text-sm text-zinc-600 dark:text-zinc-400 mb-4">
               Replay Mode needs a dedicated service certificate to connect to the TAK server. Set it up once before recording.
             </p>
@@ -155,7 +155,7 @@ function ReplayPage() {
           </div>
         ) : (
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-            <div className="rounded-md border border-zinc-200 dark:border-white/10 bg-white dark:bg-[#111113] p-4">
+            <div className="rounded-md border border-zinc-200 dark:border-white/10 bg-white dark:bg-[#0c0c0e] p-4">
               <h2 className="hud-label text-xs text-zinc-500 dark:text-zinc-400 mb-3">Recording</h2>
               <p className="text-sm text-zinc-700 dark:text-zinc-300 mb-3">
                 {status.recording ? `Recording — chunk ${status.current_chunk_id}` : 'Not recording'}
@@ -173,13 +173,13 @@ function ReplayPage() {
               )}
             </div>
 
-            <div className="rounded-md border border-zinc-200 dark:border-white/10 bg-white dark:bg-[#111113] p-4">
+            <div className="rounded-md border border-zinc-200 dark:border-white/10 bg-white dark:bg-[#0c0c0e] p-4">
               <h2 className="hud-label text-xs text-zinc-500 dark:text-zinc-400 mb-3">Playback</h2>
               <div className="flex items-center gap-2 mb-3">
                 <span className="text-sm text-zinc-600 dark:text-zinc-400">Speed:</span>
                 {[1, 2, 5, 10].map(s => (
                   <button key={s} onClick={() => setSpeed(s)} disabled={status.playback}
-                    className={`px-2 py-1 rounded text-xs disabled:opacity-50 ${speed === s ? 'bg-accent-fill text-accent-text' : 'bg-zinc-200 dark:bg-[#1a1a1d] text-zinc-700 dark:text-zinc-300'}`}>
+                    className={`px-2 py-1 rounded text-xs disabled:opacity-50 ${speed === s ? 'bg-accent-fill text-accent-text' : 'bg-zinc-200 dark:bg-[#141416] text-zinc-700 dark:text-zinc-300'}`}>
                     {s}x
                   </button>
                 ))}

@@ -6,6 +6,7 @@ import { apiJson, apiFetch, downloadFile, errorMessage } from '@/lib/api'
 import { useAuth } from '@/store/auth'
 import { notify } from '@/lib/notify'
 import { TableSkeletonRows } from '@/components/Skeleton'
+import { HudCorners } from '@/components/HudCorners'
 import { Download, Trash2, Upload } from 'lucide-react'
 
 export const Route = createFileRoute('/packages')({
@@ -128,9 +129,11 @@ function PackagesPage() {
         />
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-          <div className="lg:col-span-2 rounded-md border border-zinc-200 dark:border-white/10 overflow-x-auto">
+          <div className="hud-frame relative lg:col-span-2 rounded-md border border-zinc-200 dark:border-white/10 bg-white dark:bg-[#0c0c0e]">
+            <HudCorners />
+            <div className="overflow-x-auto">
             <table className="w-full text-sm min-w-[480px]">
-              <thead className="bg-zinc-100 dark:bg-[#111113] text-zinc-600 dark:text-zinc-400">
+              <thead className="bg-zinc-100 dark:bg-[#141416] text-zinc-600 dark:text-zinc-400">
                 <tr>
                   <th className="px-4 py-3 text-left font-medium hud-label text-xs">Name</th>
                   <th className="px-4 py-3 text-left font-medium hud-label text-xs">Size</th>
@@ -141,7 +144,7 @@ function PackagesPage() {
                 {loading ? (
                   <TableSkeletonRows columns={3} />
                 ) : packages.length === 0 ? (
-                  <tr>
+                  <tr className="bg-zinc-50 dark:bg-[#0c0c0e]">
                     <td colSpan={3} className="px-4 py-8 text-center text-zinc-500">
                       No packages yet — upload one
                     </td>
@@ -159,14 +162,14 @@ function PackagesPage() {
                         <div className="flex justify-end gap-1">
                           <button
                             onClick={e => { e.stopPropagation(); handleDownload(p) }}
-                            className="p-1.5 rounded hover:bg-zinc-200 dark:hover:bg-[#1a1a1d] text-accent-ring"
+                            className="p-1.5 rounded hover:bg-zinc-200 dark:hover:bg-[#141416] text-accent-ring"
                             title="Download"
                           >
                             <Download size={14} />
                           </button>
                           <button
                             onClick={e => { e.stopPropagation(); handleDelete(p) }}
-                            className="p-1.5 rounded hover:bg-zinc-200 dark:hover:bg-[#1a1a1d] text-red-600 dark:text-red-400"
+                            className="p-1.5 rounded hover:bg-zinc-200 dark:hover:bg-[#141416] text-red-600 dark:text-red-400"
                             title="Delete"
                           >
                             <Trash2 size={14} />
@@ -178,9 +181,11 @@ function PackagesPage() {
                 )}
               </tbody>
             </table>
+            </div>
           </div>
 
-          <div className="rounded-md border border-zinc-200 dark:border-white/10 bg-zinc-100 dark:bg-[#111113] p-4 flex flex-col items-center gap-4 min-h-[200px] justify-center">
+          <div className="hud-frame relative rounded-md border border-zinc-200 dark:border-white/10 bg-zinc-100 dark:bg-[#0c0c0e] p-4 flex flex-col items-center gap-4 min-h-[200px] justify-center">
+            <HudCorners />
             {selected ? (
               <>
                 <p className="text-sm font-medium text-zinc-700 dark:text-zinc-300 text-center break-all">{selected.name}</p>
@@ -192,7 +197,7 @@ function PackagesPage() {
                 {role !== 'field' && (
                   <button
                     onClick={() => handleCreateFieldLogin(selected)}
-                    className="text-xs px-3 py-1.5 rounded bg-zinc-200 dark:bg-[#1a1a1d] hover:bg-zinc-300 dark:hover:bg-[#232326] text-zinc-700 dark:text-zinc-300"
+                    className="text-xs px-3 py-1.5 rounded bg-zinc-200 dark:bg-[#141416] hover:bg-zinc-300 dark:hover:bg-[#232326] text-zinc-700 dark:text-zinc-300"
                   >
                     Create field login
                   </button>

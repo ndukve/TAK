@@ -6,8 +6,9 @@ import path from 'path'
 import { execSync } from 'child_process'
 
 function gitVersion(): string {
+  if (process.env.APP_VERSION) return process.env.APP_VERSION
   try {
-    return execSync('git describe --tags --always', { cwd: __dirname }).toString().trim()
+    return execSync('git describe --tags --always', { cwd: __dirname, stdio: ['ignore', 'pipe', 'ignore'] }).toString().trim()
   } catch {
     return 'unknown'
   }

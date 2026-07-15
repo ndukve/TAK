@@ -4,7 +4,13 @@
 
 x-tak: &tak-base
   image: takserver:local
-  env_file: takserver.env
+  env_file: ${TAK_ENV_FILE:-takserver.env}
+  environment:
+    # Web-admin credentials never belong in the client-facing TAK processes.
+    ADMIN_SECRET_KEY: ""
+    ADMIN_FIRST_USER: ""
+    ADMIN_FIRST_PASS: ""
+    OIDC_CLIENT_SECRET: ""
   volumes:
     - takserver_data:/opt/tak/data
   networks:
@@ -16,7 +22,6 @@ services:
   # ── Database ────────────────────────────────────────────────────────────────
   takdb:
     image: postgis/postgis:15-3.3
-    env_file: takserver.env
     environment:
       POSTGRES_DB: ${POSTGRES_DB:-cot}
       POSTGRES_USER: ${POSTGRES_USER:-martiuser}
@@ -33,6 +38,32 @@ services:
       retries: 10
       start_period: 30s
 
+  # ── TAK volume ownership migration (short-lived, networkless) ────────────
+  tak_permissions:
+    image: takserver:local
+    build:
+      context: .
+      args:
+        GIT_COMMIT: ${GIT_COMMIT:-unknown}
+        TAK_DIST_IMAGE: ${TAK_DIST_IMAGE:-pvarki/tak-server-dist:5.7-RELEASE-43}
+    user: "0:0"
+    entrypoint: ["/bin/sh", "/opt/scripts/prepare_tak_volumes.sh"]
+    read_only: true
+    network_mode: none
+    cap_drop:
+      - ALL
+    cap_add:
+      - CHOWN
+      - DAC_OVERRIDE
+      - FOWNER
+    security_opt:
+      - no-new-privileges:true
+    volumes:
+      - takserver_data:/opt/tak/data
+      - tak_plugins:/opt/tak/plugins
+      - tak_plugin_conf:/opt/tak/conf/plugins
+    restart: "no"
+
   # ── First-run initialisation (certs + DB schema) ───────────────────────────
   takserver_initialization:
     <<: *tak-base
@@ -45,11 +76,14 @@ services:
     depends_on:
       takdb:
         condition: service_healthy
+      tak_permissions:
+        condition: service_completed_successfully
     restart: "no"
 
   # ── Config service (TAK SSL CoT + HTTPS API) ───────────────────────────────
   takserver_config:
     <<: *tak-base
+    container_name: takserver_config
     command: ["/bin/bash", "/opt/scripts/start-tak.sh", "config"]
     ports:
       - "8089:8089"
@@ -62,7 +96,12 @@ services:
   # ── Messaging service (shares network namespace with config) ───────────────
   takserver_messaging:
     image: takserver:local
-    env_file: takserver.env
+    env_file: ${TAK_ENV_FILE:-takserver.env}
+    environment:
+      ADMIN_SECRET_KEY: ""
+      ADMIN_FIRST_USER: ""
+      ADMIN_FIRST_PASS: ""
+      OIDC_CLIENT_SECRET: ""
     volumes:
       - takserver_data:/opt/tak/data
     restart: unless-stopped
@@ -75,7 +114,12 @@ services:
   # ── API service (shares network namespace with messaging) ──────────────────
   takserver_api:
     image: takserver:local
-    env_file: takserver.env
+    env_file: ${TAK_ENV_FILE:-takserver.env}
+    environment:
+      ADMIN_SECRET_KEY: ""
+      ADMIN_FIRST_USER: ""
+      ADMIN_FIRST_PASS: ""
+      OIDC_CLIENT_SECRET: ""
     volumes:
       - takserver_data:/opt/tak/data
     restart: unless-stopped
@@ -88,7 +132,12 @@ services:
   # ── Retention service (shares network namespace with messaging) ────────────
   takserver_retention:
     image: takserver:local
-    env_file: takserver.env
+    env_file: ${TAK_ENV_FILE:-takserver.env}
+    environment:
+      ADMIN_SECRET_KEY: ""
+      ADMIN_FIRST_USER: ""
+      ADMIN_FIRST_PASS: ""
+      OIDC_CLIENT_SECRET: ""
     volumes:
       - takserver_data:/opt/tak/data
     restart: unless-stopped
@@ -101,7 +150,12 @@ services:
   # ── Plugin manager (shares network namespace with messaging) ───────────────
   takserver_pluginmanager:
     image: takserver:local
-    env_file: takserver.env
+    env_file: ${TAK_ENV_FILE:-takserver.env}
+    environment:
+      ADMIN_SECRET_KEY: ""
+      ADMIN_FIRST_USER: ""
+      ADMIN_FIRST_PASS: ""
+      OIDC_CLIENT_SECRET: ""
     volumes:
       - takserver_data:/opt/tak/data
       - tak_plugins:/opt/tak/plugins
@@ -122,30 +176,57 @@ services:
   # narrowly-scoped proxy touches the real socket. admin talks to it over TCP
   # on its own isolated network instead.
   #
-  # CONTAINERS=1 + POST=1 together unlock every POST under /containers/*, not
-  # just exec — including `create`/`start` with an attacker-chosen HostConfig
-  # (bind mounts, --privileged). Confirmed against the proxy's actual ACL
-  # source (haproxy.cfg): CONTAINERS matches the whole `/containers` path
-  # prefix with no finer split, and EXEC only covers the separate `/exec/*`
-  # start call — `docker exec` needs both, so there is no env-var combination
-  # of this proxy that allows exec while blocking create/start. The real
-  # containment is network isolation: docker_proxy_net is `internal` (no
-  # route out) and shared with nothing except `admin` — a compromise of
-  # takdb/takserver_*/admin_proxy can't reach this proxy at all, since
-  # they're never on this network. `admin` itself also runs with
-  # no-new-privileges to limit what an RCE inside it could escalate to
-  # before it even reaches this proxy.
+  # The custom ACL permits only version discovery, container listing/inspect,
+  # logs, and exec create/start. In particular it has no route for container
+  # create/start/update/delete, images, volumes, networks, or swarm APIs.
   docker_socket_proxy:
-    image: tecnativa/docker-socket-proxy:v0.4.2
-    environment:
-      CONTAINERS: 1
-      EXEC: 1
-      POST: 1
+    image: tak-docker-socket-proxy:local
+    build:
+      context: ./docker/socket-proxy
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock:ro
+    # The proxy stays unprivileged and receives only the host socket's numeric
+    # group as a supplemental group (recorded by the installer).
+    group_add:
+      - "${DOCKER_SOCKET_GID:-0}"
+    read_only: true
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
     networks:
       - docker_proxy_net
     restart: unless-stopped
+
+  # ── Admin/nginx volume ownership migration (short-lived, networkless) ───
+  admin_permissions:
+    image: admin:local
+    build:
+      context: ./admin
+      args:
+        GIT_COMMIT: ${GIT_COMMIT:-unknown}
+    user: "0:0"
+    entrypoint: ["/bin/sh", "/prepare-volumes.sh"]
+    read_only: true
+    network_mode: none
+    cap_drop:
+      - ALL
+    cap_add:
+      - CHOWN
+      - DAC_OVERRIDE
+      - FOWNER
+    security_opt:
+      - no-new-privileges:true
+    volumes:
+      - takserver_data:/opt/tak/data
+      - tak_plugins:/opt/tak/plugins
+      - ./packages/tak-maps:/opt/tak/maps
+      - admin_ssl:/etc/nginx/ssl
+      - admin_tmp:/tmp/admin
+    depends_on:
+      takserver_initialization:
+        condition: service_completed_successfully
+    restart: "no"
 
   # ── Admin panel (internal only — accessed via admin_proxy) ───────────────
   admin:
@@ -154,24 +235,36 @@ services:
       context: ./admin
       args:
         GIT_COMMIT: ${GIT_COMMIT:-unknown}
-    env_file: takserver.env
+    env_file: ${TAK_ENV_FILE:-takserver.env}
     environment:
       DOCKER_HOST: tcp://docker_socket_proxy:2375
+      # The web app only needs its DB/JWT/OIDC settings. Certificate and
+      # database-superuser bootstrap secrets stay out of its process env.
+      CA_PASS: ""
+      ADMIN_CERT_PASS: ""
+      TAKSERVER_CERT_PASS: ""
+      POSTGRES_SUPER_PASSWORD: ""
     security_opt:
       - no-new-privileges:true
+    read_only: true
+    cap_drop:
+      - ALL
+    group_add:
+      - "10000"
     volumes:
       - takserver_data:/opt/tak/data:rw
       - tak_plugins:/opt/tak/plugins:rw
       - ./packages/tak-maps:/opt/tak/maps:rw
       - /proc:/host/proc:ro
       - admin_ssl:/etc/nginx-ssl:ro
+      - admin_tmp:/tmp
     networks:
       - taknet
       - docker_proxy_net
     depends_on:
       takdb:
         condition: service_healthy
-      takserver_initialization:
+      admin_permissions:
         condition: service_completed_successfully
       docker_socket_proxy:
         condition: service_started
@@ -179,20 +272,33 @@ services:
 
   # ── Admin TLS reverse proxy (port 8889 HTTPS) ────────────────────────────
   admin_proxy:
+    image: admin-proxy:local
     build:
       context: ./admin/nginx
-    env_file: takserver.env
+    environment:
+      TAK_SERVER_ADDRESS: ${TAK_SERVER_ADDRESS:-localhost}
     volumes:
       - ./admin/nginx/nginx.conf:/etc/nginx/conf.d/default.conf:ro
       - ./admin/nginx/entrypoint.sh:/entrypoint.sh:ro
       - admin_ssl:/etc/nginx/ssl
     entrypoint: ["/bin/sh", "/entrypoint.sh"]
     ports:
-      - "8889:443"
+      - "8889:8443"
+    read_only: true
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    tmpfs:
+      - /var/cache/nginx:uid=101,gid=101,mode=0750
+      - /var/run:uid=101,gid=101,mode=0750
     networks:
       - taknet
     depends_on:
-      - admin
+      admin:
+        condition: service_started
+      admin_permissions:
+        condition: service_completed_successfully
     restart: unless-stopped
 
 volumes:
@@ -201,6 +307,7 @@ volumes:
   tak_plugins:
   tak_plugin_conf:
   admin_ssl:
+  admin_tmp:
 
 networks:
   taknet:

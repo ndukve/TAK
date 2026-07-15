@@ -1,9 +1,9 @@
 import re
 from datetime import UTC, datetime
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Response
 from pydantic import BaseModel
-from sqlalchemy import delete, select
+from sqlalchemy import delete, select, update
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -48,7 +48,8 @@ async def list_users(db: AsyncSession = Depends(get_db), actor=Depends(_superadm
     result = await db.execute(query)
     users = result.scalars().all()
     return {"users": [
-        {"id": u.id, "username": u.username, "role": u.role, "is_active": u.is_active, "created_at": u.created_at}
+        {"id": u.id, "username": u.username, "role": u.role, "is_active": u.is_active,
+         "auth_provider": u.auth_provider, "created_at": u.created_at}
         for u in users
     ]}
 
@@ -57,6 +58,8 @@ async def list_users(db: AsyncSession = Depends(get_db), actor=Depends(_superadm
 async def create_user(body: CreateUserRequest, db: AsyncSession = Depends(get_db), actor=Depends(_superadmin)):
     if body.role not in VALID_ROLES:
         raise HTTPException(status_code=400, detail=f"role must be one of {VALID_ROLES}")
+    if not (1 <= len(body.username) <= 64) or not _USERNAME_RE.match(body.username):
+        raise HTTPException(status_code=400, detail="Username must be 1-64 characters, letters/digits/./_/- only")
     existing = await db.execute(select(AdminUser).where(AdminUser.username == body.username))
     if existing.scalar_one_or_none():
         raise HTTPException(status_code=409, detail="Username already exists")
@@ -86,13 +89,18 @@ async def patch_user(user_id: str, body: PatchUserRequest, db: AsyncSession = De
             raise HTTPException(status_code=400, detail=f"role must be one of {VALID_ROLES}")
         user.role = body.role
     if body.password:
+        if user.auth_provider != "local":
+            raise HTTPException(status_code=400, detail="OIDC account passwords are managed by the identity provider")
         await validate_password(body.password)
         user.password_hash = pwd_ctx.hash(body.password)
         user.password_changed_at = datetime.now(UTC)
+        await db.execute(update(RefreshToken).where(RefreshToken.user_id == user.id).values(revoked=True))
     if body.is_active is not None:
         if body.is_active != user.is_active and user.id == actor.id:
             raise HTTPException(status_code=400, detail="Cannot deactivate your own account")
         user.is_active = body.is_active
+        if not body.is_active:
+            await db.execute(update(RefreshToken).where(RefreshToken.user_id == user.id).values(revoked=True))
     await db.commit()
     await write_audit(db, actor.id, "patch_admin_user", user_id)
     return {"id": user.id, "username": user.username, "role": user.role}
@@ -116,18 +124,23 @@ async def deactivate_user(user_id: str, db: AsyncSession = Depends(get_db), acto
 @router.post("/me/change-password")
 async def change_own_password(
     body: ChangePasswordRequest,
+    response: Response,
     db: AsyncSession = Depends(get_db),
     actor: AdminUser = Depends(get_current_user),
 ):
     # Deliberately get_current_user, not require_role/get_current_user_active —
     # this must stay reachable for every role (including field) and even once
     # the caller's password has expired, since it's the only way out of that state.
+    if actor.auth_provider != "local":
+        raise HTTPException(status_code=400, detail="Password is managed by the identity provider")
     if not pwd_ctx.verify(body.current_password, actor.password_hash):
         raise HTTPException(status_code=400, detail="Current password is incorrect")
     await validate_password(body.new_password)
     actor.password_hash = pwd_ctx.hash(body.new_password)
     actor.password_changed_at = datetime.now(UTC)
+    await db.execute(update(RefreshToken).where(RefreshToken.user_id == actor.id).values(revoked=True))
     await db.commit()
+    response.delete_cookie("refresh_token")
     await write_audit(db, actor.id, "change_own_password", actor.username)
     return {"status": "ok"}
 
@@ -138,6 +151,8 @@ async def change_own_username(
     db: AsyncSession = Depends(get_db),
     actor: AdminUser = Depends(get_current_user),
 ):
+    if actor.auth_provider != "local":
+        raise HTTPException(status_code=400, detail="Username is managed by the identity provider")
     if not pwd_ctx.verify(body.current_password, actor.password_hash):
         raise HTTPException(status_code=400, detail="Current password is incorrect")
     if not (1 <= len(body.new_username) <= 64) or not _USERNAME_RE.match(body.new_username):
@@ -152,5 +167,8 @@ async def change_own_username(
         raise HTTPException(status_code=409, detail="Username already taken") from e
 
     await write_audit(db, actor.id, "change_own_username", f"{old_username} -> {actor.username}")
-    access_token = create_access_token({"sub": actor.id, "role": actor.role, "username": actor.username})
+    access_token = create_access_token({
+        "sub": actor.id, "role": actor.role, "username": actor.username,
+        "auth_provider": actor.auth_provider,
+    })
     return TokenResponse(access_token=access_token)

@@ -28,8 +28,17 @@ WT_BACKTITLE="TAK Server Installer"
 . "$SCRIPT_DIR/scripts/_tui.sh"
 # shellcheck source=scripts/refresh_vendor.sh
 . "$SCRIPT_DIR/scripts/refresh_vendor.sh"
+# shellcheck source=scripts/scrub_admin_secret.sh
+. "$SCRIPT_DIR/scripts/scrub_admin_secret.sh"
 
 gen_hex() { openssl rand -hex "${1:-16}"; }
+docker_socket_gid() {
+    local gid
+    gid=$(stat -c '%g' /var/run/docker.sock 2>/dev/null) && { printf '%s' "$gid"; return; }
+    gid=$(getent group docker 2>/dev/null | cut -d: -f3) && [ -n "$gid" ] \
+        && { printf '%s' "$gid"; return; }
+    printf '0'
+}
 
 # ── Existing install detected — offer reinstall instead of re-onboarding ────
 if [ -f "$ENV_FILE" ]; then
@@ -51,6 +60,14 @@ if [ -f "$ENV_FILE" ]; then
                 "curl -fsSL https://get.docker.com | sh && systemctl enable --now docker" \
                 || fail "Docker installation failed (see output above)."
         fi
+
+        DOCKER_SOCKET_GID=$(docker_socket_gid)
+        if grep -q '^DOCKER_SOCKET_GID=' "$ENV_FILE"; then
+            sed -i "s/^DOCKER_SOCKET_GID=.*/DOCKER_SOCKET_GID=${DOCKER_SOCKET_GID}/" "$ENV_FILE"
+        else
+            printf '\nDOCKER_SOCKET_GID=%s\n' "$DOCKER_SOCKET_GID" >> "$ENV_FILE"
+        fi
+        chmod 600 "$ENV_FILE"
 
         cd "$SCRIPT_DIR"
         run_with_gauge "Reinstall" "Stopping containers and removing images..." -- bash -c \
@@ -76,6 +93,9 @@ if [ -f "$ENV_FILE" ]; then
             -U "${POSTGRES_USER:-martiuser}" -d "${POSTGRES_DB:-cot}" >/dev/null 2>&1; do
             sleep 3
         done
+
+        scrub_admin_bootstrap_secret "$ENV_FILE" \
+            || fail "Admin bootstrap credential could not be removed safely."
 
         wt_msg "Reinstall Complete" "TAK Server is starting up.\n\nSSL CoT     : ${TAK_SERVER_ADDRESS}:8089\nHTTPS API   : https://${TAK_SERVER_ADDRESS}:8443\nAdmin panel : https://${TAK_SERVER_ADDRESS}:8889/ (packages under /packages)" 14 72
 
@@ -217,6 +237,7 @@ ADMIN_CERT_PASS=$(gen_hex 16)
 TAKSERVER_CERT_PASS=$(gen_hex 16)
 CA_PASS=$(gen_hex 16)
 ADMIN_SECRET_KEY=$(gen_hex 32)
+DOCKER_SOCKET_GID=$(docker_socket_gid)
 
 cat > "$ENV_FILE" << ENVEOF
 # TAK Server configuration — generated $(date -u '+%Y-%m-%d %H:%M UTC')
@@ -247,6 +268,8 @@ ORGANIZATIONAL_UNIT=${ORGANIZATIONAL_UNIT}
 LOGGING_JSON_ENABLED=true
 LOGGING_CONFIG=/opt/tak/logback-stdout.xml
 
+DOCKER_SOCKET_GID=${DOCKER_SOCKET_GID}
+
 ADMIN_SECRET_KEY=${ADMIN_SECRET_KEY}
 ADMIN_FIRST_USER=${ADMIN_FIRST_USER}
 ADMIN_FIRST_PASS=${ADMIN_FIRST_PASS}
@@ -275,6 +298,9 @@ whiptail --backtitle "$WT_BACKTITLE" --title "Database" --infobox "Waiting for d
 until docker compose --env-file "$ENV_FILE" exec -T takdb pg_isready -U martiuser -d cot >/dev/null 2>&1; do
     sleep 3
 done
+
+scrub_admin_bootstrap_secret "$ENV_FILE" \
+    || fail "Admin bootstrap credential could not be removed safely."
 
 wt_msg "Installation Complete" "TAK Server is starting up.\n\nSSL CoT     : ${TAK_SERVER_ADDRESS}:8089\nHTTPS API   : https://${TAK_SERVER_ADDRESS}:8443\nAdmin panel : https://${TAK_SERVER_ADDRESS}:8889/ (packages under /packages)\n\nAdmin user     : ${ADMIN_FIRST_USER}\nAdmin password : ${ADMIN_FIRST_PASS}" 18 72
 

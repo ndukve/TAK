@@ -1,2 +1,4 @@
 FROM nginx:alpine
-RUN apk add --no-cache openssl
+RUN apk upgrade --no-cache \
+    && apk add --no-cache openssl
+USER 101:101

@@ -24,12 +24,13 @@ autoinstall:
   identity:
     hostname: tak-server
     username: tak
-    # password: TAKserver1! — change on first login
-    password: "$6$rounds=4096$saltvalue$7Gpt3GVF3L3YAT7hGdmVKLhOJkIDfPzQjK.ULXvq3BO5tHHXXlzuWGFfAWxBROBq4xoSHovuNi3KkpONqnkN1"
+    # Start locked. firstboot.sh asks for a unique console password before the
+    # system is usable; no shared credential is baked into every ISO.
+    password: "!"
 
   ssh:
     install-server: true
-    allow-pw: true
+    allow-pw: false
 
   packages:
     - ca-certificates
@@ -40,7 +41,7 @@ autoinstall:
     - net-tools
 
   user-data:
-    disable_root: false
+    disable_root: true
 
   late-commands:
     # Copy bundled files from ISO mount

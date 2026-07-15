@@ -1,6 +1,6 @@
 from sqlalchemy import select
 
-from api.models import AdminUser
+from api.models import AdminUser, RefreshToken
 
 from .conftest import ADMIN_PASSWORD
 
@@ -125,11 +125,18 @@ async def test_non_superadmin_gets_403_deleting_user(admin_client, admin_user):
     assert resp.status_code == 403
 
 
-async def test_change_own_password_success(admin_client):
+async def test_change_own_password_success(admin_client, session_factory, admin_user):
     resp = await admin_client.post("/api/admin-users/me/change-password", json={
         "current_password": ADMIN_PASSWORD, "new_password": "AnotherSecret456!",
     })
     assert resp.status_code == 200
+
+    async with session_factory() as session:
+        tokens = (await session.execute(
+            select(RefreshToken).where(RefreshToken.user_id == admin_user.id)
+        )).scalars().all()
+        assert tokens
+        assert all(token.revoked for token in tokens)
 
 
 async def test_change_own_password_wrong_current_password(admin_client):

@@ -125,7 +125,7 @@ function LogsPage() {
           <select
             value={service}
             onChange={(e) => setService(e.target.value)}
-            className="px-3 py-2 rounded-md bg-zinc-200 dark:bg-[#1a1a1d] border border-zinc-300 dark:border-white/10 text-zinc-900 dark:text-white text-sm focus:outline-none"
+            className="px-3 py-2 rounded-md bg-zinc-200 dark:bg-[#141416] border border-zinc-300 dark:border-white/10 text-zinc-900 dark:text-white text-sm focus:outline-none"
           >
             {SERVICES.map((s) => (
               <option key={s} value={s}>

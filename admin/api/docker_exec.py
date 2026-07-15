@@ -16,16 +16,6 @@ def _strip_ansi(text: str) -> str:
     return _ANSI_RE.sub("", text)
 
 
-def _get_takserver_config():
-    """Find takserver_config container by compose service label (works with any project prefix)."""
-    matches = _client.containers.list(
-        filters={"label": f"com.docker.compose.service={SERVICE_NAME}"}
-    )
-    if not matches:
-        raise DockerException(f"No running container for service '{SERVICE_NAME}'")
-    return matches[0]
-
-
 async def run_in_container(
     cmd: list[str],
     env: dict[str, str] | None = None,
@@ -35,13 +25,23 @@ async def run_in_container(
 
     def _exec():
         try:
-            container = _get_takserver_config()
             # Cert files are root-owned; without an explicit user the exec
             # can silently fail to remove/read them depending on the image's
-            # default exec user.
-            result = container.exec_run(cmd, demux=False, environment=env, workdir=workdir, user="root")
-            output = result.output.decode("utf-8", errors="replace") if result.output else ""
-            return result.exit_code, _strip_ansi(output)
+            # default exec user. Always use the fixed name: the socket proxy
+            # rejects exec creation by ID or any other container name.
+            exec_data = _client.api.exec_create(
+                SERVICE_NAME,
+                cmd,
+                stdout=True,
+                stderr=True,
+                environment=env,
+                workdir=workdir,
+                user="root",
+            )
+            output_bytes = _client.api.exec_start(exec_data["Id"], demux=False)
+            inspected = _client.api.exec_inspect(exec_data["Id"])
+            output = output_bytes.decode("utf-8", errors="replace") if output_bytes else ""
+            return inspected.get("ExitCode", 1), _strip_ansi(output)
         except DockerException as e:
             return 1, str(e)
 

@@ -6,6 +6,8 @@ import { apiJson, apiFetch, downloadFile, errorMessage } from '@/lib/api'
 import { useAuth } from '@/store/auth'
 import { notify } from '@/lib/notify'
 import { TableSkeletonRows } from '@/components/Skeleton'
+import { HudCorners } from '@/components/HudCorners'
+import { PasswordInput } from '@/components/PasswordInput'
 import { UserPlus, Trash2, CheckCircle, XCircle, KeyRound, Download, RefreshCw, Pencil } from 'lucide-react'
 
 export const Route = createFileRoute('/users')({
@@ -43,9 +45,11 @@ function UserTable({ users, loading, emptyText, createFieldLogin, renameFieldAcc
   pendingUsers: Set<string>
 }) {
   return (
-    <div className="rounded-md border border-zinc-200 dark:border-white/10 overflow-x-auto mb-6">
+    <div className="hud-frame relative rounded-md border border-zinc-200 dark:border-white/10 bg-white dark:bg-[#0c0c0e] mb-6">
+      <HudCorners />
+      <div className="overflow-x-auto">
       <table className="w-full text-sm min-w-[560px]">
-        <thead className="bg-zinc-100 dark:bg-[#111113] text-zinc-600 dark:text-zinc-400">
+        <thead className="bg-zinc-100 dark:bg-[#141416] text-zinc-600 dark:text-zinc-400">
           <tr>
             <th className="px-4 py-3 text-left font-medium hud-label text-xs">Callsign</th>
             <th className="px-4 py-3 text-left font-medium hud-label text-xs">Web Login</th>
@@ -57,7 +61,7 @@ function UserTable({ users, loading, emptyText, createFieldLogin, renameFieldAcc
           {loading ? (
             <TableSkeletonRows columns={4} />
           ) : users.length === 0 ? (
-            <tr><td colSpan={4} className="px-4 py-8 text-center text-zinc-500">{emptyText}</td></tr>
+            <tr className="bg-zinc-50 dark:bg-[#0c0c0e]"><td colSpan={4} className="px-4 py-8 text-center text-zinc-500">{emptyText}</td></tr>
           ) : (
             users.map(u => (
               <tr key={u.username} className="bg-zinc-50 dark:bg-[#000000] hover:bg-zinc-100/50 dark:hover:bg-white/[0.03]">
@@ -67,27 +71,28 @@ function UserTable({ users, loading, emptyText, createFieldLogin, renameFieldAcc
                     ? (
                       <span className="inline-flex items-center gap-1">
                         <span className="text-xs px-2 py-0.5 rounded-full font-medium text-green-600 dark:text-green-400 bg-green-100 dark:bg-green-400/10">active ({u.field_username})</span>
-                        <button onClick={() => renameFieldAccount(u.base_callsign, u.field_username)} disabled={pendingUsers.has(u.base_callsign)} title="Rename login" aria-label="Rename login" className="p-1 rounded hover:bg-zinc-200 dark:hover:bg-[#1a1a1d] text-zinc-600 dark:text-zinc-400 focus:outline-none focus:ring-2 focus:ring-accent-ring disabled:opacity-50"><Pencil size={12} /></button>
+                        <button onClick={() => renameFieldAccount(u.base_callsign, u.field_username)} disabled={pendingUsers.has(u.base_callsign)} title="Rename login" aria-label="Rename login" className="p-1 rounded hover:bg-zinc-200 dark:hover:bg-[#141416] text-zinc-600 dark:text-zinc-400 focus:outline-none focus:ring-2 focus:ring-accent-ring disabled:opacity-50"><Pencil size={12} /></button>
                       </span>
                     )
-                    : <button onClick={() => createFieldLogin(u.username)} disabled={pendingUsers.has(u.username)} className="text-xs px-2 py-1 rounded bg-zinc-200 dark:bg-[#1a1a1d] hover:bg-zinc-300 dark:hover:bg-[#232326] text-zinc-700 dark:text-zinc-300 disabled:opacity-50">Create login</button>
+                    : <button onClick={() => createFieldLogin(u.username)} disabled={pendingUsers.has(u.username)} className="text-xs px-2 py-1 rounded bg-zinc-200 dark:bg-[#141416] hover:bg-zinc-300 dark:hover:bg-[#232326] text-zinc-700 dark:text-zinc-300 disabled:opacity-50">Create login</button>
                   }
                 </td>
                 <td className="px-4 py-3">
                   <CertBadge daysRemaining={u.cert_days_remaining} />
                 </td>
                 <td className="px-4 py-3 flex justify-end gap-2">
-                  <button onClick={() => downloadPackage(u.username)} disabled={pendingUsers.has(u.username)} title="Download package" aria-label="Download package" className="p-1.5 rounded hover:bg-zinc-200 dark:hover:bg-[#1a1a1d] text-accent-ring focus:outline-none focus:ring-2 focus:ring-accent-ring disabled:opacity-50"><Download size={14} /></button>
-                  <button onClick={() => enableUser(u.username)} disabled={pendingUsers.has(u.username)} title="Enable" aria-label="Enable" className="p-1.5 rounded hover:bg-zinc-200 dark:hover:bg-[#1a1a1d] text-green-600 dark:text-green-400 focus:outline-none focus:ring-2 focus:ring-accent-ring disabled:opacity-50"><CheckCircle size={14} /></button>
-                  <button onClick={() => disableUser(u.username)} disabled={pendingUsers.has(u.username)} title="Disable" aria-label="Disable" className="p-1.5 rounded hover:bg-zinc-200 dark:hover:bg-[#1a1a1d] text-yellow-600 dark:text-yellow-400 focus:outline-none focus:ring-2 focus:ring-accent-ring disabled:opacity-50"><XCircle size={14} /></button>
-                  <button onClick={() => setSetPwUser(u.username)} title="Set Password" aria-label="Set Password" className="p-1.5 rounded hover:bg-zinc-200 dark:hover:bg-[#1a1a1d] text-accent-ring focus:outline-none focus:ring-2 focus:ring-accent-ring"><KeyRound size={14} /></button>
-                  <button onClick={() => deleteUser(u.username)} disabled={pendingUsers.has(u.username)} title="Delete" aria-label="Delete" className="p-1.5 rounded hover:bg-zinc-200 dark:hover:bg-[#1a1a1d] text-red-600 dark:text-red-400 focus:outline-none focus:ring-2 focus:ring-accent-ring disabled:opacity-50"><Trash2 size={14} /></button>
+                  <button onClick={() => downloadPackage(u.username)} disabled={pendingUsers.has(u.username)} title="Download package" aria-label="Download package" className="p-1.5 rounded hover:bg-zinc-200 dark:hover:bg-[#141416] text-accent-ring focus:outline-none focus:ring-2 focus:ring-accent-ring disabled:opacity-50"><Download size={14} /></button>
+                  <button onClick={() => enableUser(u.username)} disabled={pendingUsers.has(u.username)} title="Enable" aria-label="Enable" className="p-1.5 rounded hover:bg-zinc-200 dark:hover:bg-[#141416] text-green-600 dark:text-green-400 focus:outline-none focus:ring-2 focus:ring-accent-ring disabled:opacity-50"><CheckCircle size={14} /></button>
+                  <button onClick={() => disableUser(u.username)} disabled={pendingUsers.has(u.username)} title="Disable" aria-label="Disable" className="p-1.5 rounded hover:bg-zinc-200 dark:hover:bg-[#141416] text-yellow-600 dark:text-yellow-400 focus:outline-none focus:ring-2 focus:ring-accent-ring disabled:opacity-50"><XCircle size={14} /></button>
+                  <button onClick={() => setSetPwUser(u.username)} title="Set Password" aria-label="Set Password" className="p-1.5 rounded hover:bg-zinc-200 dark:hover:bg-[#141416] text-accent-ring focus:outline-none focus:ring-2 focus:ring-accent-ring"><KeyRound size={14} /></button>
+                  <button onClick={() => deleteUser(u.username)} disabled={pendingUsers.has(u.username)} title="Delete" aria-label="Delete" className="p-1.5 rounded hover:bg-zinc-200 dark:hover:bg-[#141416] text-red-600 dark:text-red-400 focus:outline-none focus:ring-2 focus:ring-accent-ring disabled:opacity-50"><Trash2 size={14} /></button>
                 </td>
               </tr>
             ))
           )}
         </tbody>
       </table>
+      </div>
     </div>
   )
 }
@@ -134,7 +139,7 @@ function NewUserModal({ onClose, onCreated }: { onClose: () => void; onCreated: 
 
   return (
     <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50">
-      <div className="bg-zinc-100 dark:bg-[#111113] border border-zinc-300 dark:border-white/10 rounded-md p-6 w-full max-w-md">
+      <div className="bg-zinc-100 dark:bg-[#0c0c0e] border border-zinc-300 dark:border-white/10 rounded-md p-6 w-full max-w-md">
         <h2 className="text-lg font-semibold mb-4">New TAK User</h2>
 
         {step === 'form' && (
@@ -144,13 +149,13 @@ function NewUserModal({ onClose, onCreated }: { onClose: () => void; onCreated: 
               <input type="text" value={callsign}
                 onChange={e => setCallsign(e.target.value.replace(/[^a-zA-Z0-9_-]/g, ''))}
                 placeholder="e.g. alpha1" required
-                className="w-full px-3 py-2 rounded-md bg-zinc-200 dark:bg-[#1a1a1d] border border-zinc-300 dark:border-white/10 text-zinc-900 dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-accent-ring" />
+                className="w-full px-3 py-2 rounded-md bg-zinc-200 dark:bg-[#141416] border border-zinc-300 dark:border-white/10 text-zinc-900 dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-accent-ring" />
               <p className="text-xs text-zinc-500">Letters, numbers, hyphens, underscores only.</p>
             </div>
             <div className="space-y-1">
               <label className="text-sm text-zinc-700 dark:text-zinc-300">Client</label>
               <select value={clientType} onChange={e => setClientType(e.target.value as 'ATAK' | 'WinTAK' | 'iTAK' | 'Service')}
-                className="w-full px-3 py-2 rounded-md bg-zinc-200 dark:bg-[#1a1a1d] border border-zinc-300 dark:border-white/10 text-zinc-900 dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-accent-ring">
+                className="w-full px-3 py-2 rounded-md bg-zinc-200 dark:bg-[#141416] border border-zinc-300 dark:border-white/10 text-zinc-900 dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-accent-ring">
                 <option value="iTAK">iTAK (iOS)</option>
                 <option value="ATAK">ATAK (Android)</option>
                 <option value="WinTAK">WinTAK (Windows)</option>
@@ -175,7 +180,7 @@ function NewUserModal({ onClose, onCreated }: { onClose: () => void; onCreated: 
               const done = idx < currentIdx
               const active = s.id === step
               return (
-                <div key={s.id} className={`flex items-center gap-3 p-3 rounded-md border ${active ? 'border-accent-fill bg-accent-fill/10' : done ? 'border-zinc-300 dark:border-white/10 bg-zinc-100 dark:bg-[#111113]' : 'border-zinc-200 dark:border-white/10 opacity-40'}`}>
+                <div key={s.id} className={`flex items-center gap-3 p-3 rounded-md border ${active ? 'border-accent-fill bg-accent-fill/10' : done ? 'border-zinc-300 dark:border-white/10 bg-zinc-100 dark:bg-[#0c0c0e]' : 'border-zinc-200 dark:border-white/10 opacity-40'}`}>
                   {done ? <CheckCircle size={16} className="text-green-600 dark:text-green-400 shrink-0" /> : <div className={`w-4 h-4 rounded-full border-2 shrink-0 ${active ? 'border-accent-ring animate-pulse' : 'border-zinc-400 dark:border-white/15'}`} />}
                   <span className="text-sm">{s.label}</span>
                 </div>
@@ -192,7 +197,7 @@ function NewUserModal({ onClose, onCreated }: { onClose: () => void; onCreated: 
             </div>
             {packageReady && (
               <button onClick={() => downloadFile(`/api/packages/${encodeURIComponent(username)}/download`, `${username}.zip`).catch((e) => notify.error(errorMessage(e)))}
-                className="inline-block px-4 py-2 bg-zinc-200 dark:bg-[#1a1a1d] hover:bg-zinc-300 dark:hover:bg-[#232326] text-zinc-900 dark:text-white text-sm rounded-md transition-colors">
+                className="inline-block px-4 py-2 bg-zinc-200 dark:bg-[#141416] hover:bg-zinc-300 dark:hover:bg-[#232326] text-zinc-900 dark:text-white text-sm rounded-md transition-colors">
                 Download data package
               </button>
             )}
@@ -240,16 +245,16 @@ function SetPasswordModal({ username, onClose }: { username: string; onClose: ()
 
   return (
     <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50">
-      <div className="bg-zinc-100 dark:bg-[#111113] border border-zinc-300 dark:border-white/10 rounded-md p-6 w-full max-w-sm">
+      <div className="bg-zinc-100 dark:bg-[#0c0c0e] border border-zinc-300 dark:border-white/10 rounded-md p-6 w-full max-w-sm">
         <h2 className="text-lg font-semibold mb-1">Set Password</h2>
         <p className="text-sm text-zinc-600 dark:text-zinc-400 mb-4">TAK Server web UI password for <span className="font-mono text-zinc-800 dark:text-zinc-200">{username}</span></p>
         <form onSubmit={handleSubmit} className="space-y-3">
-          <input type="password" placeholder="New password (min 12 chars)" value={password}
+          <PasswordInput placeholder="New password (min 12 chars)" value={password}
             onChange={e => setPassword(e.target.value)}
-            className="w-full bg-zinc-200 dark:bg-[#1a1a1d] border border-zinc-300 dark:border-white/10 rounded px-3 py-2 text-sm" required />
-          <input type="password" placeholder="Confirm password" value={confirm}
+            className="w-full bg-zinc-200 dark:bg-[#141416] border border-zinc-300 dark:border-white/10 rounded px-3 py-2 text-sm" required />
+          <PasswordInput placeholder="Confirm password" value={confirm}
             onChange={e => setConfirm(e.target.value)}
-            className="w-full bg-zinc-200 dark:bg-[#1a1a1d] border border-zinc-300 dark:border-white/10 rounded px-3 py-2 text-sm" required />
+            className="w-full bg-zinc-200 dark:bg-[#141416] border border-zinc-300 dark:border-white/10 rounded px-3 py-2 text-sm" required />
           <div className="flex gap-2 pt-1">
             <button type="button" onClick={onClose} className="flex-1 py-2 rounded bg-zinc-300 dark:bg-[#232326] hover:bg-zinc-400 dark:hover:bg-[#2b2b2f] text-sm">Cancel</button>
             <button type="submit" disabled={loading} className="flex-1 py-2 rounded bg-accent-fill hover:bg-accent-fill-hover text-accent-text text-sm disabled:opacity-50">

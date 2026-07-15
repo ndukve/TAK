@@ -93,10 +93,10 @@ function DashboardPage() {
 
   return (
     <Layout>
-      <div className="p-8 max-w-[1600px]">
+      <div className="p-8">
         <PageHeader title="Dashboard" />
 
-        <div className="flex flex-nowrap gap-3 pt-1 pb-3 mb-3 overflow-x-auto hud-enter">
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 pt-1 pb-3 mb-3 hud-enter">
           {system ? (
             <>
               <SystemStatCard icon={Cpu} label="CPU" value={system.cpu_percent !== null ? `${system.cpu_percent}%` : '—'} />
@@ -108,7 +108,7 @@ function DashboardPage() {
             </>
           ) : (
             Array.from({ length: 6 }).map((_, i) => (
-              <div key={i} className="rounded-md border border-zinc-200 dark:border-white/10 bg-white dark:bg-[#111113] p-2.5 hud-card flex-1 min-w-[120px] h-24">
+              <div key={i} className="rounded-md border border-zinc-200 dark:border-white/10 bg-white dark:bg-[#0c0c0e] p-2.5 hud-card flex-1 min-w-[120px] h-24">
                 <div className="flex items-start justify-between mb-1.5">
                   <Skeleton className="h-2 w-8" />
                   <Skeleton className="w-5 h-5 rounded" />
@@ -118,8 +118,6 @@ function DashboardPage() {
             ))
           )}
         </div>
-        {system && <CertList certs={system.certs} />}
-
         <h2 className="hud-label text-sm font-semibold text-zinc-600 dark:text-zinc-400 mb-3">Services</h2>
         <div className="flex flex-nowrap gap-3 pt-1 pb-3 mb-3 overflow-x-auto hud-enter hud-enter-delay-1">
           {services.map(s => (
@@ -145,7 +143,7 @@ function SystemStatCard({ icon: Icon, label, value, state = 'ok' }: { icon: Luci
   const badgeClass = state === 'critical' ? 'border-red-300 dark:border-red-800 bg-red-100 dark:bg-red-500/10' : state === 'warn' ? 'border-yellow-300 dark:border-yellow-800 bg-yellow-100 dark:bg-yellow-500/10' : 'border-zinc-300 dark:border-white/10 bg-zinc-200/50 dark:bg-white/[0.04]'
   const textClass = state === 'critical' ? 'text-red-600 dark:text-red-400' : state === 'warn' ? 'text-yellow-600 dark:text-yellow-400' : 'text-zinc-800 dark:text-zinc-200'
   return (
-    <div className="hud-frame rounded-md border border-zinc-200 dark:border-white/10 bg-white dark:bg-[#111113] p-2.5 hud-card flex-1 min-w-[120px] h-24 flex flex-col justify-between">
+    <div className="hud-frame rounded-md border border-zinc-200 dark:border-white/10 bg-white dark:bg-[#0c0c0e] p-2.5 hud-card flex-1 min-w-[120px] h-24 flex flex-col justify-between">
       <HudCorners />
       <div className="flex items-start justify-between">
         <span className="text-[9px] font-semibold tracking-wider text-zinc-500 uppercase">{label}</span>
@@ -154,28 +152,6 @@ function SystemStatCard({ icon: Icon, label, value, state = 'ok' }: { icon: Luci
         </div>
       </div>
       <p className={cn('text-xs font-medium font-mono truncate', textClass)}>{value}</p>
-    </div>
-  )
-}
-
-function CertList({ certs }: { certs: CertInfo[] }) {
-  if (certs.length === 0) return null
-  return (
-    <div className="rounded-md border border-zinc-200 dark:border-white/10 bg-white dark:bg-[#111113] p-4 mb-6 hud-card">
-      <span className="text-[10px] font-semibold tracking-wider text-zinc-500 uppercase">Certificates</span>
-      <div className="mt-3 space-y-2">
-        {certs.map(c => {
-          const state = c.days_remaining < 7 ? 'critical' : c.days_remaining < 30 ? 'warn' : 'ok'
-          const textClass = state === 'critical' ? 'text-red-600 dark:text-red-400' : state === 'warn' ? 'text-yellow-600 dark:text-yellow-400' : 'text-green-600 dark:text-green-400'
-          return (
-            <div key={c.name} className="flex items-center justify-between text-sm">
-              <span className="font-mono text-zinc-700 dark:text-zinc-300">{c.name}</span>
-              <span className="text-zinc-500">{c.expires_at}</span>
-              <span className={cn('font-mono text-xs', textClass)}>{c.days_remaining}d remaining</span>
-            </div>
-          )
-        })}
-      </div>
     </div>
   )
 }
@@ -200,7 +176,7 @@ function ServiceCard({ service }: { service: ServiceState }) {
   )
 
   return (
-    <div className="hud-frame rounded-md border border-zinc-200 dark:border-white/10 bg-white dark:bg-[#111113] p-2.5 hud-card flex-1 min-w-[120px] h-24 flex flex-col justify-between">
+    <div className="hud-frame rounded-md border border-zinc-200 dark:border-white/10 bg-white dark:bg-[#0c0c0e] p-2.5 hud-card flex-1 min-w-[120px] h-24 flex flex-col justify-between">
       <HudCorners />
       <div className="flex items-start justify-between">
         <span className="text-[9px] font-semibold tracking-wider text-zinc-500 uppercase">Service</span>

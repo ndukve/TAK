@@ -4,3 +4,4 @@
 # Build/push with scripts/publish_tak_dist.sh — do not build this by hand.
 FROM scratch
 COPY takserver-docker-*.zip /zips/
+USER 65532:65532

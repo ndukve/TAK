@@ -4,7 +4,7 @@ import os
 # these at import time and raise/KeyError if they're missing.
 os.environ.setdefault("POSTGRES_USER", "test")
 os.environ.setdefault("POSTGRES_PASSWORD", "test")
-os.environ.setdefault("ADMIN_SECRET_KEY", "test-secret-key-for-pytest")
+os.environ.setdefault("ADMIN_SECRET_KEY", "x" * 64)
 
 import pytest
 import pytest_asyncio

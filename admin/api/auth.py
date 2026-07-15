@@ -37,6 +37,24 @@ _ws_tickets: dict[str, tuple[str, str, datetime]] = {}
 _DUMMY_PASSWORD_HASH = pwd_ctx.hash("no-such-user-timing-parity")
 
 
+def _token_claims(user: AdminUser) -> dict[str, str]:
+    return {
+        "sub": user.id,
+        "role": user.role,
+        "username": user.username,
+        "auth_provider": user.auth_provider,
+    }
+
+
+def _purge_expired_tickets() -> None:
+    """Bound the in-memory ticket stores when tickets are minted but unused."""
+    now = datetime.now(UTC)
+    for store in (_shell_tickets, _ws_tickets):
+        expired = [key for key, entry in store.items() if entry[-1] <= now]
+        for key in expired:
+            store.pop(key, None)
+
+
 @router.post("/login", response_model=TokenResponse)
 async def login(body: LoginRequest, response: Response, db: AsyncSession = Depends(get_db)):
     result = await db.execute(select(AdminUser).where(AdminUser.username == body.username, AdminUser.is_active))
@@ -62,7 +80,7 @@ async def login(body: LoginRequest, response: Response, db: AsyncSession = Depen
     user.locked_until = None
     await db.commit()
 
-    access_token = create_access_token({"sub": user.id, "role": user.role, "username": user.username})
+    access_token = create_access_token(_token_claims(user))
 
     raw_refresh = secrets.token_urlsafe(32)
     token_hash = hashlib.sha256(raw_refresh.encode()).hexdigest()
@@ -99,8 +117,22 @@ async def refresh(response: Response, refresh_token: str = Cookie(None), db: Asy
     if not user:
         raise HTTPException(status_code=401, detail="User inactive")
 
-    # Rotate: revoke the token just used, issue a new one in its place.
-    token.revoked = True
+    # Atomically claim this refresh token. Without the conditional UPDATE,
+    # two concurrent requests can both observe revoked=False and each mint a
+    # successor, defeating rotation/replay detection.
+    claimed = await db.scalar(
+        update(RefreshToken)
+        .where(RefreshToken.id == token.id, RefreshToken.revoked.is_(False))
+        .values(revoked=True)
+        .returning(RefreshToken.user_id)
+        .execution_options(synchronize_session=False)
+    )
+    if claimed is None:
+        await db.execute(update(RefreshToken).where(RefreshToken.user_id == token.user_id).values(revoked=True))
+        await db.commit()
+        raise HTTPException(status_code=401, detail="Invalid or expired refresh token")
+
+    # Rotate: issue a new token in place of the one atomically claimed above.
     raw_refresh = secrets.token_urlsafe(32)
     new_hash = hashlib.sha256(raw_refresh.encode()).hexdigest()
     expires = now + timedelta(days=REFRESH_TOKEN_EXPIRE_DAYS)
@@ -109,7 +141,7 @@ async def refresh(response: Response, refresh_token: str = Cookie(None), db: Asy
 
     response.set_cookie("refresh_token", raw_refresh, httponly=True, secure=True, samesite="lax", max_age=60 * 60 * 24 * REFRESH_TOKEN_EXPIRE_DAYS)
 
-    access_token = create_access_token({"sub": user.id, "role": user.role, "username": user.username})
+    access_token = create_access_token(_token_claims(user))
     return TokenResponse(access_token=access_token)
 
 
@@ -134,9 +166,12 @@ async def shell_elevate(
 ):
     if user.role != "superadmin":
         raise HTTPException(status_code=403, detail="Superadmin only")
+    if user.auth_provider != "local":
+        raise HTTPException(status_code=403, detail="Shell requires a local break-glass account")
     if not pwd_ctx.verify(body.password, user.password_hash):
         raise HTTPException(status_code=401, detail="Invalid password")
 
+    _purge_expired_tickets()
     ticket = secrets.token_urlsafe(32)
     ticket_hash = hashlib.sha256(ticket.encode()).hexdigest()
     expires = datetime.now(UTC) + timedelta(minutes=SHELL_TICKET_EXPIRE_MINUTES)
@@ -161,6 +196,7 @@ def consume_shell_ticket(ticket: str) -> str | None:
 async def issue_ws_ticket(user: AdminUser = Depends(get_current_user)):
     if user.role not in ("admin", "superadmin"):
         raise HTTPException(status_code=403, detail="Forbidden")
+    _purge_expired_tickets()
     ticket = secrets.token_urlsafe(32)
     ticket_hash = hashlib.sha256(ticket.encode()).hexdigest()
     expires = datetime.now(UTC) + timedelta(seconds=WS_TICKET_EXPIRE_SECONDS)

@@ -1,0 +1,10 @@
+.venv
+.pytest_cache
+.ruff_cache
+tests
+ui/node_modules
+ui/dist
+ui/.vite
+ui/vite-dev.log
+**/__pycache__
+**/*.pyc

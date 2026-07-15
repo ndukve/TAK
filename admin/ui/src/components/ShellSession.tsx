@@ -7,6 +7,7 @@ import { FitAddon } from '@xterm/addon-fit'
 import { notify } from '@/lib/notify'
 import { ShieldAlert } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { PasswordInput } from '@/components/PasswordInput'
 
 // Mounted once at the app root (see main.tsx), never unmounted by routing —
 // this is what makes the shell survive navigating away and back. shell.tsx's
@@ -17,7 +18,7 @@ import { cn } from '@/lib/utils'
 // safely has router context) instead of touching the router directly — this
 // component is rendered outside the router tree entirely.
 export function ShellSession() {
-  const { token, role } = useAuth()
+  const { token, role, authProvider } = useAuth()
   const pathname = useRoute((s) => s.pathname)
   const onShellPage = pathname === '/shell'
 
@@ -90,13 +91,20 @@ export function ShellSession() {
     }
   }, [ticket])
 
+  // Logout, role changes, and a switch to an SSO session must tear down an
+  // already-open terminal immediately rather than leaving the Docker exec
+  // alive behind a hidden route.
+  useEffect(() => {
+    if (!token || role !== 'superadmin' || authProvider !== 'local') setTicket(null)
+  }, [token, role, authProvider])
+
   // Re-fit whenever the shell page becomes visible again (its container may
   // have been display:none, where fitAddon can't measure it, since the last resize).
   useEffect(() => {
     if (onShellPage) fitRef.current?.fit()
   }, [onShellPage])
 
-  if (!token || role !== 'superadmin') return null
+  if (!token || role !== 'superadmin' || authProvider !== 'local') return null
 
   return (
     <div
@@ -116,13 +124,12 @@ export function ShellSession() {
             </p>
           </div>
           <form onSubmit={elevate} className="space-y-3">
-            <input
-              type="password"
+            <PasswordInput
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               placeholder="Your admin password"
               required
-              className="w-full px-3 py-2 rounded-md bg-zinc-200 dark:bg-[#1a1a1d] border border-zinc-300 dark:border-white/10 text-zinc-900 dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-accent-ring"
+              className="w-full px-3 py-2 rounded-md bg-zinc-200 dark:bg-[#141416] border border-zinc-300 dark:border-white/10 text-zinc-900 dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-accent-ring"
             />
             <button
               type="submit"

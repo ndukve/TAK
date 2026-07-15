@@ -17,13 +17,12 @@ FROM ${TAK_DIST_IMAGE} AS tak-files
 FROM eclipse-temurin:${TEMURIN_VERSION}-noble AS deps
 ENV LC_ALL=C.UTF-8
 
-RUN apt-get update && apt-get install -y --no-install-recommends \
-    emacs-nox \
+RUN apt-get update && apt-get upgrade -y && apt-get install -y --no-install-recommends \
     net-tools \
     netcat-traditional \
     vim \
     nmon \
-    python3-lxml \
+    python3-minimal \
     unzip \
     tini \
     curl \
@@ -38,16 +37,13 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 COPY docker/wait-for-it.sh /usr/bin/wait-for-it.sh
 RUN chmod a+x /usr/bin/wait-for-it.sh
 
-COPY --from=hairyhenderson/gomplate:stable /gomplate /bin/gomplate
+COPY scripts/gomplate.py /usr/bin/gomplate
+RUN chmod a+x /usr/bin/gomplate
 
 SHELL ["/bin/bash", "-lc"]
 
-# ── Stage 3: install TAK Server + project scripts/templates ──────────────────
-FROM deps AS install
-
-COPY docker/entrypoint.sh /entrypoint.sh
-RUN chmod +x /entrypoint.sh
-
+# ── Stage 3: extract TAK away from the eventual runtime image history ────────
+FROM deps AS tak-extract
 COPY --from=tak-files /zips/takserver-docker-*.zip /tmp/takserver.zip
 RUN cd /tmp \
     && unzip takserver.zip \
@@ -55,11 +51,22 @@ RUN cd /tmp \
     && DISTDIR=$(echo takserver-docker-*) \
     && mv "$DISTDIR/tak" /opt/tak
 
-COPY scripts /opt/scripts
-COPY templates /opt/templates
+# ── Stage 4: install TAK Server + project scripts/templates ──────────────────
+FROM deps AS install
 
-# ── Stage 4: runtime image ───────────────────────────────────────────────────
+# The TAK processes do not need host-level root.  Keep a stable numeric ID so
+# named volumes can be migrated by the short-lived permissions service in
+# docker-compose.yml and shared consistently by every TAK container.
+COPY --from=tak-extract --chown=10000:10000 /opt/tak /opt/tak
+COPY --chown=10000:10000 scripts /opt/scripts
+COPY --chown=10000:10000 templates /opt/templates
+
+COPY docker/entrypoint.sh /entrypoint.sh
+RUN chmod +x /entrypoint.sh
+
+# ── Stage 5: runtime image ───────────────────────────────────────────────────
 FROM install AS run
 ARG GIT_COMMIT=unknown
 LABEL org.opencontainers.image.revision="$GIT_COMMIT"
+USER 10000:10000
 ENTRYPOINT ["/usr/bin/tini", "--", "/entrypoint.sh"]

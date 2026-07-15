@@ -10,5 +10,12 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Validate docker-compose.yml parses
-        run: python3 -c "import yaml; yaml.safe_load(open('docker-compose.yml'))"
+      - name: Validate Compose model
+        env:
+          TAK_ENV_FILE: takserver.env.example
+        run: docker compose --env-file takserver.env.example config --quiet
+      - name: Validate Docker socket proxy ACL syntax
+        run: |
+          docker build -t tak-docker-socket-proxy:test docker/socket-proxy
+          docker run --rm tak-docker-socket-proxy:test \
+            haproxy -c -f /usr/local/etc/haproxy/haproxy.cfg

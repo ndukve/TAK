@@ -1,0 +1,1 @@
+Read `CLAUDE.md` first; its project constraints apply to every agent and tool.
