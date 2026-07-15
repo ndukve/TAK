@@ -1,4 +1,4 @@
-FROM node:20-slim AS ui-builder
+FROM node:24-slim AS ui-builder
 ARG GIT_COMMIT=unknown
 ENV APP_VERSION=$GIT_COMMIT
 WORKDIR /ui

@@ -30,7 +30,7 @@ TAK_DEFAULT_RELEASE="5.7-RELEASE-43"
 VENDORED_IMAGES=(
     "nginx_alpine.tar|nginx:alpine|nginx-alpine"
     "eclipse-temurin_17-noble.tar|eclipse-temurin:17-noble|eclipse-temurin-17-noble"
-    "node_20-slim.tar|node:20-slim|node-20-slim"
+    "node_24-slim.tar|node:24-slim|node-24-slim"
     "python_3.11-alpine.tar|python:3.11-alpine|python-3.11-alpine"
     "postgis_postgis_15-3.3.tar|postgis/postgis:15-3.3|postgis-15-3.3"
     "haproxy_3.2-alpine.tar|haproxy:3.2-alpine|haproxy-3.2-alpine"

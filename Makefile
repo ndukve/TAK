@@ -144,7 +144,7 @@ add-service:
 ## Generate pnpm-lock.yaml for the admin UI (requires Docker, not pnpm on host).
 ## Run once after checkout, then commit the lockfile.
 generate-lockfile:
-	docker run --rm -v "$(PWD)/admin/ui:/ui" node:20-slim \
+	docker run --rm -v "$(PWD)/admin/ui:/ui" node:24-slim \
 		sh -c "npm install -g pnpm && cd /ui && pnpm install"
 	@echo "Lockfile written to admin/ui/pnpm-lock.yaml — commit it."
 
