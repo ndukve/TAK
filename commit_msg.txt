@@ -1,4 +1,4 @@
-release: v1.0.6 — harden authentication, deployment, and TAK routing
+release: v1.0.7 — harden authentication, deployment, and TAK routing
 
 - add optional OIDC login with issuer/subject identity binding, fail-closed group mapping, safe JIT provisioning, and SSO-aware UI behavior
 - revoke privileged sessions on credential and account changes, atomically rotate refresh tokens, replace WebSocket JWT queries with one-time tickets, and cap shell sessions
