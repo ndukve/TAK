@@ -100,7 +100,9 @@ if [ -z "$DOCKER_FREE_MB" ] || ! [[ "$DOCKER_FREE_MB" =~ ^[0-9]+$ ]]; then
 fi
 if (( DOCKER_FREE_MB < MIN_DOCKER_FREE_MB )); then
     docker system df 2>/dev/null || true
-    fail "Only ${DOCKER_FREE_MB} MiB free on Docker storage ($DOCKER_ROOT); ${MIN_DOCKER_FREE_MB} MiB required. Remove unused build cache/images deliberately, then retry. Set TAK_UPDATE_MIN_FREE_MB only to override this preflight intentionally."
+    warn "Reclaim unused build cache: docker builder prune -af"
+    warn "Reclaim images unused by containers: docker image prune -af"
+    fail "Only ${DOCKER_FREE_MB} MiB free on Docker storage ($DOCKER_ROOT); ${MIN_DOCKER_FREE_MB} MiB required. Free space deliberately, then retry. Set TAK_UPDATE_MIN_FREE_MB only to override this preflight intentionally."
 fi
 ok "Docker storage preflight: ${DOCKER_FREE_MB} MiB free"
 

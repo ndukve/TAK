@@ -2,6 +2,12 @@
 # Build once: docker compose build
 # Start: docker compose --env-file takserver.env up -d
 
+x-logging: &default-logging
+  driver: local
+  options:
+    max-size: "20m"
+    max-file: "5"
+
 x-tak: &tak-base
   image: takserver:local
   env_file: ${TAK_ENV_FILE:-takserver.env}
@@ -16,6 +22,7 @@ x-tak: &tak-base
   networks:
     - taknet
   restart: unless-stopped
+  logging: *default-logging
 
 services:
 
@@ -31,6 +38,7 @@ services:
     networks:
       - taknet
     restart: unless-stopped
+    logging: *default-logging
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-martiuser} -d ${POSTGRES_DB:-cot}"]
       interval: 10s
@@ -63,6 +71,7 @@ services:
       - tak_plugins:/opt/tak/plugins
       - tak_plugin_conf:/opt/tak/conf/plugins
     restart: "no"
+    logging: *default-logging
 
   # ── First-run initialisation (certs + DB schema) ───────────────────────────
   takserver_initialization:
@@ -105,6 +114,7 @@ services:
     volumes:
       - takserver_data:/opt/tak/data
     restart: unless-stopped
+    logging: *default-logging
     command: ["/bin/bash", "/opt/scripts/start-tak.sh", "messaging"]
     network_mode: "service:takserver_config"
     depends_on:
@@ -123,6 +133,7 @@ services:
     volumes:
       - takserver_data:/opt/tak/data
     restart: unless-stopped
+    logging: *default-logging
     command: ["/bin/bash", "/opt/scripts/start-tak.sh", "api"]
     network_mode: "service:takserver_messaging"
     depends_on:
@@ -141,6 +152,7 @@ services:
     volumes:
       - takserver_data:/opt/tak/data
     restart: unless-stopped
+    logging: *default-logging
     command: ["/bin/bash", "/opt/scripts/start-tak.sh", "retention"]
     network_mode: "service:takserver_messaging"
     depends_on:
@@ -161,6 +173,7 @@ services:
       - tak_plugins:/opt/tak/plugins
       - tak_plugin_conf:/opt/tak/conf/plugins
     restart: unless-stopped
+    logging: *default-logging
     command: ["/bin/bash", "/opt/scripts/start-tak.sh", "pm"]
     network_mode: "service:takserver_messaging"
     depends_on:
@@ -197,6 +210,7 @@ services:
     networks:
       - docker_proxy_net
     restart: unless-stopped
+    logging: *default-logging
 
   # ── Admin/nginx volume ownership migration (short-lived, networkless) ───
   admin_permissions:
@@ -227,6 +241,7 @@ services:
       takserver_initialization:
         condition: service_completed_successfully
     restart: "no"
+    logging: *default-logging
 
   # ── Admin panel (internal only — accessed via admin_proxy) ───────────────
   admin:
@@ -269,6 +284,7 @@ services:
       docker_socket_proxy:
         condition: service_started
     restart: unless-stopped
+    logging: *default-logging
 
   # ── Admin TLS reverse proxy (port 8889 HTTPS) ────────────────────────────
   admin_proxy:
@@ -300,6 +316,7 @@ services:
       admin_permissions:
         condition: service_completed_successfully
     restart: unless-stopped
+    logging: *default-logging
 
 volumes:
   takdb_data:

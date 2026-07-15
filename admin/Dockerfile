@@ -3,7 +3,7 @@ ARG GIT_COMMIT=unknown
 ENV APP_VERSION=$GIT_COMMIT
 WORKDIR /ui
 RUN corepack enable
-COPY ui/package.json ui/pnpm-lock.yaml ./
+COPY ui/package.json ui/pnpm-lock.yaml ui/pnpm-workspace.yaml ./
 RUN pnpm install --frozen-lockfile
 COPY ui/ .
 RUN pnpm build

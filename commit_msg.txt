@@ -16,3 +16,5 @@ release: v1.0.6 — harden authentication, deployment, and TAK routing
 - add OIDC, session-security, certificate-group, Compose, container ACL, dependency-lock, image, and secret-scanning validation
 - upgrade CI and UI builds to Node.js 24 LTS and pnpm 11 so audits use npm's supported bulk-advisory endpoint
 - reduce TAK build disk pressure and fail updates early when Docker storage is too full
+- cap and rotate Docker logs so long-running services cannot exhaust host storage
+- explicitly allow only esbuild's required native install script under pnpm 11

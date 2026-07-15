@@ -9,6 +9,12 @@
 # clients and the admin panel reach them — but on any host with a public IP,
 # firewall everything except the ports you actually intend to expose.
 
+x-logging: &default-logging
+  driver: local
+  options:
+    max-size: "20m"
+    max-file: "5"
+
 x-tak: &tak-base
   image: takserver:local
   env_file: ${TAK_ENV_FILE:-takserver.env}
@@ -21,6 +27,7 @@ x-tak: &tak-base
     - takserver_data:/opt/tak/data
   network_mode: host
   restart: unless-stopped
+  logging: *default-logging
 
 services:
 
@@ -36,6 +43,7 @@ services:
       - takdb_data:/var/lib/postgresql/data
     network_mode: host
     restart: unless-stopped
+    logging: *default-logging
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-martiuser} -d ${POSTGRES_DB:-cot}"]
       interval: 10s
@@ -62,6 +70,7 @@ services:
     volumes:
       - takserver_data:/opt/tak/data
     restart: "no"
+    logging: *default-logging
 
   # ── First-run initialisation (certs + DB schema) ───────────────────────────
   takserver_initialization:
