@@ -44,10 +44,9 @@ SHELL ["/bin/bash", "-lc"]
 
 # ── Stage 3: extract TAK away from the eventual runtime image history ────────
 FROM deps AS tak-extract
-COPY --from=tak-files /zips/takserver-docker-*.zip /tmp/takserver.zip
-RUN cd /tmp \
-    && unzip takserver.zip \
-    && rm takserver.zip \
+RUN --mount=from=tak-files,source=/zips,target=/tak-zips,ro \
+    cd /tmp \
+    && unzip /tak-zips/takserver-docker-*.zip \
     && DISTDIR=$(echo takserver-docker-*) \
     && mv "$DISTDIR/tak" /opt/tak
 

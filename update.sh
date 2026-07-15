@@ -84,6 +84,26 @@ else
     ok "Added DOCKER_SOCKET_GID"
 fi
 
+# Building TAK temporarily needs room for its distribution, expanded WAR, base
+# layers, and the previous image (which must remain available until replacement
+# containers start). Fail before a long BuildKit run instead of dying halfway
+# through extraction with an opaque unzip write error.
+MIN_DOCKER_FREE_MB=${TAK_UPDATE_MIN_FREE_MB:-8192}
+[[ "$MIN_DOCKER_FREE_MB" =~ ^[0-9]+$ ]] \
+    || fail "TAK_UPDATE_MIN_FREE_MB must be a non-negative integer"
+DOCKER_ROOT=$(docker info --format '{{.DockerRootDir}}' 2>/dev/null || true)
+DOCKER_ROOT=${DOCKER_ROOT:-/var/lib/docker}
+[ -d "$DOCKER_ROOT" ] || DOCKER_ROOT=/
+DOCKER_FREE_MB=$(df -Pm "$DOCKER_ROOT" | awk 'NR == 2 {print $4}')
+if [ -z "$DOCKER_FREE_MB" ] || ! [[ "$DOCKER_FREE_MB" =~ ^[0-9]+$ ]]; then
+    fail "Could not determine free space for Docker storage at $DOCKER_ROOT"
+fi
+if (( DOCKER_FREE_MB < MIN_DOCKER_FREE_MB )); then
+    docker system df 2>/dev/null || true
+    fail "Only ${DOCKER_FREE_MB} MiB free on Docker storage ($DOCKER_ROOT); ${MIN_DOCKER_FREE_MB} MiB required. Remove unused build cache/images deliberately, then retry. Set TAK_UPDATE_MIN_FREE_MB only to override this preflight intentionally."
+fi
+ok "Docker storage preflight: ${DOCKER_FREE_MB} MiB free"
+
 # ── Admin DB ──────────────────────────────────────────────────────────────────
 info "Ensuring admin database exists..."
 PGUSER=$(grep '^POSTGRES_USER=' "$ENV_FILE" | cut -d= -f2)

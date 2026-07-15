@@ -14,3 +14,5 @@ release: v1.0.6 — harden authentication, deployment, and TAK routing
 - assign client and service certificates to TAK-USERS, route the legacy CoT input into that group, and add a repair-groups command for existing client packages
 - add certificate status, responsive dashboard and table refinements, dark-mode polish, improved shell rendering, and accessible password visibility controls
 - add OIDC, session-security, certificate-group, Compose, container ACL, dependency-lock, image, and secret-scanning validation
+- upgrade CI to pnpm 11 so audits use npm's supported bulk-advisory endpoint
+- reduce TAK build disk pressure and fail updates early when Docker storage is too full
