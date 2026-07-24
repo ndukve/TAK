@@ -66,6 +66,57 @@ async def test_upload_map_mbtiles_streams_to_disk(superadmin_client, tmp_path, m
     assert (tmp_path / "lietuva50k" / "Lietuva_50K.mbtiles.sha256").read_text().strip() == body["sha256"]
 
 
+async def test_chunked_map_upload_resumes_and_finalizes(superadmin_client, tmp_path, monkeypatch):
+    monkeypatch.setattr(packages_module, "MAPS_DIR", str(tmp_path))
+    data = b"resumable mbtiles bytes"
+    init_body = {
+        "provider": "lietuva",
+        "filename": "Lietuva.mbtiles",
+        "total_size": len(data),
+        "fingerprint": "22:123456",
+    }
+
+    initialized = await superadmin_client.post("/api/maps/uploads", json=init_body)
+    assert initialized.status_code == 200
+    assert initialized.json() == {"offset": 0, "complete": False}
+
+    first = await superadmin_client.put(
+        f"/api/maps/uploads/lietuva/Lietuva.mbtiles?offset=0&total_size={len(data)}&fingerprint=22%3A123456",
+        content=data[:10],
+    )
+    assert first.status_code == 200
+    assert first.json() == {"offset": 10, "complete": False}
+
+    resumed = await superadmin_client.post("/api/maps/uploads", json=init_body)
+    assert resumed.json() == {"offset": 10, "complete": False}
+
+    final = await superadmin_client.put(
+        f"/api/maps/uploads/lietuva/Lietuva.mbtiles?offset=10&total_size={len(data)}&fingerprint=22%3A123456",
+        content=data[10:],
+    )
+    assert final.status_code == 200
+    assert final.json()["complete"] is True
+    assert final.json()["sha256"] == hashlib.sha256(data).hexdigest()
+    assert (tmp_path / "lietuva" / "Lietuva.mbtiles").read_bytes() == data
+
+    recovered = await superadmin_client.post("/api/maps/uploads", json=init_body)
+    assert recovered.json()["offset"] == len(data)
+    assert recovered.json()["complete"] is True
+
+
+async def test_chunked_map_upload_rejects_wrong_resume_offset(superadmin_client, tmp_path, monkeypatch):
+    monkeypatch.setattr(packages_module, "MAPS_DIR", str(tmp_path))
+    body = {"provider": "test", "filename": "test.xml", "total_size": 10, "fingerprint": "10:1"}
+    await superadmin_client.post("/api/maps/uploads", json=body)
+
+    res = await superadmin_client.put(
+        "/api/maps/uploads/test/test.xml?offset=5&total_size=10&fingerprint=10%3A1",
+        content=b"12345",
+    )
+    assert res.status_code == 409
+    assert "byte 0" in res.json()["detail"]
+
+
 async def test_upload_map_mbtiles_rejects_oversized(superadmin_client, tmp_path, monkeypatch):
     monkeypatch.setattr(packages_module, "MAPS_DIR", str(tmp_path))
     monkeypatch.setattr(packages_module, "MAX_MBTILES_BYTES", 100)

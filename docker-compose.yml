@@ -98,6 +98,10 @@ services:
       - "8089:8089"
       - "8443:8443"
       - "8087:8087"
+    networks:
+      taknet:
+        aliases:
+          - takserver
     depends_on:
       takserver_initialization:
         condition: service_completed_successfully
@@ -221,6 +225,9 @@ services:
         GIT_COMMIT: ${GIT_COMMIT:-unknown}
     user: "0:0"
     entrypoint: ["/bin/sh", "/prepare-volumes.sh"]
+    environment:
+      CA_PASS: ${CA_PASS}
+      TAK_SERVER_ADDRESS: ${TAK_SERVER_ADDRESS:-localhost}
     read_only: true
     network_mode: none
     cap_drop:
@@ -253,6 +260,7 @@ services:
     env_file: ${TAK_ENV_FILE:-takserver.env}
     environment:
       DOCKER_HOST: tcp://docker_socket_proxy:2375
+      TAK_API_ADDRESS: takserver
       # The web app only needs its DB/JWT/OIDC settings. Certificate and
       # database-superuser bootstrap secrets stay out of its process env.
       CA_PASS: ""

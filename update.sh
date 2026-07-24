@@ -136,6 +136,28 @@ docker compose --env-file "$ENV_FILE" up -d --remove-orphans \
     || fail "Container restart failed (see output above)."
 ok "Containers restarted"
 
+# The EFDI bridge is an always-on TAK integration. Reapply its shared routing
+# group after every upgrade so older packages and restored certificates retain
+# IN + OUT access even if their server-side assignment was lost.
+info "Ensuring efdi-bridge has full TAK routing access..."
+EFDI_BRIDGE_CERTS=$(docker compose --env-file "$ENV_FILE" exec -T takserver_config bash -c '
+    for name in efdi-bridge efdi-bridge-ATAK efdi-bridge-WinTAK efdi-bridge-iTAK efdi-bridge-Service; do
+        [ -f "/opt/tak/data/certs/files/${name}.pem" ] && printf "%s\n" "$name"
+    done
+    true
+')
+if [ -n "$EFDI_BRIDGE_CERTS" ]; then
+    while IFS= read -r cert_name; do
+        docker compose --env-file "$ENV_FILE" exec -T \
+            -e USER_CERT_NAME="$cert_name" \
+            takserver_config bash /opt/scripts/enable_user.sh \
+            || fail "Could not restore full TAK routing access for $cert_name"
+    done <<< "$EFDI_BRIDGE_CERTS"
+    ok "efdi-bridge has full TAK routing access"
+else
+    dim "No efdi-bridge certificate found yet"
+fi
+
 scrub_admin_bootstrap_secret "$ENV_FILE" \
     || fail "Admin bootstrap credential could not be removed safely."
 

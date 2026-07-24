@@ -14,6 +14,7 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1
 COPY requirements.lock .
 RUN apk upgrade --no-cache \
+    && apk add --no-cache openssl \
     && pip install --no-cache-dir --require-hashes -r requirements.lock \
     && pip uninstall -y pip setuptools wheel
 COPY api/ ./api/

@@ -65,7 +65,10 @@ function UserTable({ users, loading, emptyText, createFieldLogin, renameFieldAcc
           ) : (
             users.map(u => (
               <tr key={u.username} className="bg-zinc-50 dark:bg-[#000000] hover:bg-zinc-100/50 dark:hover:bg-white/[0.03]">
-                <td className="px-4 py-3 font-mono">{u.username}</td>
+                <td className="px-4 py-3 font-mono">
+                  {u.username}
+                  {u.always_enabled && <span className="ml-2 rounded-full bg-green-100 px-2 py-0.5 text-[10px] text-green-700 dark:bg-green-400/10 dark:text-green-400">always on</span>}
+                </td>
                 <td className="px-4 py-3">
                   {u.has_field_account
                     ? (
@@ -83,9 +86,9 @@ function UserTable({ users, loading, emptyText, createFieldLogin, renameFieldAcc
                 <td className="px-4 py-3 flex justify-end gap-2">
                   <button onClick={() => downloadPackage(u.username)} disabled={pendingUsers.has(u.username)} title="Download package" aria-label="Download package" className="p-1.5 rounded hover:bg-zinc-200 dark:hover:bg-[#141416] text-accent-ring focus:outline-none focus:ring-2 focus:ring-accent-ring disabled:opacity-50"><Download size={14} /></button>
                   <button onClick={() => enableUser(u.username)} disabled={pendingUsers.has(u.username)} title="Enable" aria-label="Enable" className="p-1.5 rounded hover:bg-zinc-200 dark:hover:bg-[#141416] text-green-600 dark:text-green-400 focus:outline-none focus:ring-2 focus:ring-accent-ring disabled:opacity-50"><CheckCircle size={14} /></button>
-                  <button onClick={() => disableUser(u.username)} disabled={pendingUsers.has(u.username)} title="Disable" aria-label="Disable" className="p-1.5 rounded hover:bg-zinc-200 dark:hover:bg-[#141416] text-yellow-600 dark:text-yellow-400 focus:outline-none focus:ring-2 focus:ring-accent-ring disabled:opacity-50"><XCircle size={14} /></button>
+                  {!u.always_enabled && <button onClick={() => disableUser(u.username)} disabled={pendingUsers.has(u.username)} title="Disable" aria-label="Disable" className="p-1.5 rounded hover:bg-zinc-200 dark:hover:bg-[#141416] text-yellow-600 dark:text-yellow-400 focus:outline-none focus:ring-2 focus:ring-accent-ring disabled:opacity-50"><XCircle size={14} /></button>}
                   <button onClick={() => setSetPwUser(u.username)} title="Set Password" aria-label="Set Password" className="p-1.5 rounded hover:bg-zinc-200 dark:hover:bg-[#141416] text-accent-ring focus:outline-none focus:ring-2 focus:ring-accent-ring"><KeyRound size={14} /></button>
-                  <button onClick={() => deleteUser(u.username)} disabled={pendingUsers.has(u.username)} title="Delete" aria-label="Delete" className="p-1.5 rounded hover:bg-zinc-200 dark:hover:bg-[#141416] text-red-600 dark:text-red-400 focus:outline-none focus:ring-2 focus:ring-accent-ring disabled:opacity-50"><Trash2 size={14} /></button>
+                  {!u.always_enabled && <button onClick={() => deleteUser(u.username)} disabled={pendingUsers.has(u.username)} title="Delete" aria-label="Delete" className="p-1.5 rounded hover:bg-zinc-200 dark:hover:bg-[#141416] text-red-600 dark:text-red-400 focus:outline-none focus:ring-2 focus:ring-accent-ring disabled:opacity-50"><Trash2 size={14} /></button>}
                 </td>
               </tr>
             ))
@@ -274,6 +277,7 @@ interface TakUser {
   base_callsign: string
   cert_days_remaining: number | null
   is_client: boolean
+  always_enabled: boolean
 }
 
 function UsersPage() {

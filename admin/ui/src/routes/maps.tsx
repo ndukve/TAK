@@ -7,7 +7,7 @@ import { useAuth } from '@/store/auth'
 import { notify } from '@/lib/notify'
 import { TableSkeletonRows } from '@/components/Skeleton'
 import { HudCorners } from '@/components/HudCorners'
-import { Trash2, Upload, Copy, Check, Download } from 'lucide-react'
+import { Trash2, Upload, Copy, Check, Download, Pause, RotateCcw, X } from 'lucide-react'
 
 function CopyHash({ hash }: { hash: string }) {
   const [copied, setCopied] = useState(false)
@@ -40,12 +40,35 @@ interface MapSource {
   sha256: string | null
 }
 
+interface UploadProgress {
+  filename: string
+  provider: string
+  uploaded: number
+  total: number
+  phase: 'uploading' | 'paused' | 'failed' | 'complete'
+  error?: string
+}
+
+interface UploadResponse {
+  offset: number
+  complete: boolean
+}
+
+function formatBytes(bytes: number): string {
+  if (bytes < 1024) return `${bytes} B`
+  if (bytes < 1024 ** 2) return `${(bytes / 1024).toFixed(1)} KB`
+  if (bytes < 1024 ** 3) return `${(bytes / 1024 ** 2).toFixed(1)} MB`
+  return `${(bytes / 1024 ** 3).toFixed(2)} GB`
+}
+
 function MapsPage() {
   const [maps, setMaps] = useState<MapSource[]>([])
   const [loading, setLoading] = useState(true)
-  const [uploading, setUploading] = useState(false)
+  const [uploadProgress, setUploadProgress] = useState<UploadProgress | null>(null)
   const [provider, setProvider] = useState('')
   const fileRef = useRef<HTMLInputElement>(null)
+  const uploadFileRef = useRef<File | null>(null)
+  const uploadAbortRef = useRef<AbortController | null>(null)
 
   async function load() {
     try {
@@ -71,23 +94,90 @@ function MapsPage() {
   async function handleUpload(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0]
     if (!file) return
-    const form = new FormData()
-    form.append('file', file)
-    setUploading(true)
+    const selectedProvider = provider.trim()
+    uploadFileRef.current = file
+    setUploadProgress({
+      filename: file.name,
+      provider: selectedProvider,
+      uploaded: 0,
+      total: file.size,
+      phase: 'uploading',
+    })
+    if (fileRef.current) fileRef.current.value = ''
+    void uploadMap(file, selectedProvider)
+  }
+
+  async function uploadMap(file: File, selectedProvider: string) {
+    const controller = new AbortController()
+    uploadAbortRef.current = controller
+    const fingerprint = `${file.size}:${file.lastModified}`
     try {
-      const res = await apiFetch(`/api/maps?provider=${encodeURIComponent(provider.trim())}`, { method: 'POST', body: form })
-      if (!res.ok) {
-        const err = await res.json().catch(() => ({ detail: res.statusText }))
-        throw new Error(err.detail ?? res.statusText)
+      const initialized = await apiJson<UploadResponse>('/api/maps/uploads', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          provider: selectedProvider,
+          filename: file.name,
+          total_size: file.size,
+          fingerprint,
+        }),
+        signal: controller.signal,
+      })
+      let offset = initialized.offset
+      setUploadProgress(current => current ? { ...current, uploaded: offset, phase: 'uploading', error: undefined } : null)
+
+      if (!initialized.complete) {
+        const chunkSize = 2 * 1024 * 1024
+        while (offset < file.size) {
+          const end = Math.min(offset + chunkSize, file.size)
+          const result = await apiJson<UploadResponse>(
+            `/api/maps/uploads/${encodeURIComponent(selectedProvider)}/${encodeURIComponent(file.name)}?offset=${offset}&total_size=${file.size}&fingerprint=${encodeURIComponent(fingerprint)}`,
+            {
+              method: 'PUT',
+              headers: { 'Content-Type': 'application/octet-stream' },
+              body: file.slice(offset, end),
+              signal: controller.signal,
+            },
+          )
+          offset = result.offset
+          setUploadProgress(current => current ? { ...current, uploaded: offset } : null)
+        }
       }
+
+      if (uploadAbortRef.current !== controller) return
+      setUploadProgress(current => current ? { ...current, uploaded: file.size, phase: 'complete' } : null)
       notify.success(`${file.name} uploaded`)
-      load()
+      await load()
     } catch (e) {
-      notify.error(errorMessage(e))
+      if (uploadAbortRef.current !== controller) return
+      if (e instanceof DOMException && e.name === 'AbortError') {
+        setUploadProgress(current => current ? { ...current, phase: 'paused' } : null)
+      } else {
+        const message = errorMessage(e)
+        setUploadProgress(current => current ? { ...current, phase: 'failed', error: message } : null)
+        notify.error(message)
+      }
     } finally {
-      setUploading(false)
-      if (fileRef.current) fileRef.current.value = ''
+      if (uploadAbortRef.current === controller) uploadAbortRef.current = null
     }
+  }
+
+  function pauseUpload() {
+    uploadAbortRef.current?.abort()
+  }
+
+  function resumeUpload() {
+    const file = uploadFileRef.current
+    if (!file || !uploadProgress) return
+    setUploadProgress(current => current ? { ...current, phase: 'uploading', error: undefined } : null)
+    void uploadMap(file, uploadProgress.provider)
+  }
+
+  function closeUploadPrompt() {
+    uploadAbortRef.current?.abort()
+    uploadAbortRef.current = null
+    uploadFileRef.current = null
+    setUploadProgress(null)
   }
 
   async function handleDownload(m: MapSource) {
@@ -127,11 +217,11 @@ function MapsPage() {
           />
           <button
             onClick={handleUploadClick}
-            disabled={uploading}
+            disabled={uploadProgress !== null}
             className="flex items-center gap-2 px-4 py-2 bg-accent-fill hover:bg-accent-fill-hover disabled:opacity-50 text-accent-text text-sm rounded-md transition-colors"
           >
             <Upload size={14} />
-            {uploading ? 'Uploading…' : 'Upload Map'}
+            {uploadProgress?.phase === 'uploading' ? 'Uploading…' : 'Upload Map'}
           </button>
           <input
             ref={fileRef}
@@ -202,6 +292,56 @@ function MapsPage() {
           </table>
           </div>
         </div>
+
+        {uploadProgress && (
+          <div className="fixed inset-0 z-[1000] flex items-center justify-center bg-black/65 px-4" role="dialog" aria-modal="true" aria-labelledby="map-upload-title">
+            <div className="w-full max-w-md rounded-lg border border-zinc-300 dark:border-white/15 bg-white dark:bg-[#0c0c0e] p-5 shadow-2xl">
+              <div className="flex items-start justify-between gap-4">
+                <div className="min-w-0">
+                  <h2 id="map-upload-title" className="text-base font-semibold text-zinc-900 dark:text-white">Map upload</h2>
+                  <p className="mt-1 truncate font-mono text-xs text-zinc-500">{uploadProgress.provider}/{uploadProgress.filename}</p>
+                </div>
+                <button onClick={closeUploadPrompt} className="rounded p-1 text-zinc-500 hover:bg-zinc-100 dark:hover:bg-white/10" aria-label="Close upload dialog">
+                  <X size={16} />
+                </button>
+              </div>
+
+              <div className="mt-5 h-2 overflow-hidden rounded-full bg-zinc-200 dark:bg-white/10">
+                <div
+                  className={`h-full transition-[width] duration-200 ${uploadProgress.phase === 'failed' ? 'bg-red-500' : 'bg-accent-fill'}`}
+                  style={{ width: `${uploadProgress.total ? Math.min(100, (uploadProgress.uploaded / uploadProgress.total) * 100) : 0}%` }}
+                />
+              </div>
+              <div className="mt-2 flex justify-between text-xs text-zinc-500">
+                <span>{formatBytes(uploadProgress.uploaded)} of {formatBytes(uploadProgress.total)}</span>
+                <span>{uploadProgress.total ? Math.floor((uploadProgress.uploaded / uploadProgress.total) * 100) : 0}%</span>
+              </div>
+
+              <p className={`mt-4 text-sm ${uploadProgress.phase === 'failed' ? 'text-red-600 dark:text-red-400' : 'text-zinc-600 dark:text-zinc-300'}`}>
+                {uploadProgress.phase === 'uploading' && 'Uploading in resumable chunks…'}
+                {uploadProgress.phase === 'paused' && 'Upload paused. Resume continues from the last stored chunk.'}
+                {uploadProgress.phase === 'failed' && (uploadProgress.error ?? 'Upload interrupted. You can resume it.')}
+                {uploadProgress.phase === 'complete' && 'Upload complete.'}
+              </p>
+
+              <div className="mt-5 flex justify-end gap-2">
+                {uploadProgress.phase === 'uploading' && (
+                  <button onClick={pauseUpload} className="flex items-center gap-2 rounded-md border border-zinc-300 dark:border-white/15 px-3 py-2 text-sm hover:bg-zinc-100 dark:hover:bg-white/10">
+                    <Pause size={14} /> Pause
+                  </button>
+                )}
+                {(uploadProgress.phase === 'paused' || uploadProgress.phase === 'failed') && (
+                  <button onClick={resumeUpload} className="flex items-center gap-2 rounded-md bg-accent-fill px-3 py-2 text-sm text-accent-text hover:bg-accent-fill-hover">
+                    <RotateCcw size={14} /> Resume upload
+                  </button>
+                )}
+                {uploadProgress.phase === 'complete' && (
+                  <button onClick={closeUploadPrompt} className="rounded-md bg-accent-fill px-3 py-2 text-sm text-accent-text hover:bg-accent-fill-hover">Close</button>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </Layout>
   )

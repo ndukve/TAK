@@ -25,6 +25,7 @@ TAK_USER_GROUP = os.environ.get("TAK_USER_GROUP", "TAK-USERS")
 
 _USERNAME_RE = re.compile(r'^[A-Za-z0-9_-]+$')
 _NEW_USERNAME_RE = re.compile(r'^[A-Za-z0-9_-]+-(ATAK|WinTAK|iTAK|Service)$')
+_ALWAYS_ENABLED_BASE_CALLSIGNS = {"efdi-bridge"}
 
 
 def _validate_username(username: str) -> str:
@@ -68,6 +69,10 @@ def _base_callsign(username: str) -> str:
         if username.endswith(suffix):
             return username[: -len(suffix)]
     return username
+
+
+def _is_always_enabled(username: str) -> bool:
+    return _base_callsign(username) in _ALWAYS_ENABLED_BASE_CALLSIGNS
 
 
 async def _ensure_field_account(db: AsyncSession, base: str, created_by: str) -> tuple[bool, str | None]:
@@ -120,6 +125,7 @@ async def list_users(db: AsyncSession = Depends(get_db), _=Depends(_admin)):
             "base_callsign": _base_callsign(z),
             "cert_days_remaining": _cert_days_remaining(z),
             "is_client": bool(_NEW_USERNAME_RE.fullmatch(z)),
+            "always_enabled": _is_always_enabled(z),
         }
         for z in zips
     ]}
@@ -248,6 +254,8 @@ async def enable_user(body: UsernameRequest, db: AsyncSession = Depends(get_db),
 @router.post("/disable")
 async def disable_user(body: UsernameRequest, db: AsyncSession = Depends(get_db), actor=Depends(_admin)):
     username = _validate_username(body.username)
+    if _is_always_enabled(username):
+        raise HTTPException(status_code=409, detail="efdi-bridge must remain enabled with full TAK routing access")
     code, out = await run_in_container(
         ["java", "-jar", "utils/UserManager.jar", "certmod",
          f"/opt/tak/data/certs/files/{username}.pem", "--disable"],
@@ -262,6 +270,8 @@ async def disable_user(body: UsernameRequest, db: AsyncSession = Depends(get_db)
 @router.delete("/{username}")
 async def delete_user(username: str, db: AsyncSession = Depends(get_db), actor=Depends(_admin)):
     username = _validate_username(username)
+    if _is_always_enabled(username):
+        raise HTTPException(status_code=409, detail="efdi-bridge is an always-on integration and cannot be deleted")
     code, out = await run_in_container(
         ["bash", "/opt/scripts/delete_user.sh"],
         env={"USER_CERT_NAME": username},

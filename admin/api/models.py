@@ -1,7 +1,7 @@
 import uuid
 from datetime import UTC, datetime
 
-from sqlalchemy import Boolean, DateTime, ForeignKey, Index, String, Text
+from sqlalchemy import Boolean, DateTime, ForeignKey, Index, Integer, String, Text
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -91,3 +91,26 @@ class ReplaySettings(Base):
     min_free_disk_mb: Mapped[int] = mapped_column(default=1024)
     chunk_minutes: Mapped[int] = mapped_column(default=15)
     service_cert_ready: Mapped[bool] = mapped_column(Boolean, default=False)
+
+
+class BasemapDistribution(Base):
+    __tablename__ = "basemap_distributions"
+
+    id: Mapped[str] = mapped_column(UUID(as_uuid=False), primary_key=True, default=_uuid)
+    request_id: Mapped[str] = mapped_column(String(64), unique=True, nullable=False)
+    mission_name: Mapped[str | None] = mapped_column(String(160), nullable=True)
+    status: Mapped[str] = mapped_column(String(24), nullable=False, default="pending")
+    item_ids: Mapped[str] = mapped_column(Text, nullable=False)
+    recipient_uids: Mapped[str] = mapped_column(Text, nullable=False)
+    recipient_names: Mapped[str] = mapped_column(Text, nullable=False, default="[]")
+    layer_count: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    overlay_opacity: Mapped[int] = mapped_column(Integer, nullable=False, default=70)
+    accepted_count: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    error: Mapped[str | None] = mapped_column(Text, nullable=True)
+    created_by: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(UTC))
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        default=lambda: datetime.now(UTC),
+        onupdate=lambda: datetime.now(UTC),
+    )

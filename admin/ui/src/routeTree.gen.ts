@@ -20,6 +20,7 @@ import { Route as LoginRouteImport } from './routes/login'
 import { Route as LiveMapRouteImport } from './routes/live-map'
 import { Route as CertificatesRouteImport } from './routes/certificates'
 import { Route as BrandingRouteImport } from './routes/branding'
+import { Route as BasemapsRouteImport } from './routes/basemaps'
 import { Route as AuditLogRouteImport } from './routes/audit-log'
 import { Route as AdminUsersRouteImport } from './routes/admin-users'
 import { Route as IndexRouteImport } from './routes/index'
@@ -79,6 +80,11 @@ const BrandingRoute = BrandingRouteImport.update({
   path: '/branding',
   getParentRoute: () => rootRouteImport,
 } as any)
+const BasemapsRoute = BasemapsRouteImport.update({
+  id: '/basemaps',
+  path: '/basemaps',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AuditLogRoute = AuditLogRouteImport.update({
   id: '/audit-log',
   path: '/audit-log',
@@ -99,6 +105,7 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/admin-users': typeof AdminUsersRoute
   '/audit-log': typeof AuditLogRoute
+  '/basemaps': typeof BasemapsRoute
   '/branding': typeof BrandingRoute
   '/certificates': typeof CertificatesRoute
   '/live-map': typeof LiveMapRoute
@@ -115,6 +122,7 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/admin-users': typeof AdminUsersRoute
   '/audit-log': typeof AuditLogRoute
+  '/basemaps': typeof BasemapsRoute
   '/branding': typeof BrandingRoute
   '/certificates': typeof CertificatesRoute
   '/live-map': typeof LiveMapRoute
@@ -132,6 +140,7 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/admin-users': typeof AdminUsersRoute
   '/audit-log': typeof AuditLogRoute
+  '/basemaps': typeof BasemapsRoute
   '/branding': typeof BrandingRoute
   '/certificates': typeof CertificatesRoute
   '/live-map': typeof LiveMapRoute
@@ -150,6 +159,7 @@ export interface FileRouteTypes {
     | '/'
     | '/admin-users'
     | '/audit-log'
+    | '/basemaps'
     | '/branding'
     | '/certificates'
     | '/live-map'
@@ -166,6 +176,7 @@ export interface FileRouteTypes {
     | '/'
     | '/admin-users'
     | '/audit-log'
+    | '/basemaps'
     | '/branding'
     | '/certificates'
     | '/live-map'
@@ -182,6 +193,7 @@ export interface FileRouteTypes {
     | '/'
     | '/admin-users'
     | '/audit-log'
+    | '/basemaps'
     | '/branding'
     | '/certificates'
     | '/live-map'
@@ -199,6 +211,7 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AdminUsersRoute: typeof AdminUsersRoute
   AuditLogRoute: typeof AuditLogRoute
+  BasemapsRoute: typeof BasemapsRoute
   BrandingRoute: typeof BrandingRoute
   CertificatesRoute: typeof CertificatesRoute
   LiveMapRoute: typeof LiveMapRoute
@@ -291,6 +304,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof BrandingRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/basemaps': {
+      id: '/basemaps'
+      path: '/basemaps'
+      fullPath: '/basemaps'
+      preLoaderRoute: typeof BasemapsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/audit-log': {
       id: '/audit-log'
       path: '/audit-log'
@@ -319,6 +339,7 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AdminUsersRoute: AdminUsersRoute,
   AuditLogRoute: AuditLogRoute,
+  BasemapsRoute: BasemapsRoute,
   BrandingRoute: BrandingRoute,
   CertificatesRoute: CertificatesRoute,
   LiveMapRoute: LiveMapRoute,

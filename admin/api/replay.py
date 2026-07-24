@@ -20,6 +20,7 @@ CHUNK_DIR = "/opt/tak/data/replay"
 CERT_DIR = "/opt/tak/data/certs/files"
 SERVICE_CERT_NAME = "replay-Service"
 SERVER_ADDR = "takserver_config"
+TAK_USER_GROUP = os.environ.get("TAK_USER_GROUP", "TAK-USERS")
 _VALID_SPEEDS = {1, 2, 5, 10}
 
 _recorder = ReplayRecorder(CHUNK_DIR, SERVER_ADDR)
@@ -40,6 +41,15 @@ async def _get_or_create_settings(db: AsyncSession) -> ReplaySettings:
         await db.commit()
         await db.refresh(settings)
     return settings
+
+
+async def ensure_service_cert_authorized() -> None:
+    code, out = await run_in_container(
+        ["bash", "/opt/scripts/enable_user.sh"],
+        env={"USER_CERT_NAME": SERVICE_CERT_NAME, "TAK_USER_GROUP": TAK_USER_GROUP},
+    )
+    if code != 0:
+        raise HTTPException(status_code=502, detail=f"Service certificate authorization failed: {out}")
 
 
 class ReplaySettingsRequest(BaseModel):
@@ -117,15 +127,22 @@ async def delete_chunk(chunk_id: str, db: AsyncSession = Depends(get_db), actor=
 @router.post("/setup")
 async def setup_service_cert(db: AsyncSession = Depends(get_db), actor=Depends(_superadmin)):
     settings = await _get_or_create_settings(db)
-    if settings.service_cert_ready:
-        return {"status": "already_ready"}
+    already_ready = settings.service_cert_ready
+    if not already_ready:
+        code, out = await run_in_container(
+            ["bash", "/opt/scripts/gen_client_cert.sh"],
+            env={"CLIENT_CERT_NAME": SERVICE_CERT_NAME},
+        )
+        if code != 0:
+            raise HTTPException(status_code=502, detail=f"Certificate generation failed: {out}")
 
-    code, out = await run_in_container(
-        ["bash", "/opt/scripts/gen_client_cert.sh"],
-        env={"CLIENT_CERT_NAME": SERVICE_CERT_NAME},
-    )
-    if code != 0:
-        raise HTTPException(status_code=502, detail=f"Certificate generation failed: {out}")
+    # Older installations generated this certificate but never assigned it
+    # to the TAK routing group, so the live map connected without receiving
+    # any CoT traffic. This is safe to repeat and repairs those installs.
+    await ensure_service_cert_authorized()
+
+    if already_ready:
+        return {"status": "already_ready"}
 
     settings.service_cert_ready = True
     await db.commit()

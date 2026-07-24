@@ -2,7 +2,7 @@ import pytest
 from fastapi import HTTPException
 
 from api import users as users_module
-from api.users import _validate_new_username, _validate_username
+from api.users import _is_always_enabled, _validate_new_username, _validate_username
 
 # --- Pure validation logic — no docker/network involved. ------------------
 
@@ -43,6 +43,17 @@ def test_base_callsign_strips_known_suffixes():
     assert users_module._base_callsign("alpha1-WinTAK") == "alpha1"
     assert users_module._base_callsign("alpha1-iTAK") == "alpha1"
     assert users_module._base_callsign("alpha1") == "alpha1"
+
+
+@pytest.mark.parametrize("username", [
+    "efdi-bridge", "efdi-bridge-ATAK", "efdi-bridge-WinTAK", "efdi-bridge-iTAK", "efdi-bridge-Service",
+])
+def test_efdi_bridge_is_always_enabled(username):
+    assert _is_always_enabled(username) is True
+
+
+def test_other_users_are_not_always_enabled():
+    assert _is_always_enabled("alpha1-ATAK") is False
 
 
 # --- Routes that shell out to the TAK server container — docker mocked. ---
@@ -144,10 +155,22 @@ async def test_disable_user(admin_client, mock_container):
     assert resp.status_code == 200
 
 
+async def test_disable_efdi_bridge_is_rejected(admin_client, mock_container):
+    resp = await admin_client.post("/api/users/disable", json={"username": "efdi-bridge-Service"})
+    assert resp.status_code == 409
+    assert mock_container.calls == []
+
+
 async def test_delete_user_route(admin_client, mock_container):
     mock_container.set(0, "")
     resp = await admin_client.delete("/api/users/alpha1-ATAK")
     assert resp.status_code == 200
+
+
+async def test_delete_efdi_bridge_is_rejected(admin_client, mock_container):
+    resp = await admin_client.delete("/api/users/efdi-bridge-ATAK")
+    assert resp.status_code == 409
+    assert mock_container.calls == []
 
 
 async def test_delete_user_route_rejects_invalid_username(admin_client, mock_container):

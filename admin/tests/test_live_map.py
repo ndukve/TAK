@@ -1,3 +1,5 @@
+from pathlib import Path
+
 import pytest
 
 from api import live_map as live_map_module
@@ -10,6 +12,14 @@ def test_affiliation_maps_known_codes():
     assert _affiliation("a-h-G") == "hostile"
     assert _affiliation("a-n-G") == "neutral"
     assert _affiliation("a-u-G") == "unknown"
+
+
+def test_proxy_csp_allows_live_map_tiles():
+    repo_root = Path(__file__).resolve().parents[2]
+    widget = (repo_root / "admin/ui/src/components/LiveMapWidget.tsx").read_text()
+    nginx = (repo_root / "admin/nginx/nginx.conf").read_text()
+    assert "basemaps.cartocdn.com" in widget
+    assert "https://*.basemaps.cartocdn.com" in nginx
 
 
 def test_affiliation_unknown_for_non_atom_types():
@@ -120,7 +130,14 @@ def mock_cot_connection(monkeypatch, tmp_path):
     (tmp_path / f"{live_map_module.SERVICE_CERT_NAME}.key").write_text("fake-key")
 
 
-async def test_start_tracking_picks_up_contacts(superadmin_client, mock_cot_connection, session_factory):
+async def test_start_tracking_picks_up_contacts(superadmin_client, mock_cot_connection, session_factory, monkeypatch):
+    authorized = False
+
+    async def _authorize():
+        nonlocal authorized
+        authorized = True
+
+    monkeypatch.setattr(live_map_module, "ensure_service_cert_authorized", _authorize)
     async with session_factory() as session:
         session.add(ReplaySettings(id="singleton", service_cert_ready=True))
         await session.commit()
@@ -128,6 +145,7 @@ async def test_start_tracking_picks_up_contacts(superadmin_client, mock_cot_conn
     resp = await superadmin_client.post("/api/live-map/start")
     assert resp.status_code == 200
     assert resp.json()["status"] == "ok"
+    assert authorized is True
 
     # give the background track loop a tick to consume the fake event
     import asyncio

@@ -11,7 +11,7 @@ import { useNotifications } from '@/store/notifications'
 import { PasswordInput } from '@/components/PasswordInput'
 import {
   LayoutDashboard, Users, Package, Puzzle, Map,
-  ScrollText, Terminal, ShieldUser, LogOut, History, Settings, Sun, Moon, Bell, Radio, Satellite, ShieldCheck
+  ScrollText, Terminal, ShieldUser, LogOut, History, Settings, Sun, Moon, Bell, Radio, Satellite, ShieldCheck, CloudRain
 } from 'lucide-react'
 
 // Three-bar icon that morphs into an X on open — plain CSS transitions on
@@ -54,6 +54,7 @@ const fieldItems = [
 ]
 
 const superAdminItems = [
+  { to: '/basemaps', label: 'Basemaps', icon: CloudRain },
   { to: '/users', label: 'Users', icon: Users },
   { to: '/admin-users', label: 'Admin Users', icon: ShieldUser },
   { to: '/certificates', label: 'Certificates', icon: ShieldCheck },

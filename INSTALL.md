@@ -190,6 +190,20 @@ The server entry will appear automatically. Tap **Connect**.
 2. Tap any `.xml` to download
 3. ATAK/WinTAK → hamburger → **Import Manager** → select the file
 
+Superadmins can also open **Basemaps** to select ESRI weather composites, GOES imagery, NASA IMERG, NOAA/RainViewer radar, standalone basemaps, uploaded ATAK XML sources, or server-built offline MBTiles areas and push them to selected clients currently connected to TAK Server. The server sends an invite-only mission containing the selected map layers; accept the mission invitation on the EUD.
+
+Built-in near-live sources are fetched through the signed TAK tile gateway at `https://<SERVER_IP>:8889`, cached on the server, and presented to ATAK as standard `MapTile` layers. The EUD therefore needs network access to the TAK server, but does not need direct internet access to every upstream weather or imagery provider. `TAK_SERVER_ADDRESS` must be the IP or hostname that EUDs actually use; the Basemaps page warns if the proxy is accidentally configured as `localhost`.
+
+The Basemaps page also provides upstream health checks, overlay opacity and ordering, connected-client group selection, persistent delivery history, acceptance counts, resend/delete controls, old-mission cleanup, custom-source removal, and bounded AOI-to-MBTiles generation. Provider availability and licensing remain the operator's responsibility; use organization-approved XML sources where a provider requires credentials or contractual attribution.
+
+After deploying or changing the server address, run the TLS-validated smoke test from the repository directory:
+
+```bash
+./scripts/basemap_smoke_test.sh https://<SERVER_IP>:8889 <SUPERADMIN_USERNAME>
+```
+
+It prompts for the password without echoing it, runs the server-side diagnostics, then downloads one signed proxy tile while validating the admin proxy against the TAK root CA. After it passes, push a small basemap to one connected EUD, accept the mission invitation in DataSync/ATAK, and use **Refresh acceptance** in distribution history to confirm that client subscription.
+
 ---
 
 ## Client Plugins

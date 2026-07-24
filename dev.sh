@@ -53,7 +53,7 @@ cmd_up() {
 POSTGRES_ADDRESS=localhost
 POSTGRES_USER=$PG_USER
 POSTGRES_PASSWORD=$PG_PASSWORD
-ADMIN_SECRET_KEY=dev-only-not-for-production-use
+ADMIN_SECRET_KEY=dev-only-not-for-production-use-123456789
 ADMIN_FIRST_USER=admin
 ADMIN_FIRST_PASS=devpass123
 ADMIN_HIBP_CHECK=0

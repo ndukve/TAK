@@ -1,8 +1,10 @@
 import hashlib
+import json
 import os
 
 import aiofiles
-from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile
+from fastapi import APIRouter, Depends, File, Form, HTTPException, Request, UploadFile
+from pydantic import BaseModel
 from sqlalchemy.ext.asyncio import AsyncSession
 from starlette.responses import FileResponse
 
@@ -193,7 +195,44 @@ async def delete_plugin(filename: str, db: AsyncSession = Depends(get_db), actor
 
 
 MAX_MBTILES_BYTES = 6 * 1024 * 1024 * 1024  # 6 GB — offline tile packages run far larger than XML pointers
+MAX_MAP_CHUNK_BYTES = 8 * 1024 * 1024
 _MAP_EXTENSIONS = (".xml", ".mbtiles")
+
+
+class MapUploadInit(BaseModel):
+    provider: str
+    filename: str
+    total_size: int
+    fingerprint: str
+
+
+def _map_upload_paths(provider: str, filename: str, total_size: int) -> tuple[str, str, str]:
+    if not filename.endswith(_MAP_EXTENSIONS):
+        raise HTTPException(status_code=400, detail="Only .xml or .mbtiles files allowed")
+    if not provider.replace("-", "").replace("_", "").isalnum():
+        raise HTTPException(status_code=400, detail="Provider name must be alphanumeric")
+    max_bytes = MAX_MBTILES_BYTES if filename.endswith(".mbtiles") else MAX_UPLOAD_BYTES
+    if total_size < 1 or total_size > max_bytes:
+        raise HTTPException(status_code=413, detail=f"File too large (max {max_bytes // (1024**2)} MB)")
+    safe_filename = os.path.basename(filename)
+    if safe_filename != filename:
+        raise HTTPException(status_code=400, detail="Invalid filename")
+    dest_dir = os.path.join(MAPS_DIR, provider)
+    dest = os.path.join(dest_dir, safe_filename)
+    return dest, dest + ".upload", dest + ".upload.json"
+
+
+def _read_upload_metadata(path: str) -> dict | None:
+    try:
+        with open(path) as f:
+            return json.load(f)
+    except (OSError, ValueError):
+        return None
+
+
+def _write_upload_metadata(path: str, metadata: dict) -> None:
+    with open(path, "w") as f:
+        json.dump(metadata, f)
 
 
 @router.get("/api/maps")
@@ -209,6 +248,100 @@ async def list_maps(_=Depends(_admin_or_field)):
                 kind = "mbtiles" if fname.endswith(".mbtiles") else "xml"
                 result.append({"provider": provider, "filename": fname, "kind": kind, "size": _size(fpath), "sha256": _sha256_stored(fpath)})
     return {"maps": result}
+
+
+@router.post("/api/maps/uploads")
+async def initialize_map_upload(body: MapUploadInit, _=Depends(_admin)):
+    if not body.fingerprint or len(body.fingerprint) > 200:
+        raise HTTPException(status_code=400, detail="Invalid upload fingerprint")
+    dest, partial, metadata_path = _map_upload_paths(body.provider, body.filename, body.total_size)
+    os.makedirs(os.path.dirname(dest), exist_ok=True)
+    metadata = _read_upload_metadata(metadata_path)
+    matches = bool(
+        metadata
+        and metadata.get("total_size") == body.total_size
+        and metadata.get("fingerprint") == body.fingerprint
+    )
+    if matches and metadata.get("complete") and os.path.isfile(dest) and os.path.getsize(dest) == body.total_size:
+        return {"offset": body.total_size, "complete": True, "sha256": _sha256_stored(dest)}
+    if not matches:
+        for path in (partial, metadata_path):
+            try:
+                os.remove(path)
+            except FileNotFoundError:
+                pass
+        with open(partial, "wb"):
+            pass
+        metadata = {"total_size": body.total_size, "fingerprint": body.fingerprint, "complete": False}
+        _write_upload_metadata(metadata_path, metadata)
+    elif not os.path.isfile(partial):
+        with open(partial, "wb"):
+            pass
+
+    offset = min(os.path.getsize(partial), body.total_size)
+    if os.path.getsize(partial) != offset:
+        with open(partial, "r+b") as f:
+            f.truncate(offset)
+    return {"offset": offset, "complete": False}
+
+
+@router.put("/api/maps/uploads/{provider}/{filename}")
+async def upload_map_chunk(
+    provider: str,
+    filename: str,
+    offset: int,
+    total_size: int,
+    fingerprint: str,
+    request: Request,
+    db: AsyncSession = Depends(get_db),
+    actor=Depends(_admin),
+):
+    dest, partial, metadata_path = _map_upload_paths(provider, filename, total_size)
+    metadata = _read_upload_metadata(metadata_path)
+    if not metadata or metadata.get("fingerprint") != fingerprint or metadata.get("total_size") != total_size:
+        raise HTTPException(status_code=409, detail="Upload session changed; initialize it again")
+    current_offset = os.path.getsize(partial) if os.path.isfile(partial) else 0
+    if offset != current_offset:
+        raise HTTPException(status_code=409, detail=f"Resume from byte {current_offset}")
+
+    received = 0
+    try:
+        async with aiofiles.open(partial, "ab") as f:
+            async for chunk in request.stream():
+                received += len(chunk)
+                if received > MAX_MAP_CHUNK_BYTES or offset + received > total_size:
+                    raise HTTPException(status_code=413, detail="Upload chunk is too large")
+                await f.write(chunk)
+    except HTTPException:
+        with open(partial, "r+b") as f:
+            f.truncate(offset)
+        raise
+    if received == 0:
+        raise HTTPException(status_code=400, detail="Upload chunk is empty")
+
+    new_offset = offset + received
+    if new_offset < total_size:
+        return {"offset": new_offset, "complete": False}
+
+    digest = hashlib.sha256()
+    async with aiofiles.open(partial, "rb") as f:
+        while chunk := await f.read(MAX_MAP_CHUNK_BYTES):
+            digest.update(chunk)
+    sha256 = digest.hexdigest()
+    os.replace(partial, dest)
+    with open(dest + ".sha256", "w") as f:
+        f.write(sha256)
+    metadata["complete"] = True
+    _write_upload_metadata(metadata_path, metadata)
+    await write_audit(db, actor.id, "upload_map", f"{provider}/{filename}")
+    return {
+        "offset": new_offset,
+        "complete": True,
+        "provider": provider,
+        "filename": filename,
+        "size": _size(dest),
+        "sha256": sha256,
+    }
 
 
 @router.get("/api/maps/{provider}/{filename}/download")
@@ -264,4 +397,9 @@ async def delete_map(provider: str, filename: str, db: AsyncSession = Depends(ge
     if not os.path.isfile(path):
         raise HTTPException(status_code=404, detail="Map not found")
     os.remove(path)
+    for sidecar in (path + ".sha256", path + ".upload", path + ".upload.json"):
+        try:
+            os.remove(sidecar)
+        except FileNotFoundError:
+            pass
     await write_audit(db, actor.id, "delete_map", f"{safe_provider}/{safe_filename}")

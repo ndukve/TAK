@@ -10,7 +10,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from .db import get_db
 from .deps import require_role
 from .models import ReplaySettings
-from .replay import CERT_DIR, SERVER_ADDR, SERVICE_CERT_NAME
+from .replay import CERT_DIR, SERVER_ADDR, SERVICE_CERT_NAME, ensure_service_cert_authorized
 from .replay_recorder import _open_cot_connection
 
 router = APIRouter(prefix="/api/live-map", tags=["live-map"])
@@ -159,11 +159,15 @@ async def start_tracking(db: AsyncSession = Depends(get_db), _=Depends(_superadm
     if _tracker.is_tracking():
         return {"status": "already_tracking"}
 
-    with open(f"{CERT_DIR}/{SERVICE_CERT_NAME}.certpass") as f:
-        key_password = f.read().strip()
-    cert_path = f"{CERT_DIR}/{SERVICE_CERT_NAME}.pem"
-    key_path = f"{CERT_DIR}/{SERVICE_CERT_NAME}.key"
-    await _tracker.start(cert_path, key_path, key_password)
+    await ensure_service_cert_authorized()
+    try:
+        with open(f"{CERT_DIR}/{SERVICE_CERT_NAME}.certpass") as f:
+            key_password = f.read().strip()
+        cert_path = f"{CERT_DIR}/{SERVICE_CERT_NAME}.pem"
+        key_path = f"{CERT_DIR}/{SERVICE_CERT_NAME}.key"
+        await _tracker.start(cert_path, key_path, key_password)
+    except Exception as exc:
+        raise HTTPException(status_code=502, detail=f"Unable to connect to the TAK CoT service: {exc}") from exc
     return {"status": "ok"}
 
 

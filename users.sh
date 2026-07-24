@@ -96,7 +96,8 @@ cmd_repair_groups() {
 
     local USERNAME COUNT=0
     while IFS= read -r USERNAME; do
-        [[ "$USERNAME" =~ $_NAME_RE ]] || { warn "Skipping unexpected package name: $USERNAME"; continue; }
+        [[ "$USERNAME" =~ $_NAME_RE || "$USERNAME" = "efdi-bridge" ]] \
+            || { warn "Skipping unexpected package name: $USERNAME"; continue; }
         run_spin "Assigning $USERNAME to $TAK_USER_GROUP" "Assigned $USERNAME" \
             $DC --env-file "$ENV_FILE" exec -T \
                 -e USER_CERT_NAME="$USERNAME" \
@@ -113,6 +114,11 @@ cmd_purge() {
     local NAME="${1:-}"
     [ -n "$NAME" ] || fail "Usage: $0 purge <name>"
     [[ "$NAME" =~ ^[a-zA-Z0-9_-]+$ ]] || fail "Name must be alphanumeric (hyphens/underscores allowed) — got: $NAME"
+    case "$NAME" in
+        efdi-bridge|efdi-bridge-ATAK|efdi-bridge-WinTAK|efdi-bridge-iTAK|efdi-bridge-Service)
+            fail "efdi-bridge is an always-on integration and cannot be purged"
+            ;;
+    esac
 
     local CR=/opt/tak/data/certs
     local FILES=(

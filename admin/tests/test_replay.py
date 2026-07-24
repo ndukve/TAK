@@ -10,14 +10,19 @@ from api.models import ReplayChunk
 def mock_container(monkeypatch):
     """Patches api.replay.run_in_container. Call .set(code, out) to control
     what the next (and all subsequent, until changed) invocations return."""
-    state = {"code": 0, "out": ""}
+    state = {"code": 0, "out": "", "calls": []}
 
     async def _fake_run_in_container(cmd, env=None, workdir=None):
+        state["calls"].append({"cmd": cmd, "env": env, "workdir": workdir})
         return state["code"], state["out"]
 
     monkeypatch.setattr(replay_module, "run_in_container", _fake_run_in_container)
 
     class Controller:
+        @property
+        def calls(self):
+            return state["calls"]
+
         def set(self, code, out):
             state["code"] = code
             state["out"] = out
@@ -97,6 +102,18 @@ async def test_setup_generates_cert_and_marks_ready(superadmin_client, mock_cont
 
     status = await superadmin_client.get("/api/replay/status")
     assert status.json()["service_cert_ready"] is True
+    assert mock_container.calls == [
+        {
+            "cmd": ["bash", "/opt/scripts/gen_client_cert.sh"],
+            "env": {"CLIENT_CERT_NAME": "replay-Service"},
+            "workdir": None,
+        },
+        {
+            "cmd": ["bash", "/opt/scripts/enable_user.sh"],
+            "env": {"USER_CERT_NAME": "replay-Service", "TAK_USER_GROUP": "TAK-USERS"},
+            "workdir": None,
+        },
+    ]
 
 
 async def test_setup_is_idempotent(superadmin_client, mock_container):
@@ -107,6 +124,7 @@ async def test_setup_is_idempotent(superadmin_client, mock_container):
     second = await superadmin_client.post("/api/replay/setup")
     assert second.status_code == 200
     assert second.json()["status"] == "already_ready"
+    assert mock_container.calls[-1]["cmd"] == ["bash", "/opt/scripts/enable_user.sh"]
 
 
 async def test_setup_propagates_container_failure(superadmin_client, mock_container):

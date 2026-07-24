@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import L from 'leaflet'
 import 'leaflet/dist/leaflet.css'
-import { apiJson, apiFetch, errorMessage } from '@/lib/api'
+import { apiJson, errorMessage } from '@/lib/api'
 import { useAuth } from '@/store/auth'
 import { notify } from '@/lib/notify'
 import { renderCotSymbol } from '@/lib/cotSymbol'
@@ -150,8 +150,7 @@ export function LiveMapWidget({ height, showControls = false, pollMs = 5000 }: L
   async function handleSetup() {
     setBusy(true)
     try {
-      const res = await apiFetch('/api/replay/setup', { method: 'POST' })
-      if (!res.ok) throw new Error((await res.json()).detail ?? 'Setup failed')
+      await apiJson('/api/replay/setup', { method: 'POST' })
       notify.success('Service certificate ready')
       await loadStatus()
     } catch (e) {
@@ -164,8 +163,7 @@ export function LiveMapWidget({ height, showControls = false, pollMs = 5000 }: L
   async function handleStart() {
     setBusy(true)
     try {
-      const res = await apiFetch('/api/live-map/start', { method: 'POST' })
-      if (!res.ok) throw new Error((await res.json()).detail ?? 'Failed to start')
+      await apiJson('/api/live-map/start', { method: 'POST' })
       notify.success('Live tracking started')
       await loadStatus()
     } catch (e) {
@@ -178,7 +176,7 @@ export function LiveMapWidget({ height, showControls = false, pollMs = 5000 }: L
   async function handleStop() {
     setBusy(true)
     try {
-      await apiFetch('/api/live-map/stop', { method: 'POST' })
+      await apiJson('/api/live-map/stop', { method: 'POST' })
       notify.success('Live tracking stopped')
       for (const marker of markersRef.current.values()) marker.remove()
       markersRef.current.clear()

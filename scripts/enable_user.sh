@@ -18,6 +18,9 @@ TAK_USER_GROUP=${TAK_USER_GROUP:-TAK-USERS}
 cd ${TR}
 . ./setenv.sh
 
+info "Waiting for TAK server"
+/usr/bin/wait-for-it.sh localhost:8089 --strict --timeout=60 -- true
+
 info "Authorizing ${USER_CERT_NAME} in ${TAK_USER_GROUP} (IN + OUT)"
 TAKCL_CORECONFIG_PATH="${CONFIG}" java -jar /opt/tak/utils/UserManager.jar \
     certmod -g "${TAK_USER_GROUP}" "/opt/tak/data/certs/files/${USER_CERT_NAME}.pem"

@@ -1,20 +1,10 @@
-release: v1.0.7 — harden authentication, deployment, and TAK routing
+release: v1.0.8 — add TAK basemap distribution and resilient map operations
 
-- add optional OIDC login with issuer/subject identity binding, fail-closed group mapping, safe JIT provisioning, and SSO-aware UI behavior
-- revoke privileged sessions on credential and account changes, atomically rotate refresh tokens, replace WebSocket JWT queries with one-time tickets, and cap shell sessions
-- route Docker access through an allowlisted socket proxy and restrict exec creation to takserver_config
-- lock and upgrade vulnerable Python and Vite dependencies, add hash-verified installs, security audits, secret scanning, and full CI build validation
-- remove default ISO credentials, disable SSH password auth, checksum offline artifacts, bundle every required image, and erase bootstrap passwords after first use
-- scope service secrets, harden the admin container and nginx security headers, verify internal TAK TLS, and preserve local changes during updates
-- run long-lived project containers as non-root, migrate existing volume ownership with networkless one-shot helpers, and grant the socket proxy only Docker's numeric group
-- replace the vulnerable gomplate binary with a fail-closed stdlib renderer and remove unused development-heavy runtime packages
-- isolate TAK archive extraction from runtime image history, reducing the image from 4.55 GB to 2.11 GB
-- move the admin runtime to a smaller Alpine base and upgrade Alpine packages during image builds
-- refresh the supported-release security policy and remove the obsolete Passlib bcrypt wrapper while preserving existing password hashes
-- assign client and service certificates to TAK-USERS, route the legacy CoT input into that group, and add a repair-groups command for existing client packages
-- add certificate status, responsive dashboard and table refinements, dark-mode polish, improved shell rendering, and accessible password visibility controls
-- add OIDC, session-security, certificate-group, Compose, container ACL, dependency-lock, image, and secret-scanning validation
-- upgrade CI and UI builds to Node.js 24 LTS and pnpm 11 so audits use npm's supported bulk-advisory endpoint
-- reduce TAK build disk pressure and fail updates early when Docker storage is too full
-- cap and rotate Docker logs so long-running services cannot exhaust host storage
-- explicitly allow only esbuild's required native install script under pnpm 11
+- add a basemap gateway for cataloging, proxying, caching, previewing, and distributing online and offline map layers to connected TAK clients
+- publish selected basemaps through TAK Server mission APIs with recipient targeting, delivery history, resend, cleanup, and service-certificate management
+- add bounded AOI downloads that generate offline MBTiles packages with validation, storage limits, progress reporting, and smoke-test coverage
+- fix the admin live map by allowing its CARTO tile source, repairing service-certificate routing membership, and returning readable connection failures
+- add chunked map uploads with visible progress, pause and resume controls, persisted server offsets, atomic finalization, and SHA-256 verification
+- keep efdi-bridge certificates permanently enabled with TAK-USERS IN + OUT routing access and repair their assignment during updates
+- protect always-on EFDI bridge identities from disable, delete, and purge operations while identifying them clearly in the admin UI
+- update deployment settings, volume preparation, documentation, and automated tests for the new basemap and map-transfer workflows
