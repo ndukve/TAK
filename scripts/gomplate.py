@@ -15,13 +15,27 @@ import re
 import sys
 import unicodedata
 from pathlib import Path
+from xml.sax.saxutils import escape as _xml_escape
 
 
 ENV_NAME = r"[A-Za-z_][A-Za-z0-9_]*"
 
+# Every template this renders is XML (element text or double-quoted
+# attributes) — values substituted directly into the document must be
+# escaped so one containing &, <, >, or " (e.g. an org/server name with an
+# ampersand) can't produce malformed XML that TAK/ATAK then silently fails
+# to parse. Slug output is exempt: it's reduced to [a-z0-9-] by _slug()
+# itself, which needs the RAW value (its own "&"->"and" handling has to see
+# a literal "&", not an already-escaped "&amp;").
+_XML_ATTR_ENTITIES = {'"': "&quot;", "'": "&apos;"}
+
 
 def _value(name: str, default: str = "") -> str:
     return os.environ.get(name) or default
+
+
+def _esc(value: str) -> str:
+    return _xml_escape(value, _XML_ATTR_ENTITIES)
 
 
 def _slug(value: str) -> str:
@@ -53,13 +67,13 @@ def render(template: str) -> str:
     with_default = re.compile(
         rf'{{{{\s*\.Env\.({ENV_NAME})\s*\|\s*default\s+"([^"]*)"\s*}}}}'
     )
-    template = with_default.sub(lambda m: _value(m.group(1), m.group(2)), template)
+    template = with_default.sub(lambda m: _esc(_value(m.group(1), m.group(2))), template)
 
     getenv = re.compile(rf'{{{{\s*getenv\s+"({ENV_NAME})"\s+"([^"]*)"\s*}}}}')
-    template = getenv.sub(lambda m: _value(m.group(1), m.group(2)), template)
+    template = getenv.sub(lambda m: _esc(_value(m.group(1), m.group(2))), template)
 
     env = re.compile(rf"{{{{\s*\.Env\.({ENV_NAME})\s*}}}}")
-    template = env.sub(lambda m: _value(m.group(1)), template)
+    template = env.sub(lambda m: _esc(_value(m.group(1))), template)
 
     if "{{" in template or "}}" in template:
         raise ValueError("unsupported template expression")
