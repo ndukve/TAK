@@ -25,6 +25,10 @@ TAK_USER_GROUP = os.environ.get("TAK_USER_GROUP", "TAK-USERS")
 
 _USERNAME_RE = re.compile(r'^[A-Za-z0-9_-]+$')
 _NEW_USERNAME_RE = re.compile(r'^[A-Za-z0-9_-]+-(ATAK|WinTAK|iTAK|Service)$')
+# Same suffix set minus Service — used to classify TAK-client packages
+# (Users table) vs. service accounts (Service Accounts table). Keep in sync
+# with _NEW_USERNAME_RE's alternation, less "Service".
+_CLIENT_USERNAME_RE = re.compile(r'^[A-Za-z0-9_-]+-(ATAK|WinTAK|iTAK)$')
 _ALWAYS_ENABLED_BASE_CALLSIGNS = {"efdi-bridge"}
 
 
@@ -124,7 +128,7 @@ async def list_users(db: AsyncSession = Depends(get_db), _=Depends(_admin)):
             "field_username": field_logins.get(_base_callsign(z), _base_callsign(z)),
             "base_callsign": _base_callsign(z),
             "cert_days_remaining": _cert_days_remaining(z),
-            "is_client": bool(_NEW_USERNAME_RE.fullmatch(z)),
+            "is_client": bool(_CLIENT_USERNAME_RE.fullmatch(z)),
             "always_enabled": _is_always_enabled(z),
         }
         for z in zips
