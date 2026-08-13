@@ -183,6 +183,16 @@ else
     case "$_VPN_ACTION" in
         netbird)
             wt_password VPN_KEY "NetBird" "NetBird setup key (app.netbird.io → Keys):"
+            # Reaching this branch means neither wt0 nor tailscale0 had an IP
+            # (checked above), so any NetBird package already on the box is a
+            # stale/broken leftover, not a live tunnel — safe to purge before
+            # the vendor installer runs, which otherwise refuses with
+            # "NetBird seems to be installed already".
+            if command -v netbird >/dev/null 2>&1 || dpkg -l netbird 2>/dev/null | grep -q '^ii'; then
+                run_with_gauge "NetBird" "Removing stale NetBird install..." -- bash -c \
+                    "netbird down 2>/dev/null; apt purge -y netbird 2>/dev/null; rm -rf /etc/netbird /var/lib/netbird" \
+                    || fail "Could not remove the existing NetBird install (see output above)."
+            fi
             # Official vendor installer, same accepted trust model as the
             # Docker install above — see comment there.
             run_with_gauge "NetBird" "Installing NetBird..." -- bash -c \
