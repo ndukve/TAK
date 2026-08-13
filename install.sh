@@ -182,7 +182,9 @@ else
 
     case "$_VPN_ACTION" in
         netbird)
-            wt_password VPN_KEY "NetBird" "NetBird setup key (app.netbird.io → Keys):"
+            # Plaintext, not masked — lets you visually compare against
+            # app.netbird.io while typing/pasting.
+            wt_input_required VPN_KEY "NetBird" "NetBird setup key (app.netbird.io → Keys):"
             # Reaching this branch means neither wt0 nor tailscale0 had an IP
             # (checked above), so any NetBird package already on the box is a
             # stale/broken leftover, not a live tunnel — safe to purge before
