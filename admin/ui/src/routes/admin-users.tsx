@@ -53,31 +53,31 @@ function NewAdminModal({ onClose, onCreated }: { onClose: () => void; onCreated:
 
   return (
     <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50">
-      <div className="bg-white dark:bg-[#0c0c0e] border border-zinc-200 dark:border-white/10 rounded-md p-6 w-full max-w-sm">
+      <div className="hud-glass border border-zinc-200 dark:border-white/10 rounded-none p-6 w-full max-w-sm">
         <h2 className="text-lg font-semibold mb-4">New Admin User</h2>
         <form onSubmit={handleSubmit} className="space-y-3">
           <div className="space-y-1">
             <label className="text-sm text-zinc-700 dark:text-zinc-300">Username</label>
             <input type="text" value={username} onChange={e => setUsername(e.target.value)} required
-              className="w-full px-3 py-2 rounded-md bg-zinc-200 dark:bg-[#141416] border border-zinc-300 dark:border-white/10 text-zinc-900 dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-accent-ring" />
+              className="w-full px-3 py-2 rounded-none bg-zinc-200 dark:bg-[#141416] border border-zinc-300 dark:border-white/10 text-zinc-900 dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-accent-ring" />
           </div>
           <div className="space-y-1">
             <label className="text-sm text-zinc-700 dark:text-zinc-300">Password (min 12 chars)</label>
             <PasswordInput value={password} onChange={e => setPassword(e.target.value)} required
-              className="w-full px-3 py-2 rounded-md bg-zinc-200 dark:bg-[#141416] border border-zinc-300 dark:border-white/10 text-zinc-900 dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-accent-ring" />
+              className="w-full px-3 py-2 rounded-none bg-zinc-200 dark:bg-[#141416] border border-zinc-300 dark:border-white/10 text-zinc-900 dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-accent-ring" />
           </div>
           <div className="space-y-1">
             <label className="text-sm text-zinc-700 dark:text-zinc-300">Role</label>
             <select value={role} onChange={e => setRole(e.target.value as 'admin' | 'superadmin')}
-              className="w-full px-3 py-2 rounded-md bg-zinc-200 dark:bg-[#141416] border border-zinc-300 dark:border-white/10 text-zinc-900 dark:text-white text-sm focus:outline-none">
+              className="w-full px-3 py-2 rounded-none bg-zinc-200 dark:bg-[#141416] border border-zinc-300 dark:border-white/10 text-zinc-900 dark:text-white text-sm focus:outline-none">
               <option value="admin">admin</option>
               <option value="superadmin">superadmin</option>
             </select>
           </div>
           <div className="flex gap-2 pt-1">
-            <button type="button" onClick={onClose} className="flex-1 py-2 rounded bg-zinc-300 dark:bg-[#232326] hover:bg-zinc-400 dark:hover:bg-[#2b2b2f] text-sm">Cancel</button>
+            <button type="button" onClick={onClose} className="flex-1 py-2 rounded-none bg-zinc-300 dark:bg-[#232326] hover:bg-zinc-400 dark:hover:bg-[#2b2b2f] text-sm">Cancel</button>
             <button type="submit" disabled={loading}
-              className="flex-1 py-2 rounded bg-accent-fill hover:bg-accent-fill-hover text-accent-text text-sm disabled:opacity-50">
+              className="flex-1 py-2 rounded-none bg-accent-fill hover:bg-accent-fill-hover text-accent-text text-sm disabled:opacity-50">
               {loading ? 'Creating…' : 'Create'}
             </button>
           </div>
@@ -147,17 +147,18 @@ function AdminUsersPage() {
     <Layout>
       <div className="p-6">
         <PageHeader
+          eyebrow="ACCESS / ADMIN USERS"
           title="Admin Users"
           count={users.length}
           countLabel="admins"
           actions={
             <button onClick={() => setShowNew(true)}
-              className="flex items-center gap-2 px-4 py-2 bg-accent-fill hover:bg-accent-fill-hover text-accent-text text-sm rounded-md transition-colors">
+              className="flex items-center gap-2 px-4 py-2 bg-accent-fill hover:bg-accent-fill-hover text-accent-text text-sm rounded-none transition-colors">
               <UserPlus size={14} /> New Admin
             </button>
           }
         />
-        <div className="hud-frame relative rounded-md border border-zinc-200 dark:border-white/10 bg-white dark:bg-[#0c0c0e]">
+        <div className="hud-frame relative rounded-none border border-zinc-200 dark:border-white/10 hud-glass">
           <HudCorners />
           <div className="overflow-hidden">
           <table className="w-full text-sm">
@@ -188,7 +189,7 @@ function AdminUsersPage() {
                       </button>
                     </td>
                     <td className="px-4 py-3 flex justify-end">
-                      <button onClick={() => deleteUser(u.id, u.username)} disabled={pendingIds.has(u.id)} title="Delete" aria-label="Delete" className="p-1.5 rounded hover:bg-zinc-200 dark:hover:bg-[#141416] text-red-600 dark:text-red-400 focus:outline-none focus:ring-2 focus:ring-accent-ring disabled:opacity-50"><Trash2 size={14} /></button>
+                      <button onClick={() => deleteUser(u.id, u.username)} disabled={pendingIds.has(u.id)} title="Delete" aria-label="Delete" className="p-1.5 rounded-none hover:bg-zinc-200 dark:hover:bg-[#141416] text-red-600 dark:text-red-400 focus:outline-none focus:ring-2 focus:ring-accent-ring disabled:opacity-50"><Trash2 size={14} /></button>
                     </td>
                   </tr>
                 ))

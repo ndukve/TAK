@@ -209,11 +209,11 @@ export function LiveMapWidget({ height, showControls = false, pollMs = 5000 }: L
   return (
     <div className="hud-frame relative" style={{ height }}>
       <HudCorners />
-      <div className="tak-dark-map relative rounded-md overflow-hidden border border-white/10 w-full h-full">
+      <div className="tak-dark-map relative rounded-none overflow-hidden border border-white/10 w-full h-full">
       <div ref={mapRef} className="w-full h-full" />
       <div className="tak-scanline" />
 
-      <div className="tak-map-glass absolute top-3 left-3 z-[500] rounded-md border border-white/10 px-3 py-2.5 flex items-center gap-3 max-w-[calc(100%-5.5rem)]">
+      <div className="tak-map-glass absolute top-3 left-3 z-[500] rounded-none border border-white/10 px-3 py-2.5 flex items-center gap-3 max-w-[calc(100%-5.5rem)]">
         <span className="relative flex h-2 w-2 shrink-0">
           <span className={`hud-live-dot absolute inline-flex h-full w-full rounded-full ${status?.tracking ? 'bg-accent-fill text-accent-fill' : 'bg-zinc-500 text-zinc-500'}`} />
         </span>
@@ -221,17 +221,17 @@ export function LiveMapWidget({ height, showControls = false, pollMs = 5000 }: L
         {showControls && role === 'superadmin' && (
           !status?.service_cert_ready ? (
             <button onClick={handleSetup} disabled={busy}
-              className="flex items-center gap-1.5 px-2.5 py-1 bg-accent-fill hover:bg-accent-fill-hover text-accent-text text-xs rounded disabled:opacity-50 transition-colors shrink-0">
+              className="flex items-center gap-1.5 px-2.5 py-1 bg-accent-fill hover:bg-accent-fill-hover text-accent-text text-xs rounded-none disabled:opacity-50 transition-colors shrink-0">
               <Settings2 size={12} /> Set Up
             </button>
           ) : status.tracking ? (
             <button onClick={handleStop} disabled={busy}
-              className="flex items-center gap-1.5 px-2.5 py-1 bg-red-600 hover:bg-red-700 text-white text-xs rounded disabled:opacity-50 transition-colors shrink-0">
+              className="flex items-center gap-1.5 px-2.5 py-1 bg-red-600 hover:bg-red-700 text-white text-xs rounded-none disabled:opacity-50 transition-colors shrink-0">
               <Square size={12} /> Stop
             </button>
           ) : (
             <button onClick={handleStart} disabled={busy}
-              className="flex items-center gap-1.5 px-2.5 py-1 bg-accent-fill hover:bg-accent-fill-hover text-accent-text text-xs rounded disabled:opacity-50 transition-colors shrink-0">
+              className="flex items-center gap-1.5 px-2.5 py-1 bg-accent-fill hover:bg-accent-fill-hover text-accent-text text-xs rounded-none disabled:opacity-50 transition-colors shrink-0">
               <Play size={12} /> Start
             </button>
           )
@@ -239,7 +239,7 @@ export function LiveMapWidget({ height, showControls = false, pollMs = 5000 }: L
       </div>
 
       {legendItems.length > 0 && (
-        <div className="tak-map-glass absolute bottom-3 left-3 z-[500] rounded-md border border-white/10 px-3 py-2 flex flex-col gap-1.5">
+        <div className="tak-map-glass absolute bottom-3 left-3 z-[500] rounded-none border border-white/10 px-3 py-2 flex flex-col gap-1.5">
           {legendItems.map((item) => (
             <div key={item.affiliation} className="flex items-center gap-2 text-xs text-zinc-200">
               <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ background: item.color, boxShadow: `0 0 6px ${item.color}` }} />

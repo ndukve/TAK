@@ -117,7 +117,7 @@ export function ShellSession() {
 
       {!ticket && (
         <div className="max-w-sm space-y-4">
-          <div className="flex items-start gap-3 p-4 rounded-md border border-yellow-300 dark:border-yellow-700/50 bg-yellow-50 dark:bg-yellow-900/20">
+          <div className="flex items-start gap-3 p-4 rounded-none border border-yellow-300 dark:border-yellow-700/50 bg-yellow-50 dark:bg-yellow-900/20">
             <ShieldAlert size={16} className="text-yellow-600 dark:text-yellow-400 shrink-0 mt-0.5" />
             <p className="text-sm text-yellow-800 dark:text-yellow-200">
               Re-enter your password to unlock shell access. Session expires in 5 minutes.
@@ -129,12 +129,12 @@ export function ShellSession() {
               onChange={(e) => setPassword(e.target.value)}
               placeholder="Your admin password"
               required
-              className="w-full px-3 py-2 rounded-md bg-zinc-200 dark:bg-[#141416] border border-zinc-300 dark:border-white/10 text-zinc-900 dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-accent-ring"
+              className="w-full px-3 py-2 rounded-none bg-zinc-200 dark:bg-[#141416] border border-zinc-300 dark:border-white/10 text-zinc-900 dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-accent-ring"
             />
             <button
               type="submit"
               disabled={loading}
-              className="w-full py-2 rounded-md bg-accent-fill hover:bg-accent-fill-hover text-accent-text text-sm font-medium disabled:opacity-50 transition-colors"
+              className="w-full py-2 rounded-none bg-accent-fill hover:bg-accent-fill-hover text-accent-text text-sm font-medium disabled:opacity-50 transition-colors"
             >
               {loading ? 'Verifying…' : 'Unlock shell'}
             </button>
@@ -145,7 +145,7 @@ export function ShellSession() {
       {ticket && (
         <div
           ref={termRef}
-          className="flex-1 rounded-md overflow-hidden border border-zinc-200 dark:border-white/10"
+          className="flex-1 rounded-none overflow-hidden border border-zinc-200 dark:border-white/10"
           style={{ minHeight: '500px' }}
         />
       )}

@@ -46,5 +46,6 @@ __pycache__/
 # Offline install bundle (scripts/build steps regenerate this)
 offline-bundle/
 
-# Internal SDD planning docs (brainstorm/spec/plan) — not part of the shipped repo
-docs/
+# docs/ is tracked (public guides + design notes). Only local/scratch stays out.
+docs/superpowers/
+COMMIT_MSG.txt

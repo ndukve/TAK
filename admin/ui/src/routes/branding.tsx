@@ -121,7 +121,7 @@ function BrandingPage() {
             <label className="text-sm text-zinc-700 dark:text-zinc-300">Organization name</label>
             <input type="text" value={orgName} onChange={e => setOrgName(e.target.value)}
               maxLength={64} required
-              className="w-full px-3 py-2 rounded-md bg-zinc-200 dark:bg-[#141416] border border-zinc-300 dark:border-white/10 text-zinc-900 dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-accent-ring" />
+              className="w-full px-3 py-2 rounded-none bg-zinc-200 dark:bg-[#141416] border border-zinc-300 dark:border-white/10 text-zinc-900 dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-accent-ring" />
           </div>
 
           <div className="grid grid-cols-2 gap-3">
@@ -129,7 +129,7 @@ function BrandingPage() {
               <label className="text-sm text-zinc-700 dark:text-zinc-300">Accent fill</label>
               <div className="flex items-center gap-2">
                 <input type="color" value={accentFill} onChange={e => setAccentFill(e.target.value)}
-                  className="w-10 h-9 rounded border border-zinc-300 dark:border-white/10 bg-zinc-200 dark:bg-[#141416]" />
+                  className="w-10 h-9 rounded-none border border-zinc-300 dark:border-white/10 bg-zinc-200 dark:bg-[#141416]" />
                 <span className="text-xs text-zinc-500 font-mono">{accentFill}</span>
               </div>
             </div>
@@ -137,7 +137,7 @@ function BrandingPage() {
               <label className="text-sm text-zinc-700 dark:text-zinc-300">Accent fill (hover)</label>
               <div className="flex items-center gap-2">
                 <input type="color" value={accentFillHover} onChange={e => setAccentFillHover(e.target.value)}
-                  className="w-10 h-9 rounded border border-zinc-300 dark:border-white/10 bg-zinc-200 dark:bg-[#141416]" />
+                  className="w-10 h-9 rounded-none border border-zinc-300 dark:border-white/10 bg-zinc-200 dark:bg-[#141416]" />
                 <span className="text-xs text-zinc-500 font-mono">{accentFillHover}</span>
               </div>
             </div>
@@ -145,7 +145,7 @@ function BrandingPage() {
               <label className="text-sm text-zinc-700 dark:text-zinc-300">Accent text</label>
               <div className="flex items-center gap-2">
                 <input type="color" value={accentText} onChange={e => setAccentText(e.target.value)}
-                  className="w-10 h-9 rounded border border-zinc-300 dark:border-white/10 bg-zinc-200 dark:bg-[#141416]" />
+                  className="w-10 h-9 rounded-none border border-zinc-300 dark:border-white/10 bg-zinc-200 dark:bg-[#141416]" />
                 <span className="text-xs text-zinc-500 font-mono">{accentText}</span>
               </div>
             </div>
@@ -153,7 +153,7 @@ function BrandingPage() {
               <label className="text-sm text-zinc-700 dark:text-zinc-300">Accent ring</label>
               <div className="flex items-center gap-2">
                 <input type="color" value={accentRing} onChange={e => setAccentRing(e.target.value)}
-                  className="w-10 h-9 rounded border border-zinc-300 dark:border-white/10 bg-zinc-200 dark:bg-[#141416]" />
+                  className="w-10 h-9 rounded-none border border-zinc-300 dark:border-white/10 bg-zinc-200 dark:bg-[#141416]" />
                 <span className="text-xs text-zinc-500 font-mono">{accentRing}</span>
               </div>
             </div>
@@ -163,7 +163,7 @@ function BrandingPage() {
             <span className="text-sm text-zinc-700 dark:text-zinc-300">Preview</span>
             <div>
               <button type="button" disabled
-                className="px-4 py-2 rounded-md text-sm font-medium"
+                className="px-4 py-2 rounded-none text-sm font-medium"
                 style={{ backgroundColor: accentFill, color: accentText }}>
                 Sample button
               </button>
@@ -171,7 +171,7 @@ function BrandingPage() {
           </div>
 
           <button type="submit" disabled={saving}
-            className="px-4 py-2 rounded-md bg-accent-fill hover:bg-accent-fill-hover text-accent-text text-sm disabled:opacity-50">
+            className="px-4 py-2 rounded-none bg-accent-fill hover:bg-accent-fill-hover text-accent-text text-sm disabled:opacity-50">
             {saving ? 'Saving…' : 'Save'}
           </button>
         </form>
@@ -180,15 +180,15 @@ function BrandingPage() {
           <span className="text-sm text-zinc-700 dark:text-zinc-300">Logo</span>
           {logoUrl ? (
             <div className="flex items-center gap-3">
-              <img src={logoUrl} alt="Current logo" className="w-16 h-16 rounded border border-zinc-300 dark:border-white/10 object-contain bg-zinc-200 dark:bg-[#141416]" />
-              <button onClick={handleLogoRemove} className="px-3 py-1.5 rounded bg-zinc-300 dark:bg-[#232326] hover:bg-zinc-400 dark:hover:bg-[#2b2b2f] text-sm">Remove</button>
+              <img src={logoUrl} alt="Current logo" className="w-16 h-16 rounded-none border border-zinc-300 dark:border-white/10 object-contain bg-zinc-200 dark:bg-[#141416]" />
+              <button onClick={handleLogoRemove} className="px-3 py-1.5 rounded-none bg-zinc-300 dark:bg-[#232326] hover:bg-zinc-400 dark:hover:bg-[#2b2b2f] text-sm">Remove</button>
             </div>
           ) : (
             <p className="text-sm text-zinc-500">No logo uploaded.</p>
           )}
           <input ref={fileRef} type="file" accept=".png,.jpg,.jpeg" onChange={handleLogoUpload} className="hidden" />
           <button type="button" onClick={() => fileRef.current?.click()}
-            className="px-3 py-1.5 rounded bg-zinc-300 dark:bg-[#232326] hover:bg-zinc-400 dark:hover:bg-[#2b2b2f] text-zinc-900 dark:text-white text-sm">
+            className="px-3 py-1.5 rounded-none bg-zinc-300 dark:bg-[#232326] hover:bg-zinc-400 dark:hover:bg-[#2b2b2f] text-zinc-900 dark:text-white text-sm">
             Upload logo
           </button>
         </div>

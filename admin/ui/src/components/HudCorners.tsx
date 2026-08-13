@@ -1,10 +1,9 @@
+/**
+ * Reticle corners were retired with the modern-minimal surface system.
+ *
+ * Keep this compatibility component because routes still use it alongside
+ * `hud-frame`; rendering nothing updates every panel without page churn.
+ */
 export function HudCorners() {
-  return (
-    <>
-      <span className="hud-corner hud-corner-tl" />
-      <span className="hud-corner hud-corner-tr" />
-      <span className="hud-corner hud-corner-bl" />
-      <span className="hud-corner hud-corner-br" />
-    </>
-  )
+  return null
 }

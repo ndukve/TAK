@@ -2,7 +2,7 @@
 
 You will need:
 
-- A machine running **Ubuntu 22.04** (server edition, minimal install) with internet access
+- A machine running **Debian 13** (server edition, minimal install) with internet access
 - A TAK client: **iTAK** (iOS), **ATAK** (Android), or **WinTAK** (Windows)
 
 **Minimum server specs:** 4 CPU cores · 8 GB RAM · 64 GB disk
@@ -39,7 +39,7 @@ If devices will connect from outside the local network, use NetBird to create an
 
 ## Step 2 — Run the Installer
 
-On your Ubuntu machine, open a terminal and run:
+On your Debian machine, open a terminal and run:
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/ndukve/TAK/main/install.sh | bash
@@ -55,6 +55,8 @@ When prompted for networking, choose the option that matches Step 1:
 
 The installer will:
 
+- Update the OS (`apt`/`dnf` upgrade) — if a reboot is needed afterward, it
+  stops and tells you; just reboot and re-run the same command
 - Install Docker Engine
 - Connect to the chosen network (or skip if manual IP)
 - Prompt for certificate metadata (country, state, city, organisation — defaults are fine for testing)

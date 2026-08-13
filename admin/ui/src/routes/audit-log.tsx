@@ -45,8 +45,8 @@ function AuditLogPage() {
   return (
     <Layout>
       <div className="p-6">
-        <PageHeader title="Audit Logs" count={entries.length} countLabel="entries" />
-        <div className="hud-frame relative rounded-md border border-zinc-200 dark:border-white/10 bg-white dark:bg-[#0c0c0e]">
+        <PageHeader eyebrow="SECURITY / AUDIT LOG" title="Audit Logs" count={entries.length} countLabel="entries" />
+        <div className="hud-frame relative rounded-none border border-zinc-200 dark:border-white/10 hud-glass">
           <HudCorners />
           <div className="overflow-x-auto">
           <table className="w-full text-sm min-w-[640px]">

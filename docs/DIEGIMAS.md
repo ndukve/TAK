@@ -2,7 +2,7 @@
 
 Jums reikės:
 
-- Kompiuterio arba virtualios mašinos su **Ubuntu 22.04** (serverio leidimas, minimalus diegimas) ir interneto ryšiu
+- Kompiuterio arba virtualios mašinos su **Debian 13** (serverio leidimas, minimalus diegimas) ir interneto ryšiu
 - TAK kliento programėlės: **ATAK** (Android), **iTAK** (iOS) arba **WinTAK** (Windows)
 
 **Minimalūs serverio reikalavimai:** 4 CPU branduoliai · 8 GB RAM · 64 GB disko vietos
@@ -39,7 +39,7 @@ Jei įrenginiai jungiasi iš kito tinklo, naudokite NetBird šifruotam tuneliui 
 
 ## 2 žingsnis — Paleisti diegimo skriptą
 
-Ubuntu kompiuteryje/virtualioje mašinoje atidarykite terminalą ir paleiskite:
+Debian kompiuteryje/virtualioje mašinoje atidarykite terminalą ir paleiskite:
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/ndukve/TAK/main/install.sh | bash
@@ -55,6 +55,8 @@ Kai paklaus apie tinklą, pasirinkite variantą pagal 1 žingsnį:
 
 Skriptas automatiškai:
 
+- Atnaujins OS (`apt`/`dnf` upgrade) — jei po to reikės perkrauti, skriptas
+  sustos ir apie tai praneš; tiesiog perkraukite ir vėl paleiskite tą pačią komandą
 - Įdiegs Docker Engine
 - Prisijungs prie pasirinkto tinklo (arba praleis, jei rankinis IP)
 - Paklaus sertifikatų metaduomenų (šalis, valstija, miestas, organizacija — numatytosios reikšmės tinka testavimui)

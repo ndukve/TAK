@@ -106,6 +106,7 @@ function PackagesPage() {
     <Layout>
       <div className="p-6">
         <PageHeader
+          eyebrow="CONTENT / PACKAGES"
           title="Data Packages"
           count={packages.length}
           countLabel="packages"
@@ -113,7 +114,7 @@ function PackagesPage() {
             <button
               onClick={() => fileRef.current?.click()}
               disabled={uploading}
-              className="flex items-center gap-2 px-4 py-2 bg-accent-fill hover:bg-accent-fill-hover disabled:opacity-50 text-accent-text text-sm rounded-md transition-colors"
+              className="flex items-center gap-2 px-4 py-2 bg-accent-fill hover:bg-accent-fill-hover disabled:opacity-50 text-accent-text text-sm rounded-none transition-colors"
             >
               <Upload size={14} />
               {uploading ? 'Uploading…' : 'Upload Package'}
@@ -129,7 +130,7 @@ function PackagesPage() {
         />
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-          <div className="hud-frame relative lg:col-span-2 rounded-md border border-zinc-200 dark:border-white/10 bg-white dark:bg-[#0c0c0e]">
+          <div className="hud-frame relative lg:col-span-2 rounded-none border border-zinc-200 dark:border-white/10 hud-glass">
             <HudCorners />
             <div className="overflow-x-auto">
             <table className="w-full text-sm min-w-[480px]">
@@ -162,14 +163,14 @@ function PackagesPage() {
                         <div className="flex justify-end gap-1">
                           <button
                             onClick={e => { e.stopPropagation(); handleDownload(p) }}
-                            className="p-1.5 rounded hover:bg-zinc-200 dark:hover:bg-[#141416] text-accent-ring"
+                            className="p-1.5 rounded-none hover:bg-zinc-200 dark:hover:bg-[#141416] text-accent-ring"
                             title="Download"
                           >
                             <Download size={14} />
                           </button>
                           <button
                             onClick={e => { e.stopPropagation(); handleDelete(p) }}
-                            className="p-1.5 rounded hover:bg-zinc-200 dark:hover:bg-[#141416] text-red-600 dark:text-red-400"
+                            className="p-1.5 rounded-none hover:bg-zinc-200 dark:hover:bg-[#141416] text-red-600 dark:text-red-400"
                             title="Delete"
                           >
                             <Trash2 size={14} />
@@ -184,7 +185,7 @@ function PackagesPage() {
             </div>
           </div>
 
-          <div className="hud-frame relative rounded-md border border-zinc-200 dark:border-white/10 bg-zinc-100 dark:bg-[#0c0c0e] p-4 flex flex-col items-center gap-4 min-h-[200px] justify-center">
+          <div className="hud-frame relative rounded-none border border-zinc-200 dark:border-white/10 bg-zinc-100 dark:bg-[#0c0c0e] p-4 flex flex-col items-center gap-4 min-h-[200px] justify-center">
             <HudCorners />
             {selected ? (
               <>
@@ -197,13 +198,13 @@ function PackagesPage() {
                 {role !== 'field' && (
                   <button
                     onClick={() => handleCreateFieldLogin(selected)}
-                    className="text-xs px-3 py-1.5 rounded bg-zinc-200 dark:bg-[#141416] hover:bg-zinc-300 dark:hover:bg-[#232326] text-zinc-700 dark:text-zinc-300"
+                    className="text-xs px-3 py-1.5 rounded-none bg-zinc-200 dark:bg-[#141416] hover:bg-zinc-300 dark:hover:bg-[#232326] text-zinc-700 dark:text-zinc-300"
                   >
                     Create field login
                   </button>
                 )}
                 {fieldResult && (
-                  <div className="p-2 rounded border border-yellow-300 dark:border-yellow-700/50 bg-yellow-50 dark:bg-yellow-900/20 text-xs text-left space-y-1 w-full">
+                  <div className="p-2 rounded-none border border-yellow-300 dark:border-yellow-700/50 bg-yellow-50 dark:bg-yellow-900/20 text-xs text-left space-y-1 w-full">
                     {fieldResult.created ? (
                       <>
                         <p className="text-yellow-800 dark:text-yellow-200">Field login created — shown once:</p>

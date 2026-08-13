@@ -70,14 +70,14 @@ function UploadModal({ onClose, onUploaded }: { onClose: () => void; onUploaded:
 
   return (
     <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50">
-      <div className="bg-zinc-100 dark:bg-[#0c0c0e] border border-zinc-300 dark:border-white/10 rounded-md p-6 w-full max-w-md">
+      <div className="bg-zinc-100 dark:bg-[#0c0c0e] border border-zinc-300 dark:border-white/10 rounded-none p-6 w-full max-w-md">
         <h2 className="text-lg font-semibold mb-4">Upload Plugin</h2>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
             <input ref={fileRef} type="file" accept=".apk,.zip" className="hidden"
               onChange={e => setFile(e.target.files?.[0] ?? null)} />
             <button type="button" onClick={() => fileRef.current?.click()}
-              className="w-full py-8 border-2 border-dashed border-zinc-300 dark:border-white/10 rounded-md text-zinc-600 dark:text-zinc-400 hover:border-zinc-500 hover:text-zinc-800 dark:hover:text-zinc-200 transition-colors text-sm">
+              className="w-full py-8 border-2 border-dashed border-zinc-300 dark:border-white/10 rounded-none text-zinc-600 dark:text-zinc-400 hover:border-zinc-500 hover:text-zinc-800 dark:hover:text-zinc-200 transition-colors text-sm">
               {file ? file.name : 'Click to select .apk or .zip'}
             </button>
           </div>
@@ -85,13 +85,13 @@ function UploadModal({ onClose, onUploaded }: { onClose: () => void; onUploaded:
             <label className="text-xs text-zinc-600 dark:text-zinc-400">Expected SHA-256 (optional — from tak.gov)</label>
             <input type="text" value={expectedHash} onChange={e => setExpectedHash(e.target.value)}
               placeholder="e.g. a3f2c1…"
-              className="w-full bg-zinc-200 dark:bg-[#141416] border border-zinc-300 dark:border-white/10 rounded px-3 py-2 text-xs font-mono" />
+              className="w-full bg-zinc-200 dark:bg-[#141416] border border-zinc-300 dark:border-white/10 rounded-none px-3 py-2 text-xs font-mono" />
             <p className="text-xs text-zinc-500">If provided, upload is rejected if hash doesn't match.</p>
           </div>
           <div className="flex gap-2">
-            <button type="button" onClick={onClose} className="flex-1 py-2 rounded bg-zinc-300 dark:bg-[#232326] hover:bg-zinc-400 dark:hover:bg-[#2b2b2f] text-sm">Cancel</button>
+            <button type="button" onClick={onClose} className="flex-1 py-2 rounded-none bg-zinc-300 dark:bg-[#232326] hover:bg-zinc-400 dark:hover:bg-[#2b2b2f] text-sm">Cancel</button>
             <button type="submit" disabled={!file || uploading}
-              className="flex-1 py-2 rounded bg-accent-fill hover:bg-accent-fill-hover text-accent-text disabled:opacity-50 text-sm">
+              className="flex-1 py-2 rounded-none bg-accent-fill hover:bg-accent-fill-hover text-accent-text disabled:opacity-50 text-sm">
               {uploading ? 'Uploading…' : 'Upload'}
             </button>
           </div>
@@ -140,20 +140,21 @@ function PluginsPage() {
     <Layout>
       <div className="p-6">
         <PageHeader
+          eyebrow="CONTENT / PLUGINS"
           title="Plugins"
           count={plugins.length}
           countLabel="plugins"
           actions={
             canManage && (
               <button onClick={() => setShowUpload(true)}
-                className="flex items-center gap-2 px-4 py-2 bg-accent-fill hover:bg-accent-fill-hover text-accent-text text-sm rounded-md transition-colors">
+                className="flex items-center gap-2 px-4 py-2 bg-accent-fill hover:bg-accent-fill-hover text-accent-text text-sm rounded-none transition-colors">
                 <Upload size={14} /> Upload APK
               </button>
             )
           }
         />
 
-        <div className="hud-frame relative rounded-md border border-zinc-200 dark:border-white/10 bg-white dark:bg-[#0c0c0e]">
+        <div className="hud-frame relative rounded-none border border-zinc-200 dark:border-white/10 hud-glass">
           <HudCorners />
           <div className="overflow-hidden">
           <table className="w-full text-sm">
@@ -179,7 +180,7 @@ function PluginsPage() {
                     <td className="px-4 py-3">
                       {canManage && (
                         <div className="flex justify-end">
-                          <button onClick={() => handleDelete(p)} className="p-1.5 rounded hover:bg-zinc-200 dark:hover:bg-[#141416] text-red-600 dark:text-red-400 focus:outline-none focus:ring-2 focus:ring-accent-ring" title="Delete" aria-label="Delete">
+                          <button onClick={() => handleDelete(p)} className="p-1.5 rounded-none hover:bg-zinc-200 dark:hover:bg-[#141416] text-red-600 dark:text-red-400 focus:outline-none focus:ring-2 focus:ring-accent-ring" title="Delete" aria-label="Delete">
                             <Trash2 size={14} />
                           </button>
                         </div>

@@ -17,7 +17,7 @@ function LiveMapPage() {
   return (
     <Layout>
       <div className="p-6">
-        <PageHeader title="Live Map" />
+        <PageHeader eyebrow="OPERATIONS / LIVE MAP" title="Live Map" />
         <LiveMapWidget height="70vh" showControls pollMs={5000} />
       </div>
     </Layout>

@@ -64,10 +64,10 @@ function LoginPage() {
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-zinc-50 dark:bg-hud-0 hud-grid-bg">
-      <div className="hud-frame w-full max-w-sm space-y-6 p-8 rounded-md border border-zinc-200 dark:border-white/10 bg-white dark:bg-[#0c0c0e] hud-glass">
+      <div className="hud-frame w-full max-w-sm space-y-6 p-8 rounded-none border border-zinc-200 dark:border-white/10 hud-glass">
         <HudCorners />
         <div className="flex flex-col items-center text-center">
-          {logoUrl && <img src={logoUrl} alt="" className="w-20 h-20 rounded object-contain mb-4" />}
+          {logoUrl && <img src={logoUrl} alt="" className="w-20 h-20 rounded-none object-contain mb-4" />}
           <h1 className="text-3xl font-bold tracking-tight text-zinc-900 dark:text-white">{orgName}</h1>
           <p className="hud-label text-xs text-zinc-500 dark:text-zinc-500 mt-2">Sign in to manage your TAK server</p>
         </div>
@@ -79,7 +79,7 @@ function LoginPage() {
               value={username}
               onChange={e => setUsername(e.target.value)}
               required
-              className="w-full px-3 py-2 rounded-md bg-zinc-200 dark:bg-[#141416] border border-zinc-300 dark:border-white/10 text-zinc-900 dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-accent-ring"
+              className="w-full px-3 py-2 rounded-none bg-zinc-200 dark:bg-[#141416] border border-zinc-300 dark:border-white/10 text-zinc-900 dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-accent-ring"
             />
           </div>
           <div className="space-y-1">
@@ -88,13 +88,13 @@ function LoginPage() {
               value={password}
               onChange={e => setPassword(e.target.value)}
               required
-              className="w-full px-3 py-2 rounded-md bg-zinc-200 dark:bg-[#141416] border border-zinc-300 dark:border-white/10 text-zinc-900 dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-accent-ring"
+              className="w-full px-3 py-2 rounded-none bg-zinc-200 dark:bg-[#141416] border border-zinc-300 dark:border-white/10 text-zinc-900 dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-accent-ring"
             />
           </div>
           <button
             type="submit"
             disabled={loading}
-            className="w-full py-2.5 rounded-md bg-accent-fill hover:bg-accent-fill-hover text-accent-text text-sm font-semibold uppercase tracking-wider disabled:opacity-50 transition-colors"
+            className="w-full py-2.5 rounded-none bg-accent-fill hover:bg-accent-fill-hover text-accent-text text-sm font-semibold uppercase tracking-wider disabled:opacity-50 transition-colors"
           >
             {loading ? 'Signing in…' : 'Sign in'}
           </button>
@@ -108,7 +108,7 @@ function LoginPage() {
             </div>
             <a
               href="/auth/oidc/login"
-              className="block w-full py-2.5 rounded-md border border-zinc-300 dark:border-white/10 bg-zinc-100 dark:bg-[#141416] hover:bg-zinc-200 dark:hover:bg-[#232326] text-zinc-900 dark:text-white text-sm font-semibold text-center transition-colors"
+              className="block w-full py-2.5 rounded-none border border-zinc-300 dark:border-white/10 bg-zinc-100 dark:bg-[#141416] hover:bg-zinc-200 dark:hover:bg-[#232326] text-zinc-900 dark:text-white text-sm font-semibold text-center transition-colors"
             >
               Sign in with {oidc.provider_name}
             </a>

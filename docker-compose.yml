@@ -98,6 +98,11 @@ services:
       - "8089:8089"
       - "8443:8443"
       - "8087:8087"
+      # Federation (templates/CoreConfig.tpl <federation-server>) — TLS
+      # handshake, v2 protocol negotiation, token auth.
+      - "9000:9000"
+      - "9001:9001"
+      - "9002:9002"
     networks:
       taknet:
         aliases:

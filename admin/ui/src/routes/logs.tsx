@@ -120,12 +120,12 @@ function LogsPage() {
   return (
     <Layout>
       <div className="p-6 flex flex-col h-full">
-        <PageHeader title="Logs" />
+        <PageHeader eyebrow="SYSTEM / LOGS" title="Logs" />
         <div className="flex items-center gap-3 mb-4">
           <select
             value={service}
             onChange={(e) => setService(e.target.value)}
-            className="px-3 py-2 rounded-md bg-zinc-200 dark:bg-[#141416] border border-zinc-300 dark:border-white/10 text-zinc-900 dark:text-white text-sm focus:outline-none"
+            className="px-3 py-2 rounded-none bg-zinc-200 dark:bg-[#141416] border border-zinc-300 dark:border-white/10 text-zinc-900 dark:text-white text-sm focus:outline-none"
           >
             {SERVICES.map((s) => (
               <option key={s} value={s}>
@@ -136,7 +136,7 @@ function LogsPage() {
         </div>
         <div
           ref={termRef}
-          className="flex-1 rounded-md overflow-hidden border border-zinc-200 dark:border-white/10"
+          className="flex-1 rounded-none overflow-hidden border border-zinc-200 dark:border-white/10"
           style={{ minHeight: '500px' }}
         />
       </div>

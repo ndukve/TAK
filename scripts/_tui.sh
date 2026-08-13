@@ -13,7 +13,14 @@ dim()  { printf "${DIM}     %s${NC}\n" "$*"; }
 
 if ! command -v whiptail &>/dev/null; then
     echo "Installing whiptail (installer UI)..."
-    apt-get update -qq && apt-get install -y -qq whiptail
+    if command -v apt-get &>/dev/null; then
+        apt-get update -qq && apt-get install -y -qq whiptail
+    elif command -v dnf &>/dev/null; then
+        dnf install -y -q newt
+    else
+        echo "whiptail is required and no supported package manager (apt/dnf) was found." >&2
+        exit 1
+    fi
 fi
 
 # Dark-grey installer palette

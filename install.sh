@@ -9,7 +9,16 @@ INSTALL_DIR="${INSTALL_DIR:-$HOME/tak-server}"
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]:-$0}")" 2>/dev/null && pwd || echo "$PWD")"
 if [ ! -f "$SCRIPT_DIR/docker-compose.yml" ]; then
     echo "Bootstrapping — cloning repo to $INSTALL_DIR ..."
-    command -v git &>/dev/null || { apt-get update -qq && apt-get install -y -qq git; }
+    if ! command -v git &>/dev/null; then
+        if command -v apt-get &>/dev/null; then
+            apt-get update -qq && apt-get install -y -qq git
+        elif command -v dnf &>/dev/null; then
+            dnf install -y -q git
+        else
+            echo "git is required to install TAK Server and no supported package manager (apt/dnf) was found." >&2
+            exit 1
+        fi
+    fi
     if [ -d "$INSTALL_DIR/.git" ]; then
         git -C "$INSTALL_DIR" pull --ff-only
     else
@@ -30,6 +39,38 @@ WT_BACKTITLE="TAK Server Installer"
 . "$SCRIPT_DIR/scripts/refresh_vendor.sh"
 # shellcheck source=scripts/scrub_admin_secret.sh
 . "$SCRIPT_DIR/scripts/scrub_admin_secret.sh"
+
+echo "Updating the system..."
+if command -v apt-get &>/dev/null; then
+    apt-get update -qq && apt-get upgrade -y -qq
+elif command -v dnf &>/dev/null; then
+    dnf upgrade -y -q
+else
+    echo "No supported package manager (apt/dnf) found — skipping OS update." >&2
+fi
+
+_REBOOT_NEEDED=0
+[ -f /var/run/reboot-required ] && _REBOOT_NEEDED=1
+if command -v needs-restarting &>/dev/null; then
+    needs-restarting -r &>/dev/null || _REBOOT_NEEDED=1
+fi
+if (( _REBOOT_NEEDED )); then
+    ok "System updated."
+    echo "A reboot is required (kernel or core library update) — reboot, then re-run this installer to continue."
+    exit 0
+fi
+ok "System up to date."
+
+if ! command -v openssl &>/dev/null; then
+    echo "Installing openssl (required for credential generation)..."
+    if command -v apt-get &>/dev/null; then
+        apt-get update -qq && apt-get install -y -qq openssl
+    elif command -v dnf &>/dev/null; then
+        dnf install -y -q openssl
+    else
+        fail "openssl is required and no supported package manager (apt/dnf) was found."
+    fi
+fi
 
 gen_hex() { openssl rand -hex "${1:-16}"; }
 docker_socket_gid() {

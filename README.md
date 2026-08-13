@@ -7,6 +7,7 @@
 Production-style deployment of the official Java TAK Server 5.7, containerized with docker compose, integrated with NetBird for secure overlay networking and managed from the WebUI.
 
 [![TAK Server](https://img.shields.io/badge/TAK_Server-5.7-blue)](https://tak.gov/)
+[![Debian](https://img.shields.io/badge/Debian-13_trixie-A81D33?logo=debian&logoColor=white)](https://www.debian.org/)
 [![Docker](https://img.shields.io/badge/Docker-Compose-2496ED?logo=docker&logoColor=white)](https://www.docker.com/)
 [![FastAPI](https://img.shields.io/badge/FastAPI-admin_API-009688?logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com/)
 [![React](https://img.shields.io/badge/React-admin_UI-61DAFB?logo=react&logoColor=black)](https://react.dev/)
@@ -22,23 +23,54 @@ Production-style deployment of the official Java TAK Server 5.7, containerized w
 
 </div>
 
-## Architecture
+## Overview
 
-| Service | Role |
-|---------|------|
-| `takdb` | PostgreSQL 15 + PostGIS — persistent CoT and mission data |
-| `takserver_initialization` | One-shot: generates PKI, initialises DB schema |
-| `takserver_config` | Main process — SSL CoT on 8089, HTTPS API on 8443 |
-| `takserver_messaging` | Handles real-time CoT routing |
-| `takserver_api` | REST API for mission packages, data feeds |
-| `takserver_retention` | Prunes stale data per retention policy |
-| `takserver_pluginmanager` | Plugin lifecycle management |
+```mermaid
+flowchart LR
+  subgraph clients [Clients]
+    ATAK["ATAK / WinTAK / iTAK"]
+  end
+  subgraph server [TAK server]
+    TAK["TAK Server\n8089 CoT · 8443 Marti API"]
+    Admin["Admin panel\n8889"]
+    DB[("PostgreSQL + PostGIS")]
+  end
+  clients -->|mTLS| TAK
+  clients -->|HTTPS package download| Admin
+  TAK --> DB
+  Admin --> TAK
+```
 
-Client onboarding uses mutual TLS. Each user gets a signed certificate bundled into a TAK data package (`.zip`) containing server config, trust anchor, and ATAK preference defaults. Packages are served over HTTP and imported directly into the TAK client.
+This repo holds a self-contained deployment: the official TAK Server binary, a custom admin panel for day-to-day operation, and the scripts that install/update/back up the whole stack. Configuration lives in `takserver.env` on the server itself — there's no GitOps sync layer, changes are applied by running the scripts below.
+
+## Key components
+
+| Area | Components |
+|---|---|
+| TAK core | `takserver_config` (CoT + Marti API), `takserver_messaging`, `takserver_api`, `takserver_retention`, `takserver_pluginmanager` |
+| Data | `takdb` — PostgreSQL 15 + PostGIS, CoT and mission data |
+| Admin panel | `admin` (FastAPI) behind `admin_proxy` (TLS reverse proxy), React + Vite UI |
+| Isolation | `docker_socket_proxy` — the only path from the admin panel to Docker, restricted to logs/exec |
+| Networking | NetBird, Tailscale, or plain LAN (operator's choice at install time) |
+| Auth | Mutual TLS for clients; JWT + role-based access (`superadmin`/`admin`/`readonly`/`field`) for the admin panel, with optional OIDC SSO |
+
+Client onboarding uses mutual TLS. Each user gets a signed certificate bundled into a TAK data package (`.zip`) containing server config, trust anchor, and ATAK preference defaults, downloaded through the admin panel and imported directly into the TAK client.
+
+## Start here
+
+1. [docs/README.md](docs/README.md) — full operator manual index (architecture, day-to-day ops, backups, troubleshooting, EN/LT).
+2. [docs/INSTALL.md](docs/INSTALL.md) (EN) / [docs/DIEGIMAS.md](docs/DIEGIMAS.md) (LT) — step-by-step installation.
+3. [docs/01-architecture.md](docs/01-architecture.md) — how the pieces fit together.
+4. [docs/11-technical-reference.md](docs/11-technical-reference.md) — ports, env vars, `make` commands, roles, at a glance.
 
 ## Networking
 
-All client traffic runs over a NetBird WireGuard overlay (`wt0`). No ports need to be exposed to the public internet — devices connect to the server via their shared NetBird authentification.
+Chosen during install — one of three, not NetBird-only:
+
+- **NetBird** or **Tailscale** — WireGuard-based overlay for remote devices, no public ports required.
+- **Plain LAN** — devices on the same network as the server use its local IP directly, no VPN.
+
+Details: [docs/06-network-and-access.md](docs/06-network-and-access.md).
 
 ## Ports
 
@@ -46,14 +78,18 @@ All client traffic runs over a NetBird WireGuard overlay (`wt0`). No ports need 
 |------|----------|---------|
 | 8089 | TCP/TLS | CoT — primary TAK client input |
 | 8443 | HTTPS | Marti API |
-| 8888 | HTTP | Client data package distribution |
+| 8087 | TCP | Internal CoT for service accounts, overlay network only — not for public exposure |
+| 8889 | HTTPS | Admin panel — WebUI and authenticated package/plugin/map downloads |
+| 9000–9002 | TCP/TLS | Federation (server-to-server) |
+
+Full breakdown: [docs/11-technical-reference.md](docs/11-technical-reference.md).
 
 ## Repository Layout
 
 ```
 Dockerfile                  TAK Server image
 docker-compose.yml          Production stack
-install.sh                  Interactive installer (Docker + NetBird + config)
+install.sh                  Interactive installer (Docker + VPN + config)
 users.sh                    User/package management (create, purge, get)
 scripts/
   firstrun.sh               PKI bootstrap + DB schema init
@@ -65,10 +101,7 @@ templates/
   missionpkg/               Client data package templates
 ```
 
-## Quick Start
-
-See [INSTALL.md](INSTALL.md) for the English setup guide.
-See [DIEGIMAS.md](DIEGIMAS.md) for the Lithuanian setup guide.
+Full layout, including `admin/` and `docs/`: [docs/02-repo-structure.md](docs/02-repo-structure.md).
 
 ## Operations
 

@@ -1,5 +1,7 @@
 # Security Policy
 
+Rotating a certificate password or handling a suspected credential leak: follow [docs/05-certificates-and-security.md](docs/05-certificates-and-security.md) (EN) / [docs/05-sertifikatai-ir-saugumas.md](docs/05-sertifikatai-ir-saugumas.md) (LT). For an active incident on a running deployment, start with [docs/09-troubleshooting.md](docs/09-troubleshooting.md) and [docs/00-getting-started.md](docs/00-getting-started.md).
+
 ## Supported Versions
 
 Only the latest tagged release receives security fixes. Older tags are not backported.

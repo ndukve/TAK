@@ -19,10 +19,10 @@ _HEX_COLOR_RE = re.compile(r"^#[0-9a-fA-F]{6}$")
 
 _DEFAULTS = {
     "org_name": "TAK Admin",
-    "accent_fill": "#2dd4bf",
-    "accent_fill_hover": "#5eead4",
-    "accent_text": "#052e2b",
-    "accent_ring": "#2dd4bf",
+    "accent_fill": "#2563eb",
+    "accent_fill_hover": "#3b82f6",
+    "accent_text": "#ffffff",
+    "accent_ring": "#2563eb",
 }
 
 LOGO_DIR = "/opt/tak/data/branding"

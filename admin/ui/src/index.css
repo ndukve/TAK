@@ -7,67 +7,67 @@
    external font host. Latin + Latin Extended-A only (covers Lithuanian
    diacritics); other scripts fall back to the system font. */
 @font-face {
-  font-family: "Chakra Petch";
+  font-family: "Inter";
   font-style: normal;
   font-weight: 400;
   font-display: swap;
-  src: url("./assets/fonts/ChakraPetch-400-latin.woff2") format("woff2");
+  src: url("./assets/fonts/Inter-400-latin.woff2") format("woff2");
   unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+2000-206F, U+20AC, U+2122;
 }
 @font-face {
-  font-family: "Chakra Petch";
+  font-family: "Inter";
   font-style: normal;
   font-weight: 400;
   font-display: swap;
-  src: url("./assets/fonts/ChakraPetch-400-latin-ext.woff2") format("woff2");
+  src: url("./assets/fonts/Inter-400-latin-ext.woff2") format("woff2");
   unicode-range: U+0100-024F, U+0300-0331, U+1E00-1EFF;
 }
 @font-face {
-  font-family: "Chakra Petch";
+  font-family: "Inter";
   font-style: normal;
   font-weight: 500;
   font-display: swap;
-  src: url("./assets/fonts/ChakraPetch-500-latin.woff2") format("woff2");
+  src: url("./assets/fonts/Inter-500-latin.woff2") format("woff2");
   unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+2000-206F, U+20AC, U+2122;
 }
 @font-face {
-  font-family: "Chakra Petch";
+  font-family: "Inter";
   font-style: normal;
   font-weight: 500;
   font-display: swap;
-  src: url("./assets/fonts/ChakraPetch-500-latin-ext.woff2") format("woff2");
+  src: url("./assets/fonts/Inter-500-latin-ext.woff2") format("woff2");
   unicode-range: U+0100-024F, U+0300-0331, U+1E00-1EFF;
 }
 @font-face {
-  font-family: "Chakra Petch";
+  font-family: "Inter";
   font-style: normal;
   font-weight: 600;
   font-display: swap;
-  src: url("./assets/fonts/ChakraPetch-600-latin.woff2") format("woff2");
+  src: url("./assets/fonts/Inter-600-latin.woff2") format("woff2");
   unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+2000-206F, U+20AC, U+2122;
 }
 @font-face {
-  font-family: "Chakra Petch";
+  font-family: "Inter";
   font-style: normal;
   font-weight: 600;
   font-display: swap;
-  src: url("./assets/fonts/ChakraPetch-600-latin-ext.woff2") format("woff2");
+  src: url("./assets/fonts/Inter-600-latin-ext.woff2") format("woff2");
   unicode-range: U+0100-024F, U+0300-0331, U+1E00-1EFF;
 }
 @font-face {
-  font-family: "Chakra Petch";
+  font-family: "Inter";
   font-style: normal;
   font-weight: 700;
   font-display: swap;
-  src: url("./assets/fonts/ChakraPetch-700-latin.woff2") format("woff2");
+  src: url("./assets/fonts/Inter-700-latin.woff2") format("woff2");
   unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+2000-206F, U+20AC, U+2122;
 }
 @font-face {
-  font-family: "Chakra Petch";
+  font-family: "Inter";
   font-style: normal;
   font-weight: 700;
   font-display: swap;
-  src: url("./assets/fonts/ChakraPetch-700-latin-ext.woff2") format("woff2");
+  src: url("./assets/fonts/Inter-700-latin-ext.woff2") format("woff2");
   unicode-range: U+0100-024F, U+0300-0331, U+1E00-1EFF;
 }
 @font-face {
@@ -88,10 +88,10 @@
 }
 
 @theme {
-  --color-accent-fill: var(--brand-accent-fill, #2dd4bf);
-  --color-accent-fill-hover: var(--brand-accent-fill-hover, #5eead4);
-  --color-accent-text: var(--brand-accent-text, #052e2b);
-  --color-accent-ring: var(--brand-accent-ring, #2dd4bf);
+  --color-accent-fill: var(--brand-accent-fill, #2563eb);
+  --color-accent-fill-hover: var(--brand-accent-fill-hover, #3b82f6);
+  --color-accent-text: var(--brand-accent-text, #ffffff);
+  --color-accent-ring: var(--brand-accent-ring, #2563eb);
 
   /* HUD dark-surface scale — numbered token system giving the existing
      hardcoded dark: hex values (already used throughout the HUD redesign)
@@ -103,8 +103,24 @@
   --color-hud-3: #232326;
   --color-hud-4: #2b2b2f;
 
-  --font-display: "Chakra Petch", ui-sans-serif, system-ui, sans-serif;
+  /* Scout aesthetic: monospace display headings (the terminal/technical tell).
+     Body copy stays Inter (--font-sans); only headings, labels, and the logo
+     wordmark use the mono display face. */
+  --font-display: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
   --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+
+  /* Sharp corners — Scout uses square panels/cards/buttons. rounded-full
+     (status dots, avatars) is unaffected; it doesn't read these tokens. */
+  --radius-sm: 0;
+  --radius-md: 0;
+  --radius-lg: 0;
+  --radius-xl: 0;
+  --radius-2xl: 0;
+
+  --shadow-e1: 0 1px 2px rgb(0 0 0 / 0.04), 0 1px 3px rgb(0 0 0 / 0.06);
+  --shadow-e2: 0 2px 4px rgb(0 0 0 / 0.04), 0 6px 16px rgb(0 0 0 / 0.08);
+  --ease-spring: cubic-bezier(0.22, 1.2, 0.36, 1);
+  --ease-out-soft: cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 /* HUD identity: uppercase, letter-spaced small labels used for table
@@ -115,60 +131,72 @@
   letter-spacing: 0.08em;
 }
 
-/* Glass panel — floating HUD surfaces (sidebar, cards, modals). Dark mode
-   only; light mode keeps the flat white/zinc surfaces already in place. */
-.dark .hud-glass {
-  background: rgba(255, 255, 255, 0.03);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
+/* Modern-minimal panel surface: solid cards separated by fill contrast,
+   a quiet hairline, and soft elevation instead of glass blur. */
+.hud-glass {
+  background: #ffffff;
+  box-shadow: var(--shadow-e2);
 }
+.dark .hud-glass {
+  background: #141518;
+  box-shadow: 0 1px 3px rgb(0 0 0 / 0.4), 0 8px 24px rgb(0 0 0 / 0.25);
+}
+.dark .hud-card,
+.dark .hud-glass { border-color: rgb(255 255 255 / 0.06); }
 
-/* Every accent-colored primary action (buttons using bg-accent-fill) gets an
-   ambient glow tied to the runtime branding accent color, not a fixed hex —
-   so a custom brand color still glows in its own hue. */
+/* Scout primary action: flat solid fill, no ambient glow. A brief brightness
+   lift on hover is the only feedback — Scout keeps buttons crisp and square. */
 .bg-accent-fill {
-  box-shadow: 0 0 0 1px color-mix(in srgb, var(--color-accent-fill) 25%, transparent);
-  transition: box-shadow 200ms ease, transform 150ms ease;
+  transition: filter 150ms ease;
 }
 .bg-accent-fill:hover {
-  box-shadow: 0 0 0 1px color-mix(in srgb, var(--color-accent-fill) 40%, transparent),
-              0 0 16px color-mix(in srgb, var(--color-accent-fill) 20%, transparent);
-  transform: translateY(-1px);
-}
-.dark .bg-accent-fill {
-  box-shadow: 0 0 0 1px color-mix(in srgb, var(--color-accent-fill) 40%, transparent),
-              0 0 20px color-mix(in srgb, var(--color-accent-fill) 25%, transparent);
-}
-.dark .bg-accent-fill:hover {
-  box-shadow: 0 0 0 1px color-mix(in srgb, var(--color-accent-fill) 55%, transparent),
-              0 0 32px color-mix(in srgb, var(--color-accent-fill) 45%, transparent);
+  filter: brightness(1.1);
 }
 
-/* Floating card lift + accent-glow border on hover — applied via the
-   hud-card utility class on Dashboard/table container cards. Light mode
-   gets a softer lift/border cue; dark mode adds the full accent glow. */
+/* Scout cards: flat outlined boxes, no depth. A hairline border and a barely
+   raised fill do the separating; hover only brightens the border edge. Scout
+   optionally marks the active card with a top accent rule (.hud-card-active). */
 .hud-card {
-  transition: border-color 200ms ease, box-shadow 200ms ease, transform 200ms ease;
+  position: relative;
+  z-index: 0;
+  box-shadow: none;
+  transition: border-color 160ms ease;
 }
 .hud-card:hover {
-  border-color: color-mix(in srgb, var(--color-accent-fill) 25%, transparent);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
-  transform: translateY(-2px);
+  border-color: color-mix(in srgb, var(--color-accent-fill) 45%, transparent);
 }
-.dark .hud-card:hover {
-  border-color: color-mix(in srgb, var(--color-accent-fill) 40%, transparent);
-  box-shadow: 0 0 24px color-mix(in srgb, var(--color-accent-fill) 12%, transparent);
+.dark .hud-card {
+  box-shadow: none;
+}
+.hud-card-active {
+  border-top: 2px solid var(--color-accent-fill);
 }
 
 @keyframes hud-fade-in-up {
-  from { opacity: 0; transform: translateY(8px); }
-  to { opacity: 1; transform: translateY(0); }
+  from { opacity: 0; transform: translateY(12px) scale(0.99); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
 }
 .hud-enter {
-  animation: hud-fade-in-up 0.35s ease-out both;
+  position: relative;
+  z-index: 1;
+  animation: hud-fade-in-up 0.45s var(--ease-spring) both;
 }
+.bg-accent-fill { position: relative; }
+.bg-accent-fill:hover { z-index: 20; }
 .hud-enter-delay-1 { animation-delay: 0.05s; }
 .hud-enter-delay-2 { animation-delay: 0.1s; }
+
+@media (prefers-reduced-motion: reduce) {
+  .hud-card,
+  .hud-card:hover,
+  .bg-accent-fill,
+  .bg-accent-fill:hover { transform: none; }
+  .hud-enter,
+  .hud-live-dot,
+  .tak-glow-marker,
+  .tak-radar-ping,
+  .tak-scanline { animation: none; }
+}
 
 @keyframes hud-pulse-dot {
   0%, 100% { opacity: 1; box-shadow: 0 0 0 0 color-mix(in srgb, currentColor 60%, transparent); }
@@ -178,37 +206,25 @@
   animation: hud-pulse-dot 2s ease-in-out infinite;
 }
 
-/* Technical grid texture — the faint surveillance/schematic backdrop both
-   reference sites use behind their black canvas. Dark mode only, applied to
-   the app's root surface. */
+/* Clean canvas with one restrained brand glow. */
 .dark .hud-grid-bg {
-  background-image:
-    linear-gradient(to right, color-mix(in srgb, #ffffff 2%, transparent) 1px, transparent 1px),
-    linear-gradient(to bottom, color-mix(in srgb, #ffffff 2%, transparent) 1px, transparent 1px);
-  background-size: 32px 32px;
-  background-position: 0 24px;
+  background-color: #0a0b0d;
+  background-image: radial-gradient(55rem 40rem at 12% -10%, color-mix(in srgb, var(--color-accent-fill) 8%, transparent), transparent 62%);
+  background-repeat: no-repeat;
+  background-attachment: fixed;
 }
 
-/* Corner-bracket / reticle framing — the single most recognizable HUD motif
-   from the reference sites. Apply `hud-frame` (position: relative) to the
-   panel, then four `<span class="hud-corner hud-corner-{tl,tr,bl,br}">`
-   children (empty spans — see HudCorners.tsx). */
+/* Panels now read as surfaces rather than reticles. */
 .hud-frame {
   position: relative;
 }
-.hud-corner {
-  position: absolute;
-  z-index: 1001;
-  width: 14px;
-  height: 14px;
-  border-color: var(--color-accent-fill);
-  opacity: 0.7;
-  pointer-events: none;
+
+.hud-grid-bg:not(.dark .hud-grid-bg) {
+  background-color: #fafafb;
+  background-image: radial-gradient(55rem 40rem at 12% -10%, color-mix(in srgb, var(--color-accent-fill) 5%, transparent), transparent 62%);
+  background-repeat: no-repeat;
+  background-attachment: fixed;
 }
-.hud-corner-tl { top: -1px; left: -1px; border-top: 2px solid; border-left: 2px solid; }
-.hud-corner-tr { top: -1px; right: -1px; border-top: 2px solid; border-right: 2px solid; }
-.hud-corner-bl { bottom: -1px; left: -1px; border-bottom: 2px solid; border-left: 2px solid; }
-.hud-corner-br { bottom: -1px; right: -1px; border-bottom: 2px solid; border-right: 2px solid; }
 
 /* Live Map — always-dark radar-style surface, independent of the site's
    light/dark theme toggle. */

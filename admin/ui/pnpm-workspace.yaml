@@ -3,3 +3,9 @@ packages:
 
 allowBuilds:
   esbuild: true
+
+# GHSA-3jxr-9vmj-r5cp — brace-expansion <1.1.16 DoS. Reaches us only as a
+# transitive dev dependency (eslint > minimatch). Scoped to the 1.x line so the
+# unaffected 5.x copy other packages pull in is left alone.
+overrides:
+  brace-expansion@1: ^1.1.16
