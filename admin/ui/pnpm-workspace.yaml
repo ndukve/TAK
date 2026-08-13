@@ -4,8 +4,13 @@ packages:
 allowBuilds:
   esbuild: true
 
-# GHSA-3jxr-9vmj-r5cp — brace-expansion <1.1.16 DoS. Reaches us only as a
-# transitive dev dependency (eslint > minimatch). Scoped to the 1.x line so the
-# unaffected 5.x copy other packages pull in is left alone.
+# Transitive dev-dependency DoS/disclosure advisories — all reached only via
+# eslint/vite/postcss tooling, never shipped in the built app. brace-expansion
+# is scoped per major line (two independent copies get pulled in); the rest
+# pin to their latest same-major patch to avoid a breaking major bump.
 overrides:
-  brace-expansion@1: ^1.1.16
+  brace-expansion@1: ^1.1.18   # GHSA-mh99-v99m-4gvg, GHSA-rgw5-rvv9-x895
+  brace-expansion@5: ^5.0.9    # GHSA-mh99-v99m-4gvg, GHSA-rgw5-rvv9-x895
+  postcss: ^8.5.18             # GHSA-r28c-9q8g-f849
+  js-yaml: ^4.3.1              # GHSA-5p4m-2wfm-xmqj
+  nanoid: ^3.3.17              # GHSA-28wg-ghj8-5hjv, GHSA-2v37-7h3g-55p8

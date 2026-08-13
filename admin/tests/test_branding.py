@@ -6,7 +6,7 @@ async def test_get_branding_returns_defaults_when_no_row_exists(client):
     assert res.status_code == 200
     data = res.json()
     assert data["org_name"] == "TAK Admin"
-    assert data["accent_fill"] == "#2dd4bf"
+    assert data["accent_fill"] == "#2563eb"
     assert data["logo_url"] is None
 
 

@@ -66,10 +66,10 @@ class BrandSettings(Base):
 
     id: Mapped[str] = mapped_column(String(16), primary_key=True, default=lambda: "singleton")
     org_name: Mapped[str] = mapped_column(String(64), default="TAK Admin")
-    accent_fill: Mapped[str] = mapped_column(String(16), default="#2dd4bf")
-    accent_fill_hover: Mapped[str] = mapped_column(String(16), default="#5eead4")
-    accent_text: Mapped[str] = mapped_column(String(16), default="#052e2b")
-    accent_ring: Mapped[str] = mapped_column(String(16), default="#2dd4bf")
+    accent_fill: Mapped[str] = mapped_column(String(16), default="#2563eb")
+    accent_fill_hover: Mapped[str] = mapped_column(String(16), default="#3b82f6")
+    accent_text: Mapped[str] = mapped_column(String(16), default="#ffffff")
+    accent_ring: Mapped[str] = mapped_column(String(16), default="#2563eb")
     logo_filename: Mapped[str | None] = mapped_column(String(128), nullable=True)
 
 
