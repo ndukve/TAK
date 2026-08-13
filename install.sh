@@ -127,7 +127,7 @@ if [ -f "$ENV_FILE" ]; then
 
         run_with_gauge "Start" "Starting containers..." -- \
             docker compose --env-file "$ENV_FILE" up -d \
-            || fail "Container startup failed (see output above)."
+            || { dump_service_logs "$ENV_FILE"; fail "Container startup failed (see output above)."; }
 
         whiptail --backtitle "$WT_BACKTITLE" --title "Database" --infobox "Waiting for database..." 8 50
         until docker compose --env-file "$ENV_FILE" exec -T takdb pg_isready \
@@ -356,7 +356,7 @@ run_with_gauge "Build [7/7]" "Building TAK Server image (this can take a few min
 
 run_with_gauge "Start [7/7]" "Starting containers..." -- \
     docker compose --env-file "$ENV_FILE" up -d \
-    || fail "Container startup failed (see output above)."
+    || { dump_service_logs "$ENV_FILE"; fail "Container startup failed (see output above)."; }
 
 whiptail --backtitle "$WT_BACKTITLE" --title "Database" --infobox "Waiting for database..." 8 50
 until docker compose --env-file "$ENV_FILE" exec -T takdb pg_isready -U martiuser -d cot >/dev/null 2>&1; do

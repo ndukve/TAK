@@ -133,7 +133,7 @@ info "Restarting containers..."
 # actually changed — a plain admin-panel update leaves takserver_config's
 # messaging/CoT service running undisturbed instead of bouncing everything.
 docker compose --env-file "$ENV_FILE" up -d --remove-orphans \
-    || fail "Container restart failed (see output above)."
+    || { dump_service_logs "$ENV_FILE"; fail "Container restart failed (see output above)."; }
 ok "Containers restarted"
 
 # The EFDI bridge is an always-on TAK integration. Reapply its shared routing
