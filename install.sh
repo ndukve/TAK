@@ -183,8 +183,13 @@ else
     case "$_VPN_ACTION" in
         netbird)
             # Plaintext, not masked — lets you visually compare against
-            # app.netbird.io while typing/pasting.
-            wt_input_required VPN_KEY "NetBird" "NetBird setup key (app.netbird.io → Keys):"
+            # app.netbird.io while typing/pasting. Echoed back before use so a
+            # typo/bad-paste is caught here, not after burning the setup key
+            # on a failed `netbird up`.
+            while true; do
+                wt_input_required VPN_KEY "NetBird" "NetBird setup key (app.netbird.io → Keys):"
+                wt_yesno "Confirm NetBird Key" "About to use this setup key:\n\n${VPN_KEY}\n\nDoes this match app.netbird.io exactly?" 12 72 && break
+            done
             # Reaching this branch means neither wt0 nor tailscale0 had an IP
             # (checked above), so any NetBird package already on the box is a
             # stale/broken leftover, not a live tunnel — safe to purge before
