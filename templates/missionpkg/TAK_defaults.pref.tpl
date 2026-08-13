@@ -21,6 +21,11 @@
 <!-- Hide Phone number -->
 <entry key="saHasPhoneNumber" class="class java.lang.Boolean">false</entry>
 <entry key="locationUnitType" class="class java.lang.String">a-f-G-U-C</entry>
+<!-- Squad color / role — left unset (ATAK's own local default applies)
+     unless the operator picked one when generating this package. -->
+{{if getenv "TAK_LOCATION_TEAM" ""}}<entry key="locationTeam" class="class java.lang.String">{{.Env.TAK_LOCATION_TEAM}}</entry>
+{{else}}{{end}}{{if getenv "TAK_ATAK_ROLE" ""}}<entry key="atakRoleType" class="class java.lang.String">{{.Env.TAK_ATAK_ROLE}}</entry>
+{{else}}{{end}}
 <entry key="viewshed_prefs_radius" class="class java.lang.Integer">1000</entry>
 <!-- Height over Sea level force -->
 <entry key="alt_display_pref" class="class java.lang.String">MSL</entry>

@@ -98,6 +98,8 @@ function UserTable({ users, loading, emptyText, createFieldLogin, renameFieldAcc
 function NewUserModal({ onClose, onCreated }: { onClose: () => void; onCreated: () => void }) {
   const [callsign, setCallsign] = useState('')
   const [clientType, setClientType] = useState<'ATAK' | 'WinTAK' | 'iTAK' | 'Service'>('iTAK')
+  const [team, setTeam] = useState('')
+  const [role, setRole] = useState('')
   const [step, setStep] = useState<Step>('form')
   const [packageReady, setPackageReady] = useState(false)
   const [fieldAccount, setFieldAccount] = useState<{ username: string; password: string } | null>(null)
@@ -119,7 +121,7 @@ function NewUserModal({ onClose, onCreated }: { onClose: () => void; onCreated: 
       await apiJson('/api/users/gen-cert', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ username }) })
       setStep('make-package')
       const pkg = await apiJson<{ field_account_created: boolean; field_username: string; field_account_password: string | null }>(
-        '/api/users/make-package', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ username }) }
+        '/api/users/make-package', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ username, team: team || null, role: role || null }) }
       )
       setPackageReady(true)
       if (pkg.field_account_created) {
@@ -161,6 +163,41 @@ function NewUserModal({ onClose, onCreated }: { onClose: () => void; onCreated: 
               </select>
               <p className="text-xs text-zinc-500">iTAK uses a different package layout than ATAK/WinTAK — pick the right one. Service accounts are for automated/API integrations, not a TAK client app.</p>
             </div>
+            {clientType !== 'Service' && (
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1">
+                  <label className="text-sm text-zinc-700 dark:text-zinc-300">Team</label>
+                  <select value={team} onChange={e => setTeam(e.target.value)}
+                    className="w-full px-3 py-2 rounded-none bg-zinc-200 dark:bg-[#141416] border border-zinc-300 dark:border-white/10 text-zinc-900 dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-accent-ring">
+                    <option value="">Unset (device default)</option>
+                    <option value="Cyan">Cyan</option>
+                    <option value="Dark Blue">Dark Blue</option>
+                    <option value="Green">Green</option>
+                    <option value="Maroon">Maroon</option>
+                    <option value="Orange">Orange</option>
+                    <option value="Purple">Purple</option>
+                    <option value="Red">Red</option>
+                    <option value="White">White</option>
+                    <option value="Yellow">Yellow</option>
+                  </select>
+                </div>
+                <div className="space-y-1">
+                  <label className="text-sm text-zinc-700 dark:text-zinc-300">Role</label>
+                  <select value={role} onChange={e => setRole(e.target.value)}
+                    className="w-full px-3 py-2 rounded-none bg-zinc-200 dark:bg-[#141416] border border-zinc-300 dark:border-white/10 text-zinc-900 dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-accent-ring">
+                    <option value="">Unset (device default)</option>
+                    <option value="Team Member">Team Member</option>
+                    <option value="Team Lead">Team Lead</option>
+                    <option value="HQ">HQ</option>
+                    <option value="Sniper">Sniper</option>
+                    <option value="Medic">Medic</option>
+                    <option value="Forward Observer">Forward Observer</option>
+                    <option value="RTO">RTO</option>
+                    <option value="K9">K9</option>
+                  </select>
+                </div>
+              </div>
+            )}
             {username && <p className="text-xs text-zinc-500">Package name: <span className="font-mono text-zinc-700 dark:text-zinc-300">{username}</span></p>}
             <div className="flex gap-2">
               <button type="button" onClick={onClose} className="flex-1 py-2 rounded-none bg-zinc-300 dark:bg-[#232326] hover:bg-zinc-400 dark:hover:bg-[#2b2b2f] text-sm">Cancel</button>

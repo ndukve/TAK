@@ -54,8 +54,9 @@ case "$CLIENT_CERT_NAME" in
     *-iTAK)
         # Flat layout: cert files + preference file at zip root.
         cat ${WORK_DIR}/blueteam.pref.tpl         | gomplate > ${WORK_DIR}/blueteam.pref
+        cat ${WORK_DIR}/TAK_defaults.pref.tpl     | gomplate > ${WORK_DIR}/TAK_defaults.pref
         cat ${WORK_DIR}/MANIFEST/manifest.xml.tpl | gomplate > ${WORK_DIR}/MANIFEST/manifest.xml
-        rm ${WORK_DIR}/blueteam.pref.tpl ${WORK_DIR}/MANIFEST/manifest.xml.tpl
+        rm ${WORK_DIR}/blueteam.pref.tpl ${WORK_DIR}/TAK_defaults.pref.tpl ${WORK_DIR}/MANIFEST/manifest.xml.tpl
         cp ${CR}/files/${CLIENT_CERT_NAME}.p12 ${WORK_DIR}/
         cp ${CR}/files/truststore-root.p12     ${WORK_DIR}/
         ;;
@@ -73,9 +74,12 @@ case "$CLIENT_CERT_NAME" in
         ;;
     *)
         # Nested Mission Package layout (ATAK/WinTAK): content/ + MANIFEST/.
+        # TAK_defaults.pref ships at the zip root even in this layout — only
+        # blueteam.pref/cert/truststore live under content/ (see manifest).
         cat ${WORK_DIR}/content/blueteam.pref.tpl | gomplate > ${WORK_DIR}/content/blueteam.pref
+        cat ${WORK_DIR}/TAK_defaults.pref.tpl     | gomplate > ${WORK_DIR}/TAK_defaults.pref
         cat ${WORK_DIR}/MANIFEST/manifest.xml.tpl  | gomplate > ${WORK_DIR}/MANIFEST/manifest.xml
-        rm ${WORK_DIR}/content/blueteam.pref.tpl ${WORK_DIR}/MANIFEST/manifest.xml.tpl
+        rm ${WORK_DIR}/content/blueteam.pref.tpl ${WORK_DIR}/TAK_defaults.pref.tpl ${WORK_DIR}/MANIFEST/manifest.xml.tpl
         cp ${CR}/files/${CLIENT_CERT_NAME}.p12 ${WORK_DIR}/content/
         cp ${CR}/files/truststore-root.p12     ${WORK_DIR}/content/
         ;;

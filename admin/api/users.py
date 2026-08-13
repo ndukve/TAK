@@ -104,6 +104,12 @@ class UsernameRequest(BaseModel):
     username: str
 
 
+class MakePackageRequest(BaseModel):
+    username: str
+    team: str | None = None
+    role: str | None = None
+
+
 class SetPasswordRequest(BaseModel):
     username: str
     password: str
@@ -167,11 +173,16 @@ async def gen_cert(body: UsernameRequest, db: AsyncSession = Depends(get_db), ac
 
 
 @router.post("/make-package", status_code=201)
-async def make_package(body: UsernameRequest, db: AsyncSession = Depends(get_db), actor=Depends(_admin)):
+async def make_package(body: MakePackageRequest, db: AsyncSession = Depends(get_db), actor=Depends(_admin)):
     username = _validate_new_username(body.username)
+    env = {"CLIENT_CERT_NAME": username, "TAK_SERVER_ADDRESS": SERVER_ADDR}
+    if body.team:
+        env["TAK_LOCATION_TEAM"] = body.team
+    if body.role:
+        env["TAK_ATAK_ROLE"] = body.role
     code, out = await run_in_container(
         ["bash", "/opt/scripts/make_pkg_zip.sh"],
-        env={"CLIENT_CERT_NAME": username, "TAK_SERVER_ADDRESS": SERVER_ADDR},
+        env=env,
     )
     if code != 0:
         raise HTTPException(status_code=500, detail=out)
