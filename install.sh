@@ -190,6 +190,9 @@ else
                 wt_input_required VPN_KEY "NetBird" "NetBird setup key (app.netbird.io → Keys):"
                 wt_yesno "Confirm NetBird Key" "About to use this setup key:\n\n${VPN_KEY}\n\nDoes this match app.netbird.io exactly?" 12 72 && break
             done
+            # Blank = NetBird's own default (NetBird Cloud, api.netbird.io).
+            # Only self-hosted management servers need this set.
+            wt_input NETBIRD_MGMT_URL "NetBird" "Self-hosted management URL (leave blank for NetBird Cloud):"
             # Reaching this branch means neither wt0 nor tailscale0 had an IP
             # (checked above), so any NetBird package already on the box is a
             # stale/broken leftover, not a live tunnel — safe to purge before
@@ -205,9 +208,11 @@ else
             run_with_gauge "NetBird" "Installing NetBird..." -- bash -c \
                 "curl -fsSL https://pkgs.netbird.io/install.sh | sh" \
                 || fail "NetBird installation failed (see output above)."
+            _NB_UP_ARGS=(up --setup-key="$VPN_KEY")
+            [ -n "$NETBIRD_MGMT_URL" ] && _NB_UP_ARGS+=(--management-url="$NETBIRD_MGMT_URL")
             run_with_gauge "NetBird" "Connecting to NetBird..." -- \
-                netbird up --setup-key="$VPN_KEY" \
-                || fail "NetBird connection failed — check your setup key."
+                netbird "${_NB_UP_ARGS[@]}" \
+                || fail "NetBird connection failed — check your setup key${NETBIRD_MGMT_URL:+ and management URL}."
             sleep 3
             TAK_SERVER_ADDRESS=$(ip addr show wt0 2>/dev/null | awk '/inet / {print $2}' | cut -d/ -f1 | head -1)
             [ -n "$TAK_SERVER_ADDRESS" ] || fail "Could not read wt0 IP after connecting."
@@ -251,7 +256,8 @@ done
 
 # ── [4/7] Review ──────────────────────────────────────────────────────────────
 _SUMMARY="Server address    : ${TAK_SERVER_ADDRESS}
-Server name       : ${TAK_SERVER_NAME}
+${NETBIRD_MGMT_URL:+NetBird mgmt URL  : $NETBIRD_MGMT_URL
+}Server name       : ${TAK_SERVER_NAME}
 Country           : ${COUNTRY}
 State             : ${STATE}
 City              : ${CITY}
