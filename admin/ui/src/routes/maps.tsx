@@ -1,4 +1,5 @@
 import { createFileRoute, redirect } from '@tanstack/react-router'
+import { Icon } from '@/components/ui/icon'
 import { useEffect, useRef, useState } from 'react'
 import { Layout } from '@/components/Layout'
 import { PageHeader } from '@/components/PageHeader'
@@ -7,7 +8,6 @@ import { useAuth } from '@/store/auth'
 import { notify } from '@/lib/notify'
 import { TableSkeletonRows } from '@/components/Skeleton'
 import { HudCorners } from '@/components/HudCorners'
-import { Trash2, Upload, Copy, Check, Download, Pause, RotateCcw, X } from 'lucide-react'
 
 function CopyHash({ hash }: { hash: string }) {
   const [copied, setCopied] = useState(false)
@@ -19,7 +19,7 @@ function CopyHash({ hash }: { hash: string }) {
   return (
     <button onClick={copy} title="Copy SHA-256" aria-label="Copy full SHA-256 hash" className="flex items-center gap-1 font-mono text-xs text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300 transition-colors focus:outline-none focus:ring-2 focus:ring-accent-ring">
       <span>{hash.slice(0, 16)}…</span>
-      {copied ? <Check size={11} className="text-green-600 dark:text-green-400" /> : <Copy size={11} />}
+      {copied ? <Icon name="check-line" size={11} className="text-green-600 dark:text-green-400" /> : <Icon name="file-copy-line" size={11} />}
     </button>
   )
 }
@@ -220,7 +220,7 @@ function MapsPage() {
             disabled={uploadProgress !== null}
             className="flex items-center gap-2 px-4 py-2 bg-accent-fill hover:bg-accent-fill-hover disabled:opacity-50 text-accent-text text-sm rounded-none transition-colors"
           >
-            <Upload size={14} />
+            <Icon name="upload-line" size={14} />
             {uploadProgress?.phase === 'uploading' ? 'Uploading…' : 'Upload Map'}
           </button>
           <input
@@ -274,14 +274,14 @@ function MapsPage() {
                           className="p-1.5 rounded-none hover:bg-zinc-200 dark:hover:bg-[#141416] text-accent-ring"
                           title="Download"
                         >
-                          <Download size={14} />
+                          <Icon name="download-line" size={14} />
                         </button>
                         <button
                           onClick={() => handleDelete(m)}
                           className="p-1.5 rounded-none hover:bg-zinc-200 dark:hover:bg-[#141416] text-red-600 dark:text-red-400"
                           title="Delete"
                         >
-                          <Trash2 size={14} />
+                          <Icon name="delete-bin-2-line" size={14} />
                         </button>
                       </div>
                     </td>
@@ -302,7 +302,7 @@ function MapsPage() {
                   <p className="mt-1 truncate font-mono text-xs text-zinc-500">{uploadProgress.provider}/{uploadProgress.filename}</p>
                 </div>
                 <button onClick={closeUploadPrompt} className="rounded-none p-1 text-zinc-500 hover:bg-zinc-100 dark:hover:bg-white/10" aria-label="Close upload dialog">
-                  <X size={16} />
+                  <Icon name="close-line" size={16} />
                 </button>
               </div>
 
@@ -327,12 +327,12 @@ function MapsPage() {
               <div className="mt-5 flex justify-end gap-2">
                 {uploadProgress.phase === 'uploading' && (
                   <button onClick={pauseUpload} className="flex items-center gap-2 rounded-none border border-zinc-300 dark:border-white/15 px-3 py-2 text-sm hover:bg-zinc-100 dark:hover:bg-white/10">
-                    <Pause size={14} /> Pause
+                    <Icon name="pause-line" size={14} /> Pause
                   </button>
                 )}
                 {(uploadProgress.phase === 'paused' || uploadProgress.phase === 'failed') && (
                   <button onClick={resumeUpload} className="flex items-center gap-2 rounded-none bg-accent-fill px-3 py-2 text-sm text-accent-text hover:bg-accent-fill-hover">
-                    <RotateCcw size={14} /> Resume upload
+                    <Icon name="arrow-go-back-line" size={14} /> Resume upload
                   </button>
                 )}
                 {uploadProgress.phase === 'complete' && (

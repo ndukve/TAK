@@ -1,6 +1,6 @@
 import { createFileRoute, redirect } from '@tanstack/react-router'
+import { Icon } from '@/components/ui/icon'
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { AlertTriangle, CheckCircle2, CloudRain, FileUp, History, Radio, RefreshCw, RotateCcw, Send, Trash2, Upload } from 'lucide-react'
 import { Layout } from '@/components/Layout'
 import { PageHeader } from '@/components/PageHeader'
 import { HudCorners } from '@/components/HudCorners'
@@ -401,7 +401,7 @@ function BasemapsPage() {
 
         {proxyStatus?.warning && (
           <div className="flex items-start gap-2 rounded-none border border-yellow-300/60 dark:border-yellow-600/30 bg-yellow-50 dark:bg-yellow-500/[0.05] p-3 text-xs text-yellow-800 dark:text-yellow-300">
-            <AlertTriangle size={15} className="mt-0.5 shrink-0" />
+            <Icon name="alert-line" size={15} className="mt-0.5 shrink-0" />
             <span>{proxyStatus.warning}</span>
           </div>
         )}
@@ -410,7 +410,7 @@ function BasemapsPage() {
           <section className="hud-frame relative rounded-none border border-green-300 dark:border-green-500/40 bg-green-50 dark:bg-green-500/[0.06] p-4">
             <HudCorners />
             <div className="flex items-start gap-3">
-              <CheckCircle2 size={19} className="mt-0.5 shrink-0 text-green-600 dark:text-green-400" />
+              <Icon name="checkbox-circle-line" size={19} className="mt-0.5 shrink-0 text-green-600 dark:text-green-400" />
               <div className="min-w-0">
                 <div className="flex flex-wrap items-center gap-2">
                   <span className="rounded-none bg-green-600 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-white">Successful</span>
@@ -436,14 +436,14 @@ function BasemapsPage() {
             </div>
             <div className="flex gap-2">
               <button onClick={checkSources} disabled={busy} className="flex items-center gap-2 rounded-none border border-zinc-300 dark:border-white/15 px-3 py-2 text-xs hover:bg-zinc-100 dark:hover:bg-white/10 disabled:opacity-50">
-                <Radio size={13} /> Test sources
+                <Icon name="rss-line" size={13} /> Test sources
               </button>
               <button
                 onClick={() => { void load() }}
                 disabled={loading || busy}
                 className="flex items-center gap-2 rounded-none border border-zinc-300 dark:border-white/15 px-3 py-2 text-xs hover:bg-zinc-100 dark:hover:bg-white/10 disabled:opacity-50"
               >
-                <RefreshCw size={13} /> Refresh
+                <Icon name="refresh-line" size={13} /> Refresh
               </button>
             </div>
           </div>
@@ -477,7 +477,7 @@ function BasemapsPage() {
                       <span className="block text-xs text-zinc-500">{source.provider} · {source.kind === 'offline' ? 'offline MBTiles' : 'XML source'}</span>
                     </button>
                     {(source.provider === 'Custom' || source.provider === 'Offline') && (
-                      <button type="button" onClick={() => { void removeLibrarySource(source) }} disabled={busy} title="Delete stored source" className="rounded-none p-1.5 text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10 disabled:opacity-50"><Trash2 size={13} /></button>
+                      <button type="button" onClick={() => { void removeLibrarySource(source) }} disabled={busy} title="Delete stored source" className="rounded-none p-1.5 text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10 disabled:opacity-50"><Icon name="delete-bin-2-line" size={13} /></button>
                     )}
                   </div>
                 ))}
@@ -503,7 +503,7 @@ function BasemapsPage() {
           <div className="hud-frame relative rounded-none border border-zinc-200 dark:border-white/10 hud-glass p-4">
             <HudCorners />
             <div className="flex items-center gap-2">
-              <Radio size={16} className={recipients.length > 0 ? 'text-green-500' : 'text-zinc-500'} />
+              <Icon name="rss-line" size={16} className={recipients.length > 0 ? 'text-green-500' : 'text-zinc-500'} />
               <h2 className="text-sm font-semibold">Connected EUDs</h2>
               <span className="ml-auto font-mono text-xs text-zinc-500">{recipients.length} online</span>
             </div>
@@ -511,7 +511,7 @@ function BasemapsPage() {
               <div className="mt-4 rounded-none border border-yellow-300/60 dark:border-yellow-600/30 bg-yellow-50 dark:bg-yellow-500/[0.05] p-3">
                 <p className="text-xs text-yellow-800 dark:text-yellow-300">{recipientError}</p>
                 <button onClick={setupConnection} disabled={busy} className="mt-3 flex items-center gap-2 rounded-none bg-accent-fill px-3 py-2 text-xs text-accent-text hover:bg-accent-fill-hover disabled:opacity-50">
-                  <Radio size={13} /> Set up service certificate
+                  <Icon name="rss-line" size={13} /> Set up service certificate
                 </button>
               </div>
             ) : recipients.length === 0 ? (
@@ -547,7 +547,7 @@ function BasemapsPage() {
           <div className="hud-frame relative rounded-none border border-zinc-200 dark:border-white/10 hud-glass p-4">
             <HudCorners />
             <div className="flex items-center gap-2">
-              <CloudRain size={16} />
+              <Icon name="rainy-line" size={16} />
               <h2 className="text-sm font-semibold">Distribution</h2>
             </div>
             <p className="mt-3 text-xs text-zinc-500">TAK Server creates an invite-only mission, adds the selected layers, and sends the archive and invitation to each selected live client UID.</p>
@@ -564,7 +564,7 @@ function BasemapsPage() {
               disabled={busy || selected.size === 0 || recipientCount === 0}
               className="mt-4 flex w-full items-center justify-center gap-2 rounded-none bg-accent-fill px-4 py-2.5 text-sm font-medium text-accent-text hover:bg-accent-fill-hover disabled:opacity-50"
             >
-              <Send size={15} /> {busy ? 'Publishing…' : 'Push to Connected EUDs'}
+              <Icon name="send-plane-line" size={15} /> {busy ? 'Publishing…' : 'Push to Connected EUDs'}
             </button>
           </div>
         </section>
@@ -572,27 +572,27 @@ function BasemapsPage() {
         <section className="grid gap-4 lg:grid-cols-2">
           <form onSubmit={addXmlFile} className="hud-frame relative rounded-none border border-zinc-200 dark:border-white/10 hud-glass p-4 space-y-3">
             <HudCorners />
-            <div className="flex items-center gap-2"><FileUp size={16} /><h2 className="text-sm font-semibold">Add XML File</h2></div>
+            <div className="flex items-center gap-2"><Icon name="upload-2-line" size={16} /><h2 className="text-sm font-semibold">Add XML File</h2></div>
             <p className="text-xs text-zinc-500">Upload an ATAK/MOBAC customMapSource or customWmsMapSource XML file.</p>
             <input value={fileName} onChange={event => setFileName(event.target.value)} required maxLength={80} placeholder="Basemap name" className="w-full rounded-none border border-zinc-300 dark:border-white/10 bg-zinc-50 dark:bg-black/20 px-3 py-2 text-sm" />
             <input ref={fileRef} type="file" accept=".xml,text/xml,application/xml" required className="w-full rounded-none border border-zinc-300 dark:border-white/10 bg-zinc-50 dark:bg-black/20 px-3 py-2 text-xs" />
-            <button disabled={busy} className="flex items-center gap-2 rounded-none bg-accent-fill px-3 py-2 text-sm text-accent-text hover:bg-accent-fill-hover disabled:opacity-50"><Upload size={14} /> Add XML File</button>
+            <button disabled={busy} className="flex items-center gap-2 rounded-none bg-accent-fill px-3 py-2 text-sm text-accent-text hover:bg-accent-fill-hover disabled:opacity-50"><Icon name="upload-line" size={14} /> Add XML File</button>
           </form>
 
           <form onSubmit={addXmlUrl} className="hud-frame relative rounded-none border border-zinc-200 dark:border-white/10 hud-glass p-4 space-y-3">
             <HudCorners />
-            <div className="flex items-center gap-2"><CloudRain size={16} /><h2 className="text-sm font-semibold">Add XML URL</h2></div>
+            <div className="flex items-center gap-2"><Icon name="rainy-line" size={16} /><h2 className="text-sm font-semibold">Add XML URL</h2></div>
             <p className="text-xs text-zinc-500">Import a public HTTPS URL that points directly to an ATAK XML map source.</p>
             <input value={urlName} onChange={event => setUrlName(event.target.value)} required maxLength={80} placeholder="Basemap name" className="w-full rounded-none border border-zinc-300 dark:border-white/10 bg-zinc-50 dark:bg-black/20 px-3 py-2 text-sm" />
             <input value={xmlUrl} onChange={event => setXmlUrl(event.target.value)} required type="url" placeholder="https://example.com/map.xml" className="w-full rounded-none border border-zinc-300 dark:border-white/10 bg-zinc-50 dark:bg-black/20 px-3 py-2 text-sm" />
-            <button disabled={busy} className="flex items-center gap-2 rounded-none bg-accent-fill px-3 py-2 text-sm text-accent-text hover:bg-accent-fill-hover disabled:opacity-50"><Upload size={14} /> Add XML URL</button>
+            <button disabled={busy} className="flex items-center gap-2 rounded-none bg-accent-fill px-3 py-2 text-sm text-accent-text hover:bg-accent-fill-hover disabled:opacity-50"><Icon name="upload-line" size={14} /> Add XML URL</button>
           </form>
         </section>
 
         <section className="hud-frame relative rounded-none border border-zinc-200 dark:border-white/10 hud-glass p-4">
           <HudCorners />
           <div className="flex flex-wrap items-center justify-between gap-3 border-b border-zinc-200 dark:border-white/10 pb-3">
-            <div className="flex items-center gap-2"><History size={16} /><h2 className="text-sm font-semibold">Distribution history</h2></div>
+            <div className="flex items-center gap-2"><Icon name="history-line" size={16} /><h2 className="text-sm font-semibold">Distribution history</h2></div>
             <button onClick={cleanupHistory} disabled={busy} className="rounded-none border border-zinc-300 dark:border-white/15 px-3 py-2 text-xs hover:bg-zinc-100 dark:hover:bg-white/10 disabled:opacity-50">Clean missions older than 30 days</button>
           </div>
           {history.length === 0 ? (
@@ -612,10 +612,10 @@ function BasemapsPage() {
                   {(distribution.status === 'completed' || distribution.status === 'failed') && (
                     <div className="flex gap-1">
                       {distribution.status === 'completed' && (
-                      <button onClick={() => { void refreshDelivery(distribution) }} disabled={busy} title="Refresh acceptance" className="rounded-none p-2 hover:bg-zinc-100 dark:hover:bg-white/10"><RefreshCw size={13} /></button>
+                      <button onClick={() => { void refreshDelivery(distribution) }} disabled={busy} title="Refresh acceptance" className="rounded-none p-2 hover:bg-zinc-100 dark:hover:bg-white/10"><Icon name="refresh-line" size={13} /></button>
                       )}
-                      <button onClick={() => { void resend(distribution) }} disabled={busy} title="Resend" className="rounded-none p-2 hover:bg-zinc-100 dark:hover:bg-white/10"><RotateCcw size={13} /></button>
-                      <button onClick={() => { void removeDistribution(distribution) }} disabled={busy} title="Delete mission" className="rounded-none p-2 text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10"><Trash2 size={13} /></button>
+                      <button onClick={() => { void resend(distribution) }} disabled={busy} title="Resend" className="rounded-none p-2 hover:bg-zinc-100 dark:hover:bg-white/10"><Icon name="arrow-go-back-line" size={13} /></button>
+                      <button onClick={() => { void removeDistribution(distribution) }} disabled={busy} title="Delete mission" className="rounded-none p-2 text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10"><Icon name="delete-bin-2-line" size={13} /></button>
                     </div>
                   )}
                 </div>
@@ -626,7 +626,7 @@ function BasemapsPage() {
 
         <form onSubmit={buildOffline} className="hud-frame relative rounded-none border border-zinc-200 dark:border-white/10 hud-glass p-4 space-y-3">
           <HudCorners />
-          <div className="flex items-center gap-2"><CloudRain size={16} /><h2 className="text-sm font-semibold">Build Offline AOI</h2></div>
+          <div className="flex items-center gap-2"><Icon name="rainy-line" size={16} /><h2 className="text-sm font-semibold">Build Offline AOI</h2></div>
           <p className="text-xs text-zinc-500">Download a bounded area into MBTiles, then select it above and push it inside the TAK mission package.</p>
           <div className="grid gap-3 md:grid-cols-2">
             <input value={offlineName} onChange={event => setOfflineName(event.target.value)} required maxLength={80} placeholder="Offline map name" className="rounded-none border border-zinc-300 dark:border-white/10 bg-zinc-50 dark:bg-black/20 px-3 py-2 text-sm" />
@@ -643,7 +643,7 @@ function BasemapsPage() {
             <label className="text-xs text-zinc-500">Min zoom<input type="number" min={0} max={20} required value={offlineZoom.min} onChange={event => setOfflineZoom(current => ({ ...current, min: event.target.value }))} className="mt-1 w-full rounded-none border border-zinc-300 dark:border-white/10 bg-zinc-50 dark:bg-black/20 px-2 py-2 text-sm text-zinc-900 dark:text-white" /></label>
             <label className="text-xs text-zinc-500">Max zoom<input type="number" min={0} max={20} required value={offlineZoom.max} onChange={event => setOfflineZoom(current => ({ ...current, max: event.target.value }))} className="mt-1 w-full rounded-none border border-zinc-300 dark:border-white/10 bg-zinc-50 dark:bg-black/20 px-2 py-2 text-sm text-zinc-900 dark:text-white" /></label>
           </div>
-          <button disabled={busy} className="flex items-center gap-2 rounded-none bg-accent-fill px-3 py-2 text-sm text-accent-text hover:bg-accent-fill-hover disabled:opacity-50"><Upload size={14} /> {busy ? 'Building…' : 'Build MBTiles AOI'}</button>
+          <button disabled={busy} className="flex items-center gap-2 rounded-none bg-accent-fill px-3 py-2 text-sm text-accent-text hover:bg-accent-fill-hover disabled:opacity-50"><Icon name="upload-line" size={14} /> {busy ? 'Building…' : 'Build MBTiles AOI'}</button>
         </form>
 
         <p className="text-[11px] text-zinc-500">{providerNotice}</p>

@@ -1,4 +1,5 @@
 import { createFileRoute, redirect } from '@tanstack/react-router'
+import { Icon } from '@/components/ui/icon'
 import { useEffect, useState } from 'react'
 import { Layout } from '@/components/Layout'
 import { PageHeader } from '@/components/PageHeader'
@@ -8,7 +9,6 @@ import { notify } from '@/lib/notify'
 import { TableSkeletonRows } from '@/components/Skeleton'
 import { PasswordInput } from '@/components/PasswordInput'
 import { StatusPill } from '@/components/StatusPill'
-import { UserPlus, Trash2, CheckCircle, XCircle, KeyRound, Download, RefreshCw, Pencil } from 'lucide-react'
 
 export const Route = createFileRoute('/users')({
   beforeLoad: () => {
@@ -69,7 +69,7 @@ function UserTable({ users, loading, emptyText, createFieldLogin, renameFieldAcc
                     ? (
                       <span className="inline-flex items-center gap-2">
                         <StatusPill text={`active (${u.field_username})`} tone="ok" />
-                        <button onClick={() => renameFieldAccount(u.base_callsign, u.field_username)} disabled={pendingUsers.has(u.base_callsign)} title="Rename login" aria-label="Rename login" className="p-1 rounded-none hover:bg-zinc-200 dark:hover:bg-[#141416] text-zinc-600 dark:text-zinc-400 focus:outline-none focus:ring-2 focus:ring-accent-ring disabled:opacity-50"><Pencil size={12} /></button>
+                        <button onClick={() => renameFieldAccount(u.base_callsign, u.field_username)} disabled={pendingUsers.has(u.base_callsign)} title="Rename login" aria-label="Rename login" className="p-1 rounded-none hover:bg-zinc-200 dark:hover:bg-[#141416] text-zinc-600 dark:text-zinc-400 focus:outline-none focus:ring-2 focus:ring-accent-ring disabled:opacity-50"><Icon name="pencil-line" size={12} /></button>
                       </span>
                     )
                     : <button onClick={() => createFieldLogin(u.username)} disabled={pendingUsers.has(u.username)} className="text-xs px-2 py-1 rounded-none bg-zinc-200 dark:bg-[#141416] hover:bg-zinc-300 dark:hover:bg-[#232326] text-zinc-700 dark:text-zinc-300 disabled:opacity-50">Create login</button>
@@ -79,11 +79,11 @@ function UserTable({ users, loading, emptyText, createFieldLogin, renameFieldAcc
                   <CertBadge daysRemaining={u.cert_days_remaining} />
                 </td>
                 <td className="px-4 py-3 flex justify-end gap-2">
-                  <button onClick={() => downloadPackage(u.username)} disabled={pendingUsers.has(u.username)} title="Download package" aria-label="Download package" className="p-1.5 rounded-none hover:bg-zinc-200 dark:hover:bg-[#141416] text-accent-ring focus:outline-none focus:ring-2 focus:ring-accent-ring disabled:opacity-50"><Download size={14} /></button>
-                  <button onClick={() => enableUser(u.username)} disabled={pendingUsers.has(u.username)} title="Enable" aria-label="Enable" className="p-1.5 rounded-none hover:bg-zinc-200 dark:hover:bg-[#141416] text-green-600 dark:text-green-400 focus:outline-none focus:ring-2 focus:ring-accent-ring disabled:opacity-50"><CheckCircle size={14} /></button>
-                  {!u.always_enabled && <button onClick={() => disableUser(u.username)} disabled={pendingUsers.has(u.username)} title="Disable" aria-label="Disable" className="p-1.5 rounded-none hover:bg-zinc-200 dark:hover:bg-[#141416] text-yellow-600 dark:text-yellow-400 focus:outline-none focus:ring-2 focus:ring-accent-ring disabled:opacity-50"><XCircle size={14} /></button>}
-                  <button onClick={() => setSetPwUser(u.username)} title="Set Password" aria-label="Set Password" className="p-1.5 rounded-none hover:bg-zinc-200 dark:hover:bg-[#141416] text-accent-ring focus:outline-none focus:ring-2 focus:ring-accent-ring"><KeyRound size={14} /></button>
-                  {!u.always_enabled && <button onClick={() => deleteUser(u.username)} disabled={pendingUsers.has(u.username)} title="Delete" aria-label="Delete" className="p-1.5 rounded-none hover:bg-zinc-200 dark:hover:bg-[#141416] text-red-600 dark:text-red-400 focus:outline-none focus:ring-2 focus:ring-accent-ring disabled:opacity-50"><Trash2 size={14} /></button>}
+                  <button onClick={() => downloadPackage(u.username)} disabled={pendingUsers.has(u.username)} title="Download package" aria-label="Download package" className="p-1.5 rounded-none hover:bg-zinc-200 dark:hover:bg-[#141416] text-accent-ring focus:outline-none focus:ring-2 focus:ring-accent-ring disabled:opacity-50"><Icon name="download-line" size={14} /></button>
+                  <button onClick={() => enableUser(u.username)} disabled={pendingUsers.has(u.username)} title="Enable" aria-label="Enable" className="p-1.5 rounded-none hover:bg-zinc-200 dark:hover:bg-[#141416] text-green-600 dark:text-green-400 focus:outline-none focus:ring-2 focus:ring-accent-ring disabled:opacity-50"><Icon name="checkbox-circle-line" size={14} /></button>
+                  {!u.always_enabled && <button onClick={() => disableUser(u.username)} disabled={pendingUsers.has(u.username)} title="Disable" aria-label="Disable" className="p-1.5 rounded-none hover:bg-zinc-200 dark:hover:bg-[#141416] text-yellow-600 dark:text-yellow-400 focus:outline-none focus:ring-2 focus:ring-accent-ring disabled:opacity-50"><Icon name="close-circle-line" size={14} /></button>}
+                  <button onClick={() => setSetPwUser(u.username)} title="Set Password" aria-label="Set Password" className="p-1.5 rounded-none hover:bg-zinc-200 dark:hover:bg-[#141416] text-accent-ring focus:outline-none focus:ring-2 focus:ring-accent-ring"><Icon name="key-2-line" size={14} /></button>
+                  {!u.always_enabled && <button onClick={() => deleteUser(u.username)} disabled={pendingUsers.has(u.username)} title="Delete" aria-label="Delete" className="p-1.5 rounded-none hover:bg-zinc-200 dark:hover:bg-[#141416] text-red-600 dark:text-red-400 focus:outline-none focus:ring-2 focus:ring-accent-ring disabled:opacity-50"><Icon name="delete-bin-2-line" size={14} /></button>}
                 </td>
               </tr>
             ))
@@ -216,7 +216,7 @@ function NewUserModal({ onClose, onCreated }: { onClose: () => void; onCreated: 
               const active = s.id === step
               return (
                 <div key={s.id} className={`flex items-center gap-3 p-3 rounded-none border ${active ? 'border-accent-fill bg-accent-fill/10' : done ? 'border-zinc-300 dark:border-white/10 bg-zinc-100 dark:bg-[#0c0c0e]' : 'border-zinc-200 dark:border-white/10 opacity-40'}`}>
-                  {done ? <CheckCircle size={16} className="text-green-600 dark:text-green-400 shrink-0" /> : <div className={`w-4 h-4 rounded-full border-2 shrink-0 ${active ? 'border-accent-ring animate-pulse' : 'border-zinc-400 dark:border-white/15'}`} />}
+                  {done ? <Icon name="checkbox-circle-line" size={16} className="text-green-600 dark:text-green-400 shrink-0" /> : <div className={`w-4 h-4 rounded-full border-2 shrink-0 ${active ? 'border-accent-ring animate-pulse' : 'border-zinc-400 dark:border-white/15'}`} />}
                   <span className="text-sm">{s.label}</span>
                 </div>
               )
@@ -227,7 +227,7 @@ function NewUserModal({ onClose, onCreated }: { onClose: () => void; onCreated: 
         {step === 'done' && (
           <div className="space-y-4">
             <div className="flex items-center gap-2 text-green-600 dark:text-green-400">
-              <CheckCircle size={18} />
+              <Icon name="checkbox-circle-line" size={18} />
               <span className="font-medium">{username} is ready</span>
             </div>
             {packageReady && (
@@ -432,11 +432,11 @@ function UsersPage() {
             <>
               <button onClick={syncAccounts} disabled={syncing}
                 className="flex items-center gap-2 px-4 py-2 bg-zinc-300 dark:bg-[#232326] hover:bg-zinc-400 dark:hover:bg-[#2b2b2f] disabled:opacity-50 text-zinc-900 dark:text-white text-sm rounded-none transition-colors">
-                <RefreshCw size={14} className={syncing ? 'animate-spin' : ''} /> {syncing ? 'Syncing…' : 'Sync Accounts'}
+                <Icon name="refresh-line" size={14} className={syncing ? 'animate-spin' : ''} /> {syncing ? 'Syncing…' : 'Sync Accounts'}
               </button>
               <button onClick={() => setShowNew(true)}
                 className="flex items-center gap-2 px-4 py-2 bg-accent-fill hover:bg-accent-fill-hover text-accent-text text-sm rounded-none transition-colors">
-                <UserPlus size={14} /> New User
+                <Icon name="user-add-line" size={14} /> New User
               </button>
             </>
           }

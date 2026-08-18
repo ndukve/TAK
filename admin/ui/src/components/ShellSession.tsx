@@ -1,11 +1,11 @@
 import { useEffect, useRef, useState } from 'react'
+import { Icon } from '@/components/ui/icon'
 import { useAuth } from '@/store/auth'
 import { useRoute } from '@/store/route'
 import { apiJson, errorMessage } from '@/lib/api'
 import { Terminal } from '@xterm/xterm'
 import { FitAddon } from '@xterm/addon-fit'
 import { notify } from '@/lib/notify'
-import { ShieldAlert } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { PasswordInput } from '@/components/PasswordInput'
 
@@ -118,7 +118,7 @@ export function ShellSession() {
       {!ticket && (
         <div className="max-w-sm space-y-4">
           <div className="flex items-start gap-3 p-4 rounded-none border border-yellow-300 dark:border-yellow-700/50 bg-yellow-50 dark:bg-yellow-900/20">
-            <ShieldAlert size={16} className="text-yellow-600 dark:text-yellow-400 shrink-0 mt-0.5" />
+            <Icon name="shield-flash-line" size={16} className="text-yellow-600 dark:text-yellow-400 shrink-0 mt-0.5" />
             <p className="text-sm text-yellow-800 dark:text-yellow-200">
               Re-enter your password to unlock shell access. Session expires in 5 minutes.
             </p>

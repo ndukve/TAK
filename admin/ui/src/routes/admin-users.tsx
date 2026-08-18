@@ -1,4 +1,5 @@
 import { createFileRoute, redirect } from '@tanstack/react-router'
+import { Icon } from '@/components/ui/icon'
 import { useEffect, useState } from 'react'
 import { Layout } from '@/components/Layout'
 import { PageHeader } from '@/components/PageHeader'
@@ -8,7 +9,6 @@ import { notify } from '@/lib/notify'
 import { TableSkeletonRows } from '@/components/Skeleton'
 import { HudCorners } from '@/components/HudCorners'
 import { PasswordInput } from '@/components/PasswordInput'
-import { UserPlus, Trash2 } from 'lucide-react'
 
 export const Route = createFileRoute('/admin-users')({
   beforeLoad: () => {
@@ -154,7 +154,7 @@ function AdminUsersPage() {
           actions={
             <button onClick={() => setShowNew(true)}
               className="flex items-center gap-2 px-4 py-2 bg-accent-fill hover:bg-accent-fill-hover text-accent-text text-sm rounded-none transition-colors">
-              <UserPlus size={14} /> New Admin
+              <Icon name="user-add-line" size={14} /> New Admin
             </button>
           }
         />
@@ -189,7 +189,7 @@ function AdminUsersPage() {
                       </button>
                     </td>
                     <td className="px-4 py-3 flex justify-end">
-                      <button onClick={() => deleteUser(u.id, u.username)} disabled={pendingIds.has(u.id)} title="Delete" aria-label="Delete" className="p-1.5 rounded-none hover:bg-zinc-200 dark:hover:bg-[#141416] text-red-600 dark:text-red-400 focus:outline-none focus:ring-2 focus:ring-accent-ring disabled:opacity-50"><Trash2 size={14} /></button>
+                      <button onClick={() => deleteUser(u.id, u.username)} disabled={pendingIds.has(u.id)} title="Delete" aria-label="Delete" className="p-1.5 rounded-none hover:bg-zinc-200 dark:hover:bg-[#141416] text-red-600 dark:text-red-400 focus:outline-none focus:ring-2 focus:ring-accent-ring disabled:opacity-50"><Icon name="delete-bin-2-line" size={14} /></button>
                     </td>
                   </tr>
                 ))

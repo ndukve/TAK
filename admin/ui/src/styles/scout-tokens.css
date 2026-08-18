@@ -1,0 +1,472 @@
+/* Scout design system — Tailwind v4 theme.
+   Dark-first hardened control plane: steel neutrals, signal-blue primary,
+   green/amber/red operational status, square corners, corner-bracket panels.
+   Source of truth: docs/design/system/ (mirror of the Scout Design System project).
+
+   Ported into TAK's admin UI. Two things deliberately dropped from the
+   upstream file since TAK already owns them:
+   - `@import "tailwindcss"` — already imported once in index.css.
+   - `@custom-variant dark/light` — TAK's theme toggle already defines
+     `dark:` against a `.dark` class (src/index.css), not `data-theme`.
+     Its `applyThemeClass()` also sets `data-theme="light"` in sync with
+     that class, so the `[data-theme="light"]` overrides below still
+     apply correctly without redefining the `dark:` variant here. */
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
+@import "@fontsource/aldrich";
+@import "@fontsource-variable/spline-sans";
+@import "@fontsource-variable/spline-sans-mono";
+@import "remixicon/fonts/remixicon.css";
+
+@source "../**/*.{ts,tsx}";
+@source "../**/*.{ts,tsx}";
+
+:root {
+  /* --- Neutral steel ramp (cool, slightly blue) --- */
+  --steel-950: oklch(0.145 0.006 248);
+  --steel-900: oklch(0.178 0.007 244);
+  --steel-850: oklch(0.208 0.008 240);
+  --steel-800: oklch(0.242 0.009 238);
+  --steel-700: oklch(0.31 0.011 236);
+  --steel-600: oklch(0.42 0.013 234);
+  --steel-500: oklch(0.55 0.014 232);
+  --steel-400: oklch(0.66 0.014 230);
+  --steel-300: oklch(0.76 0.012 226);
+  --steel-200: oklch(0.86 0.008 222);
+  --steel-100: oklch(0.93 0.005 220);
+  --steel-050: oklch(0.972 0.003 216);
+
+  /* --- Signal blue (primary) --- */
+  --blue-700: oklch(0.44 0.2 264);
+  --blue-600: oklch(0.52 0.22 264);
+  --blue-500: oklch(0.62 0.2 262);
+  --blue-400: oklch(0.72 0.15 260);
+  --blue-300: oklch(0.82 0.1 258);
+
+  /* --- Operational status --- */
+  --green-500: oklch(0.74 0.18 153);
+  --green-400: oklch(0.82 0.19 150);
+  --amber-500: oklch(0.79 0.15 76);
+  --amber-400: oklch(0.86 0.16 88);
+  --red-500: oklch(0.64 0.23 26);
+  --red-400: oklch(0.72 0.2 24);
+
+  /* === Semantic aliases (dark default) === */
+  --bg: var(--steel-950);
+  --bg-sunken: oklch(0.115 0.006 248);
+  --surface: var(--steel-900);
+  --surface-raised: var(--steel-850);
+  --surface-inset: var(--steel-950);
+  --overlay: oklch(0.208 0.008 240 / 0.72);
+
+  --text: var(--steel-050);
+  --text-muted: var(--steel-400);
+  --text-subtle: var(--steel-500);
+  --text-inverted: var(--steel-950);
+
+  --border: oklch(1 0 0 / 0.1);
+  --border-strong: oklch(1 0 0 / 0.18);
+  --border-faint: oklch(1 0 0 / 0.055);
+
+  --primary: var(--blue-600);
+  --primary-hover: var(--blue-500);
+  --primary-text: oklch(0.98 0.01 260);
+  --primary-emphasis: var(--blue-400);
+  --primary-soft: oklch(0.52 0.22 264 / 0.14);
+  --primary-ring: oklch(0.62 0.2 262 / 0.5);
+
+  --nominal: var(--green-400);
+  --nominal-surface: oklch(0.74 0.18 153 / 0.13);
+  --nominal-border: oklch(0.74 0.18 153 / 0.34);
+  --warning: var(--amber-400);
+  --warning-surface: oklch(0.79 0.15 76 / 0.14);
+  --warning-border: oklch(0.79 0.15 76 / 0.34);
+  --critical: var(--red-400);
+  --critical-surface: oklch(0.64 0.23 26 / 0.15);
+  --critical-border: oklch(0.64 0.23 26 / 0.4);
+  --neutral-surface: oklch(1 0 0 / 0.06);
+
+  /* Live/telemetry signal (bright terminal green for active pulses) */
+  --signal: oklch(0.85 0.21 148);
+  --signal-glow: oklch(0.85 0.21 148 / 0.45);
+
+  /* Layout & control metrics (4px grid, dense) */
+  --container: 80rem;
+  --container-narrow: 64rem;
+  --gutter: 1.5rem;
+  --panel-pad: 1.25rem;
+  --control-h: 2.25rem; /* 36px */
+  --control-h-sm: 1.75rem; /* 28px */
+  --control-h-lg: 2.75rem; /* 44px */
+
+  /* Elevation & motifs */
+  --shadow-soft: 0 1px 2px oklch(0 0 0 / 0.3);
+  --shadow-mid: 0 2px 6px oklch(0 0 0 / 0.35), 0 1px 2px oklch(0 0 0 / 0.3);
+  --shadow-deep: 0 12px 32px oklch(0 0 0 / 0.45), 0 2px 8px oklch(0 0 0 / 0.35);
+  --shadow-pop: 0 18px 48px oklch(0 0 0 / 0.55);
+  --glow-signal: 0 0 10px var(--signal-glow);
+  --bracket-color: var(--border-strong);
+  --bracket-size: 10px;
+
+  /* Motion — precise & mechanical, no bounce */
+  --dur-fast: 120ms;
+  --dur-base: 180ms;
+  --dur-slow: 280ms;
+  --ease-standard: cubic-bezier(0.2, 0, 0, 1);
+  --ease-exit: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-enter: cubic-bezier(0.4, 0, 1, 1);
+
+  /* --- shadcn-compat aliases (existing components keep working) --- */
+  --background: var(--bg);
+  --foreground: var(--text);
+  --card: var(--surface);
+  --card-foreground: var(--text);
+  --popover: var(--surface-raised);
+  --popover-foreground: var(--text);
+  --primary-foreground: var(--primary-text);
+  --secondary: var(--neutral-surface);
+  --secondary-foreground: var(--text);
+  --muted: var(--neutral-surface);
+  --muted-foreground: var(--text-muted);
+  --accent: var(--neutral-surface);
+  --accent-foreground: var(--text);
+  --destructive: var(--critical);
+  --input: var(--border);
+  --ring: var(--primary-ring);
+  --radius: 0px;
+  --chart-1: var(--blue-500);
+  --chart-2: var(--green-400);
+  --chart-3: var(--amber-400);
+  --chart-4: var(--red-400);
+  --chart-5: var(--steel-400);
+  --sidebar: var(--bg-sunken);
+  --sidebar-foreground: var(--text);
+  --sidebar-primary: var(--primary);
+  --sidebar-primary-foreground: var(--primary-text);
+  --sidebar-accent: var(--neutral-surface);
+  --sidebar-accent-foreground: var(--text);
+  --sidebar-border: var(--border);
+  --sidebar-ring: var(--primary-ring);
+
+  color-scheme: dark;
+}
+
+[data-theme="light"] {
+  --bg: var(--steel-050);
+  --bg-sunken: oklch(0.955 0.004 216);
+  --surface: oklch(1 0 0);
+  --surface-raised: oklch(1 0 0);
+  --surface-inset: var(--steel-100);
+  --overlay: oklch(0.145 0.006 248 / 0.4);
+
+  --text: var(--steel-950);
+  --text-muted: var(--steel-600);
+  --text-subtle: var(--steel-500);
+  --text-inverted: var(--steel-050);
+
+  --border: oklch(0.145 0.006 248 / 0.12);
+  --border-strong: oklch(0.145 0.006 248 / 0.22);
+  --border-faint: oklch(0.145 0.006 248 / 0.06);
+
+  --primary: var(--blue-600);
+  --primary-hover: var(--blue-700);
+  --primary-text: oklch(0.98 0.01 260);
+  --primary-emphasis: var(--blue-700);
+  --primary-soft: oklch(0.52 0.22 264 / 0.09);
+  --primary-ring: oklch(0.52 0.22 264 / 0.4);
+
+  --nominal: oklch(0.53 0.14 152);
+  --nominal-surface: oklch(0.74 0.18 153 / 0.12);
+  --nominal-border: oklch(0.6 0.15 152 / 0.4);
+  --warning: oklch(0.68 0.14 70);
+  --warning-surface: oklch(0.79 0.15 76 / 0.15);
+  --warning-border: oklch(0.79 0.15 76 / 0.36);
+  --critical: var(--red-500);
+  --critical-surface: oklch(0.64 0.23 26 / 0.1);
+  --critical-border: oklch(0.64 0.23 26 / 0.32);
+  --neutral-surface: oklch(0.145 0.006 248 / 0.055);
+
+  --signal: var(--green-500);
+  --signal-glow: oklch(0.74 0.18 153 / 0.35);
+
+  --shadow-soft: 0 1px 2px oklch(0 0 0 / 0.08);
+  --shadow-mid: 0 2px 6px oklch(0 0 0 / 0.1), 0 1px 2px oklch(0 0 0 / 0.08);
+  --shadow-deep: 0 12px 32px oklch(0 0 0 / 0.16), 0 2px 8px oklch(0 0 0 / 0.1);
+  --shadow-pop: 0 18px 48px oklch(0 0 0 / 0.22);
+
+  color-scheme: light;
+}
+
+@theme inline {
+  /* Semantic colors → utilities (bg-surface, text-subtle, border-strong, …) */
+  --color-background: var(--bg);
+  --color-foreground: var(--text);
+  --color-sunken: var(--bg-sunken);
+  --color-surface: var(--surface);
+  --color-surface-raised: var(--surface-raised);
+  --color-surface-inset: var(--surface-inset);
+  --color-overlay: var(--overlay);
+  --color-subtle: var(--text-subtle);
+  --color-inverted: var(--text-inverted);
+  --color-border: var(--border);
+  --color-border-strong: var(--border-strong);
+  --color-border-faint: var(--border-faint);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-hover: var(--primary-hover);
+  --color-primary-foreground: var(--primary-text);
+  --color-primary-emphasis: var(--primary-emphasis);
+  --color-primary-soft: var(--primary-soft);
+  --color-primary-ring: var(--primary-ring);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-nominal: var(--nominal);
+  --color-nominal-surface: var(--nominal-surface);
+  --color-nominal-border: var(--nominal-border);
+  --color-warning: var(--warning);
+  --color-warning-surface: var(--warning-surface);
+  --color-warning-border: var(--warning-border);
+  --color-critical: var(--critical);
+  --color-critical-surface: var(--critical-surface);
+  --color-critical-border: var(--critical-border);
+  --color-neutral-surface: var(--neutral-surface);
+  --color-signal: var(--signal);
+
+  /* Steel ramp (rarely needed directly — prefer semantic tokens) */
+  --color-steel-950: var(--steel-950);
+  --color-steel-900: var(--steel-900);
+  --color-steel-850: var(--steel-850);
+  --color-steel-800: var(--steel-800);
+  --color-steel-700: var(--steel-700);
+  --color-steel-600: var(--steel-600);
+  --color-steel-500: var(--steel-500);
+  --color-steel-400: var(--steel-400);
+  --color-steel-300: var(--steel-300);
+  --color-steel-200: var(--steel-200);
+  --color-steel-100: var(--steel-100);
+  --color-steel-050: var(--steel-050);
+
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-ring: var(--sidebar-ring);
+
+  /* Square everywhere — panels are framed with corner brackets, never rounded */
+  --radius-xs: 0px;
+  --radius-sm: 0px;
+  --radius-md: 0px;
+  --radius-lg: 0px;
+  --radius-xl: 0px;
+  --radius-2xl: 0px;
+  --radius-3xl: 0px;
+  --radius-4xl: 0px;
+
+  /* Type — Aldrich display (single 400 weight — never bold it, track it),
+     Spline Sans body, Spline Sans Mono data */
+  --font-sans: "Spline Sans Variable", "Spline Sans", system-ui, sans-serif;
+  --font-mono:
+    "Spline Sans Mono Variable", "Spline Sans Mono", ui-monospace,
+    "SFMono-Regular", Menlo, monospace;
+  --font-display: "Aldrich", "Spline Sans Variable", system-ui, sans-serif;
+  --font-heading: "Aldrich", "Spline Sans Variable", system-ui, sans-serif;
+
+  /* Dense type scale */
+  --text-2xs: 0.6875rem;
+  --text-2xs--line-height: 1.3;
+  --text-xs: 0.75rem;
+  --text-xs--line-height: 1.35;
+  --text-sm: 0.8125rem;
+  --text-sm--line-height: 1.45;
+  --text-base: 0.875rem;
+  --text-base--line-height: 1.5;
+  --text-md: 1rem;
+  --text-md--line-height: 1.5;
+  --text-lg: 1.125rem;
+  --text-lg--line-height: 1.4;
+  --text-xl: 1.375rem;
+  --text-xl--line-height: 1.3;
+  --text-2xl: 1.75rem;
+  --text-2xl--line-height: 1.2;
+  --text-3xl: 2.25rem;
+  --text-3xl--line-height: 1.1;
+  --text-4xl: 3rem;
+  --text-4xl--line-height: 1.05;
+  --text-5xl: 4rem;
+  --text-5xl--line-height: 1;
+
+  /* Tracking — mono labels are the signature: wide + uppercase */
+  --tracking-label: 0.14em;
+  --tracking-wide: 0.06em;
+  --tracking-display: -0.01em;
+  --tracking-tight: -0.02em;
+
+  /* Elevation */
+  --shadow-sm: var(--shadow-soft);
+  --shadow-md: var(--shadow-mid);
+  --shadow-lg: var(--shadow-deep);
+  --shadow-xl: var(--shadow-pop);
+
+  /* Motion */
+  --ease-standard: var(--ease-standard);
+  --ease-exit: var(--ease-exit);
+  --ease-enter: var(--ease-enter);
+  --animate-scout-pulse: scout-pulse 2s var(--ease-standard) infinite;
+
+  @keyframes scout-pulse {
+    0%,
+    100% {
+      opacity: 1;
+    }
+    50% {
+      opacity: 0.35;
+    }
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  body {
+    @apply bg-background text-base text-foreground antialiased;
+    text-rendering: optimizeLegibility;
+  }
+  /* Aldrich ships a single 400 weight — synthetic bold distorts it, so
+     headings rely on size and tracking, never weight. */
+  h1,
+  h2,
+  h3,
+  h4,
+  h5 {
+    @apply font-display font-normal tracking-display;
+    line-height: 1.05;
+    text-wrap: balance;
+  }
+  p {
+    text-wrap: pretty;
+  }
+  a {
+    transition: color var(--dur-fast) var(--ease-standard);
+  }
+  code,
+  kbd,
+  samp,
+  pre {
+    @apply font-mono;
+  }
+  ::selection {
+    background: var(--primary-soft);
+  }
+  :focus-visible {
+    scroll-margin: 1rem;
+  }
+  button:not(:disabled),
+  [role="button"]:not(:disabled) {
+    cursor: pointer;
+  }
+  /* Remix icons behave like inline glyphs */
+  i[class^="ri-"],
+  i[class*=" ri-"] {
+    font-style: normal;
+    line-height: 1;
+  }
+  .theme-transition-suppressed,
+  .theme-transition-suppressed *,
+  .theme-transition-suppressed *::before,
+  .theme-transition-suppressed *::after {
+    -webkit-transition: none !important;
+    transition: none !important;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      scroll-behavior: auto !important;
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+    }
+  }
+}
+
+@layer components {
+  /* Mono uppercase micro-label — the pervasive Scout section/eyebrow label.
+     Regular weight: the tracking and casing carry it, not boldness. */
+  .scout-label {
+    font-family: var(--font-mono);
+    font-weight: 400;
+    font-size: var(--text-2xs);
+    letter-spacing: var(--tracking-label);
+    text-transform: uppercase;
+    color: var(--text-muted);
+  }
+
+  /* Corner-bracket frame — the hardened "instrument panel" motif. Always all
+     four corners or none. Nesting brackets inside brackets is a design
+     principle to avoid (inner panels prefer inset / bracketed={false}), not a
+     hard rule — deliberate exceptions are allowed. */
+  .scout-bracketed {
+    position: relative;
+  }
+  .scout-bracketed::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    background:
+      linear-gradient(var(--bracket-color), var(--bracket-color)) left 0 top 0 /
+        var(--bracket-size) 1px,
+      linear-gradient(var(--bracket-color), var(--bracket-color)) left 0 top 0 /
+        1px var(--bracket-size),
+      linear-gradient(var(--bracket-color), var(--bracket-color)) right 0 top
+        0 / var(--bracket-size) 1px,
+      linear-gradient(var(--bracket-color), var(--bracket-color)) right 0 top
+        0 / 1px var(--bracket-size),
+      linear-gradient(var(--bracket-color), var(--bracket-color)) left 0 bottom
+        0 / var(--bracket-size) 1px,
+      linear-gradient(var(--bracket-color), var(--bracket-color)) left 0 bottom
+        0 / 1px var(--bracket-size),
+      linear-gradient(var(--bracket-color), var(--bracket-color)) right 0 bottom
+        0 / var(--bracket-size) 1px,
+      linear-gradient(var(--bracket-color), var(--bracket-color)) right 0 bottom
+        0 / 1px var(--bracket-size);
+    background-repeat: no-repeat;
+  }
+
+  /* Live dot — pulsing telemetry indicator. */
+  .scout-live-dot {
+    display: inline-block;
+    width: 7px;
+    height: 7px;
+    background: var(--signal);
+    box-shadow: var(--glow-signal);
+    animation: scout-pulse 2s var(--ease-standard) infinite;
+  }
+
+  /* Faint engineering-grid texture — marketing/hero surfaces only, never behind UI. */
+  .scout-grid-texture {
+    background-image:
+      linear-gradient(var(--border-faint) 1px, transparent 1px),
+      linear-gradient(90deg, var(--border-faint) 1px, transparent 1px);
+    background-size: 42px 42px;
+  }
+}

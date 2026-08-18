@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { Icon } from '@/components/ui/icon'
 import { Link, useNavigate, useRouterState } from '@tanstack/react-router'
 import { useAuth } from '@/store/auth'
 import { useRoute } from '@/store/route'
@@ -9,10 +10,6 @@ import { useBranding } from '@/store/branding'
 import { useTheme } from '@/store/theme'
 import { useNotifications } from '@/store/notifications'
 import { PasswordInput } from '@/components/PasswordInput'
-import {
-  LayoutDashboard, Users, Package, Puzzle, Map,
-  ScrollText, Terminal, ShieldUser, LogOut, History, Settings, Sun, Moon, Bell, Radio, Satellite, ShieldCheck, CloudRain
-} from 'lucide-react'
 
 // Three-bar icon that morphs into an X on open — plain CSS transitions on
 // each bar's rotation/position/opacity, no icon-swap flash.
@@ -36,32 +33,32 @@ function HamburgerIcon({ open }: { open: boolean }) {
 }
 
 const navItems = [
-  { to: '/', label: 'Dashboard', icon: LayoutDashboard },
-  { to: '/packages', label: 'Packages', icon: Package },
-  { to: '/plugins', label: 'Plugins', icon: Puzzle },
-  { to: '/maps', label: 'Maps', icon: Map },
+  { to: '/', label: 'Dashboard', icon: 'dashboard-line' },
+  { to: '/packages', label: 'Packages', icon: 'box-3-line' },
+  { to: '/plugins', label: 'Plugins', icon: 'puzzle-line' },
+  { to: '/maps', label: 'Maps', icon: 'map-2-line' },
 ]
 
 // Live Map shows real-time contact positions — admin/superadmin only (backend
 // enforces this too), so it's kept out of navItems rather than shown to
 // readonly users as a dead link.
-const liveMapItem = { to: '/live-map', label: 'Live Map', icon: Satellite }
+const liveMapItem = { to: '/live-map', label: 'Live Map', icon: 'satellite-line' }
 
 const fieldItems = [
-  { to: '/packages', label: 'Packages', icon: Package },
-  { to: '/plugins', label: 'Plugins', icon: Puzzle },
-  { to: '/maps', label: 'Maps', icon: Map },
+  { to: '/packages', label: 'Packages', icon: 'box-3-line' },
+  { to: '/plugins', label: 'Plugins', icon: 'puzzle-line' },
+  { to: '/maps', label: 'Maps', icon: 'map-2-line' },
 ]
 
 const superAdminItems = [
-  { to: '/basemaps', label: 'Basemaps', icon: CloudRain },
-  { to: '/users', label: 'Users', icon: Users },
-  { to: '/admin-users', label: 'Admin Users', icon: ShieldUser },
-  { to: '/certificates', label: 'Certificates', icon: ShieldCheck },
-  { to: '/replay', label: 'Replay', icon: Radio },
-  { to: '/shell', label: 'Shell', icon: Terminal },
-  { to: '/logs', label: 'Logs', icon: ScrollText },
-  { to: '/audit-log', label: 'Audit Logs', icon: History },
+  { to: '/basemaps', label: 'Basemaps', icon: 'rainy-line' },
+  { to: '/users', label: 'Users', icon: 'group-line' },
+  { to: '/admin-users', label: 'Admin Users', icon: 'shield-user-line' },
+  { to: '/certificates', label: 'Certificates', icon: 'shield-check-line' },
+  { to: '/replay', label: 'Replay', icon: 'rss-line' },
+  { to: '/shell', label: 'Shell', icon: 'terminal-line' },
+  { to: '/logs', label: 'Logs', icon: 'file-list-3-line' },
+  { to: '/audit-log', label: 'Audit Logs', icon: 'history-line' },
 ]
 
 function passwordStrength(p: string): { score: number; label: string; color: string } {
@@ -283,7 +280,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
             aria-label="Notifications"
             className="p-1.5 rounded-none hover:bg-zinc-200 dark:hover:bg-[#141416] text-zinc-600 dark:text-zinc-400 relative focus:outline-none focus:ring-2 focus:ring-accent-ring"
           >
-            <Bell size={16} />
+            <Icon name="notification-3-line" size={16} />
             {notifications.length > 0 && (
               <span className="absolute top-0.5 right-0.5 w-2 h-2 rounded-full bg-red-500" />
             )}
@@ -347,7 +344,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
                   onClick={() => { toggleTheme(); setUserMenuOpen(false) }}
                   className="flex items-center gap-3 w-full px-3 py-2 rounded-none text-sm text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white hover:bg-zinc-200/50 dark:hover:bg-white/[0.05] transition-colors"
                 >
-                  {theme === 'dark' ? <Sun size={16} /> : <Moon size={16} />}
+                  {theme === 'dark' ? <Icon name="sun-line" size={16} /> : <Icon name="moon-line" size={16} />}
                   {theme === 'dark' ? 'Light mode' : 'Dark mode'}
                 </button>
                 {authProvider === 'local' && (
@@ -355,7 +352,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
                     onClick={() => { setUserMenuOpen(false); setShowUserSettings(true) }}
                     className="flex items-center gap-3 w-full px-3 py-2 rounded-none text-sm text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white hover:bg-zinc-200/50 dark:hover:bg-white/[0.05] transition-colors"
                   >
-                    <Users size={16} />
+                    <Icon name="group-line" size={16} />
                     Account settings
                   </button>
                 )}
@@ -365,7 +362,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
                     onClick={() => setUserMenuOpen(false)}
                     className="flex items-center gap-3 w-full px-3 py-2 rounded-none text-sm text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white hover:bg-zinc-200/50 dark:hover:bg-white/[0.05] transition-colors"
                   >
-                    <Settings size={16} />
+                    <Icon name="settings-3-line" size={16} />
                     Settings
                   </Link>
                 )}
@@ -373,7 +370,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
                   onClick={() => { setUserMenuOpen(false); handleLogout() }}
                   className="flex items-center gap-3 w-full px-3 py-2 rounded-none text-sm text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white hover:bg-zinc-200/50 dark:hover:bg-white/[0.05] transition-colors"
                 >
-                  <LogOut size={16} />
+                  <Icon name="logout-box-r-line" size={16} />
                   Sign out
                 </button>
               </div>
@@ -390,7 +387,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
         sidebarOpen ? 'translate-x-0' : '-translate-x-full'
       )}>
         <nav className="flex-1 p-2 space-y-1">
-          {items.map(({ to, label, icon: Icon }) => (
+          {items.map(({ to, label, icon }) => (
             <Link
               key={to}
               to={to}
@@ -402,14 +399,14 @@ export function Layout({ children }: { children: React.ReactNode }) {
                   : 'border-transparent text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white hover:bg-zinc-200/50 dark:hover:bg-white/[0.05]'
               )}
             >
-              <Icon size={16} />
+              <Icon name={icon} size={16} />
               {current === to ? `[ ${label} ]` : label}
             </Link>
           ))}
           {adminItems.length > 0 && (
             <>
               <div className="hud-label pt-3 pb-1 px-3 text-[10px] font-semibold text-zinc-400 dark:text-zinc-600">Admin</div>
-              {adminItems.map(({ to, label, icon: Icon }) => (
+              {adminItems.map(({ to, label, icon }) => (
                 <Link
                   key={to}
                   to={to}
@@ -421,7 +418,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
                       : 'border-transparent text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white hover:bg-zinc-200/50 dark:hover:bg-white/[0.05]'
                   )}
                 >
-                  <Icon size={16} />
+                  <Icon name={icon} size={16} />
                   {current === to ? `[ ${label} ]` : label}
                 </Link>
               ))}

@@ -1,11 +1,11 @@
 import { createFileRoute, redirect } from '@tanstack/react-router'
+import { Icon } from '@/components/ui/icon'
 import { useEffect, useState } from 'react'
 import { Layout } from '@/components/Layout'
 import { PageHeader } from '@/components/PageHeader'
 import { apiJson, apiFetch, errorMessage } from '@/lib/api'
 import { useAuth } from '@/store/auth'
 import { notify } from '@/lib/notify'
-import { Play, Square, Settings2 } from 'lucide-react'
 
 export const Route = createFileRoute('/replay')({
   beforeLoad: () => {
@@ -150,7 +150,7 @@ function ReplayPage() {
             </p>
             <button onClick={handleSetup} disabled={busy}
               className="flex items-center gap-2 px-4 py-2 bg-accent-fill hover:bg-accent-fill-hover text-accent-text text-sm rounded-none disabled:opacity-50 transition-colors">
-              <Settings2 size={14} /> Set Up Replay
+              <Icon name="settings-3-line" size={14} /> Set Up Replay
             </button>
           </div>
         ) : (
@@ -163,12 +163,12 @@ function ReplayPage() {
               {status.recording ? (
                 <button onClick={handleStopRecording} disabled={busy}
                   className="flex items-center gap-2 px-4 py-2 bg-red-600 hover:bg-red-700 text-white text-sm rounded-none disabled:opacity-50 transition-colors">
-                  <Square size={14} /> Stop Recording
+                  <Icon name="stop-line" size={14} /> Stop Recording
                 </button>
               ) : (
                 <button onClick={handleStartRecording} disabled={busy}
                   className="flex items-center gap-2 px-4 py-2 bg-accent-fill hover:bg-accent-fill-hover text-accent-text text-sm rounded-none disabled:opacity-50 transition-colors">
-                  <Play size={14} /> Start Recording
+                  <Icon name="play-line" size={14} /> Start Recording
                 </button>
               )}
             </div>
@@ -187,7 +187,7 @@ function ReplayPage() {
               {status.playback && (
                 <button onClick={handleStopPlayback} disabled={busy}
                   className="flex items-center gap-2 px-4 py-2 bg-red-600 hover:bg-red-700 text-white text-sm rounded-none disabled:opacity-50 transition-colors mb-3">
-                  <Square size={14} /> Stop Playback
+                  <Icon name="stop-line" size={14} /> Stop Playback
                 </button>
               )}
               <div className="divide-y divide-zinc-200 dark:divide-white/10 max-h-64 overflow-y-auto">
@@ -203,7 +203,7 @@ function ReplayPage() {
                       <button onClick={() => handlePlay(c.id)} disabled={status.playback || busy}
                         className="p-1.5 rounded-none hover:bg-zinc-200 dark:hover:bg-white/[0.05] text-accent-ring disabled:opacity-50 focus:outline-none focus:ring-2 focus:ring-accent-ring"
                         title="Play" aria-label={`Play chunk from ${new Date(c.started_at).toLocaleString()}`}>
-                        <Play size={14} />
+                        <Icon name="play-line" size={14} />
                       </button>
                     </div>
                   ))

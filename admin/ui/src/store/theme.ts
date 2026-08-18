@@ -12,6 +12,10 @@ function systemPrefersDark(): boolean {
 
 function applyThemeClass(theme: 'light' | 'dark') {
   document.documentElement.classList.toggle('dark', theme === 'dark')
+  // Scout design tokens (src/styles/scout-tokens.css) key their light-mode
+  // overrides off data-theme="light" rather than the .dark class above.
+  if (theme === 'light') document.documentElement.setAttribute('data-theme', 'light')
+  else document.documentElement.removeAttribute('data-theme')
 }
 
 export const useTheme = create<ThemeState>()(

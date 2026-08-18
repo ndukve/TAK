@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
+import { Icon } from '@/components/ui/icon'
 import L from 'leaflet'
 import 'leaflet/dist/leaflet.css'
 import { apiJson, errorMessage } from '@/lib/api'
@@ -6,7 +7,6 @@ import { useAuth } from '@/store/auth'
 import { notify } from '@/lib/notify'
 import { renderCotSymbol } from '@/lib/cotSymbol'
 import { HudCorners } from '@/components/HudCorners'
-import { Play, Square, Settings2 } from 'lucide-react'
 
 interface Status {
   service_cert_ready: boolean
@@ -222,17 +222,17 @@ export function LiveMapWidget({ height, showControls = false, pollMs = 5000 }: L
           !status?.service_cert_ready ? (
             <button onClick={handleSetup} disabled={busy}
               className="flex items-center gap-1.5 px-2.5 py-1 bg-accent-fill hover:bg-accent-fill-hover text-accent-text text-xs rounded-none disabled:opacity-50 transition-colors shrink-0">
-              <Settings2 size={12} /> Set Up
+              <Icon name="settings-3-line" size={12} /> Set Up
             </button>
           ) : status.tracking ? (
             <button onClick={handleStop} disabled={busy}
               className="flex items-center gap-1.5 px-2.5 py-1 bg-red-600 hover:bg-red-700 text-white text-xs rounded-none disabled:opacity-50 transition-colors shrink-0">
-              <Square size={12} /> Stop
+              <Icon name="stop-line" size={12} /> Stop
             </button>
           ) : (
             <button onClick={handleStart} disabled={busy}
               className="flex items-center gap-1.5 px-2.5 py-1 bg-accent-fill hover:bg-accent-fill-hover text-accent-text text-xs rounded-none disabled:opacity-50 transition-colors shrink-0">
-              <Play size={12} /> Start
+              <Icon name="play-line" size={12} /> Start
             </button>
           )
         )}

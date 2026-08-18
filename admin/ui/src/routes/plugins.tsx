@@ -1,4 +1,5 @@
 import { createFileRoute, redirect } from '@tanstack/react-router'
+import { Icon } from '@/components/ui/icon'
 import { useEffect, useRef, useState } from 'react'
 import { Layout } from '@/components/Layout'
 import { PageHeader } from '@/components/PageHeader'
@@ -7,7 +8,6 @@ import { useAuth } from '@/store/auth'
 import { notify } from '@/lib/notify'
 import { TableSkeletonRows } from '@/components/Skeleton'
 import { HudCorners } from '@/components/HudCorners'
-import { Trash2, Upload, Copy, Check } from 'lucide-react'
 
 export const Route = createFileRoute('/plugins')({
   beforeLoad: () => {
@@ -33,7 +33,7 @@ function CopyHash({ hash }: { hash: string }) {
   return (
     <button onClick={copy} title="Copy SHA-256" aria-label="Copy full SHA-256 hash" className="flex items-center gap-1 font-mono text-xs text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300 transition-colors focus:outline-none focus:ring-2 focus:ring-accent-ring">
       <span>{hash.slice(0, 16)}…</span>
-      {copied ? <Check size={11} className="text-green-600 dark:text-green-400" /> : <Copy size={11} />}
+      {copied ? <Icon name="check-line" size={11} className="text-green-600 dark:text-green-400" /> : <Icon name="file-copy-line" size={11} />}
     </button>
   )
 }
@@ -148,7 +148,7 @@ function PluginsPage() {
             canManage && (
               <button onClick={() => setShowUpload(true)}
                 className="flex items-center gap-2 px-4 py-2 bg-accent-fill hover:bg-accent-fill-hover text-accent-text text-sm rounded-none transition-colors">
-                <Upload size={14} /> Upload APK
+                <Icon name="upload-line" size={14} /> Upload APK
               </button>
             )
           }
@@ -181,7 +181,7 @@ function PluginsPage() {
                       {canManage && (
                         <div className="flex justify-end">
                           <button onClick={() => handleDelete(p)} className="p-1.5 rounded-none hover:bg-zinc-200 dark:hover:bg-[#141416] text-red-600 dark:text-red-400 focus:outline-none focus:ring-2 focus:ring-accent-ring" title="Delete" aria-label="Delete">
-                            <Trash2 size={14} />
+                            <Icon name="delete-bin-2-line" size={14} />
                           </button>
                         </div>
                       )}

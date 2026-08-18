@@ -1,4 +1,5 @@
 import { createFileRoute, redirect } from '@tanstack/react-router'
+import { Icon } from '@/components/ui/icon'
 import { useEffect, useRef, useState } from 'react'
 import { Layout } from '@/components/Layout'
 import { PageHeader } from '@/components/PageHeader'
@@ -7,7 +8,6 @@ import { useAuth } from '@/store/auth'
 import { notify } from '@/lib/notify'
 import { TableSkeletonRows } from '@/components/Skeleton'
 import { HudCorners } from '@/components/HudCorners'
-import { Download, Trash2, Upload } from 'lucide-react'
 
 export const Route = createFileRoute('/packages')({
   beforeLoad: () => {
@@ -116,7 +116,7 @@ function PackagesPage() {
               disabled={uploading}
               className="flex items-center gap-2 px-4 py-2 bg-accent-fill hover:bg-accent-fill-hover disabled:opacity-50 text-accent-text text-sm rounded-none transition-colors"
             >
-              <Upload size={14} />
+              <Icon name="upload-line" size={14} />
               {uploading ? 'Uploading…' : 'Upload Package'}
             </button>
           }
@@ -166,14 +166,14 @@ function PackagesPage() {
                             className="p-1.5 rounded-none hover:bg-zinc-200 dark:hover:bg-[#141416] text-accent-ring"
                             title="Download"
                           >
-                            <Download size={14} />
+                            <Icon name="download-line" size={14} />
                           </button>
                           <button
                             onClick={e => { e.stopPropagation(); handleDelete(p) }}
                             className="p-1.5 rounded-none hover:bg-zinc-200 dark:hover:bg-[#141416] text-red-600 dark:text-red-400"
                             title="Delete"
                           >
-                            <Trash2 size={14} />
+                            <Icon name="delete-bin-2-line" size={14} />
                           </button>
                         </div>
                       </td>
