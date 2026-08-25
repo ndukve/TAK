@@ -1,9 +1,10 @@
-/**
- * Reticle corners were retired with the modern-minimal surface system.
- *
- * Keep this compatibility component because routes still use it alongside
- * `hud-frame`; rendering nothing updates every panel without page churn.
- */
+import { CardBrackets } from '@/components/ui/card'
+
+// Thin wrapper over Scout's real CardBrackets (components/ui/card.tsx,
+// vendored verbatim from packages/ui) — reticle corners were retired here
+// before the real bracket motif was ported in; every route already renders
+// <HudCorners /> inside a `.hud-frame` container, so wiring this one file
+// restores brackets everywhere without touching call sites.
 export function HudCorners() {
-  return null
+  return <CardBrackets />
 }

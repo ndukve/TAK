@@ -21,6 +21,7 @@ interface Plugin {
   filename: string
   size: string
   sha256: string | null
+  verified: boolean
 }
 
 function CopyHash({ hash }: { hash: string }) {
@@ -58,7 +59,9 @@ function UploadModal({ onClose, onUploaded }: { onClose: () => void; onUploaded:
         throw new Error(err.detail ?? res.statusText)
       }
       const data = await res.json()
-      notify.success(`${file.name} uploaded — SHA-256: ${data.sha256?.slice(0, 16)}…`)
+      notify.success(data.verified
+        ? `${file.name} uploaded — checksum verified against allowlist`
+        : `${file.name} uploaded — SHA-256: ${data.sha256?.slice(0, 16)}… (not in checksum allowlist)`)
       onUploaded()
       onClose()
     } catch (e) {
@@ -74,19 +77,19 @@ function UploadModal({ onClose, onUploaded }: { onClose: () => void; onUploaded:
         <h2 className="text-lg font-semibold mb-4">Upload Plugin</h2>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <input ref={fileRef} type="file" accept=".apk,.zip" className="hidden"
+            <input ref={fileRef} type="file" accept=".apk,.wpk,.zip" className="hidden"
               onChange={e => setFile(e.target.files?.[0] ?? null)} />
             <button type="button" onClick={() => fileRef.current?.click()}
               className="w-full py-8 border-2 border-dashed border-zinc-300 dark:border-white/10 rounded-none text-zinc-600 dark:text-zinc-400 hover:border-zinc-500 hover:text-zinc-800 dark:hover:text-zinc-200 transition-colors text-sm">
-              {file ? file.name : 'Click to select .apk or .zip'}
+              {file ? file.name : 'Click to select .apk, .wpk, or .zip'}
             </button>
           </div>
           <div className="space-y-1">
-            <label className="text-xs text-zinc-600 dark:text-zinc-400">Expected SHA-256 (optional — from tak.gov)</label>
+            <label className="text-xs text-zinc-600 dark:text-zinc-400">Expected SHA-256 (optional — only needed if not already in your checksum allowlist)</label>
             <input type="text" value={expectedHash} onChange={e => setExpectedHash(e.target.value)}
               placeholder="e.g. a3f2c1…"
               className="w-full bg-zinc-200 dark:bg-[#141416] border border-zinc-300 dark:border-white/10 rounded-none px-3 py-2 text-xs font-mono" />
-            <p className="text-xs text-zinc-500">If provided, upload is rejected if hash doesn't match.</p>
+            <p className="text-xs text-zinc-500">Uploads are auto-checked against the checksum allowlist first. If provided here too, upload is rejected if this hash doesn't match.</p>
           </div>
           <div className="flex gap-2">
             <button type="button" onClick={onClose} className="flex-1 py-2 rounded-none bg-zinc-300 dark:bg-[#232326] hover:bg-zinc-400 dark:hover:bg-[#2b2b2f] text-sm">Cancel</button>
@@ -101,12 +104,70 @@ function UploadModal({ onClose, onUploaded }: { onClose: () => void; onUploaded:
   )
 }
 
+function ChecksumsModal({ onClose }: { onClose: () => void }) {
+  const [content, setContent] = useState('')
+  const [loading, setLoading] = useState(true)
+  const [saving, setSaving] = useState(false)
+
+  useEffect(() => {
+    apiJson<{ content: string }>('/api/plugins/checksums')
+      .then(d => setContent(d.content))
+      .catch(e => notify.error(errorMessage(e)))
+      .finally(() => setLoading(false))
+  }, [])
+
+  async function handleSave() {
+    setSaving(true)
+    try {
+      const res = await apiFetch('/api/plugins/checksums', {
+        method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ content }),
+      })
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({ detail: res.statusText }))
+        throw new Error(err.detail ?? res.statusText)
+      }
+      const data = await res.json()
+      notify.success(`Checksum allowlist saved — ${data.count} hash${data.count === 1 ? '' : 'es'}`)
+      onClose()
+    } catch (e) {
+      notify.error(errorMessage(e))
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  return (
+    <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50">
+      <div className="bg-zinc-100 dark:bg-[#0c0c0e] border border-zinc-300 dark:border-white/10 rounded-none p-6 w-full max-w-lg">
+        <h2 className="text-lg font-semibold mb-1">Checksum Allowlist</h2>
+        <p className="text-xs text-zinc-500 mb-4">One SHA-256 hash per line (from tak.gov release pages). Uploaded plugins are auto-verified against this list — filename doesn't need to match. Lines starting with # are ignored.</p>
+        {loading ? (
+          <div className="h-48 flex items-center justify-center text-zinc-500 text-sm">Loading…</div>
+        ) : (
+          <textarea value={content} onChange={e => setContent(e.target.value)}
+            spellCheck={false}
+            placeholder="88f2cf56025e30af110cc1e7a0ced555&#10;# comment&#10;a3f2c1…"
+            className="w-full h-48 bg-zinc-200 dark:bg-[#141416] border border-zinc-300 dark:border-white/10 rounded-none px-3 py-2 text-xs font-mono resize-none" />
+        )}
+        <div className="flex gap-2 mt-4">
+          <button type="button" onClick={onClose} className="flex-1 py-2 rounded-none bg-zinc-300 dark:bg-[#232326] hover:bg-zinc-400 dark:hover:bg-[#2b2b2f] text-sm">Cancel</button>
+          <button type="button" onClick={handleSave} disabled={loading || saving}
+            className="flex-1 py-2 rounded-none bg-accent-fill hover:bg-accent-fill-hover text-accent-text disabled:opacity-50 text-sm">
+            {saving ? 'Saving…' : 'Save'}
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 function PluginsPage() {
   const { role } = useAuth()
   const canManage = role !== 'field'
   const [plugins, setPlugins] = useState<Plugin[]>([])
   const [loading, setLoading] = useState(true)
   const [showUpload, setShowUpload] = useState(false)
+  const [showChecksums, setShowChecksums] = useState(false)
 
   async function load() {
     try {
@@ -146,10 +207,16 @@ function PluginsPage() {
           countLabel="plugins"
           actions={
             canManage && (
-              <button onClick={() => setShowUpload(true)}
-                className="flex items-center gap-2 px-4 py-2 bg-accent-fill hover:bg-accent-fill-hover text-accent-text text-sm rounded-none transition-colors">
-                <Icon name="upload-line" size={14} /> Upload APK
-              </button>
+              <div className="flex gap-2">
+                <button onClick={() => setShowChecksums(true)}
+                  className="flex items-center gap-2 px-4 py-2 bg-zinc-200 dark:bg-[#141416] hover:bg-zinc-300 dark:hover:bg-[#232326] text-zinc-700 dark:text-zinc-300 text-sm rounded-none transition-colors">
+                  <Icon name="shield-check-line" size={14} /> Checksum Allowlist
+                </button>
+                <button onClick={() => setShowUpload(true)}
+                  className="flex items-center gap-2 px-4 py-2 bg-accent-fill hover:bg-accent-fill-hover text-accent-text text-sm rounded-none transition-colors">
+                  <Icon name="upload-line" size={14} /> Upload Plugin
+                </button>
+              </div>
             )
           }
         />
@@ -163,20 +230,26 @@ function PluginsPage() {
                 <th className="px-4 py-3 text-left font-medium hud-label text-xs">File</th>
                 <th className="px-4 py-3 text-left font-medium hud-label text-xs">Size</th>
                 <th className="px-4 py-3 text-left font-medium hud-label text-xs">SHA-256</th>
+                <th className="px-4 py-3 text-left font-medium hud-label text-xs">Verified</th>
                 <th className="px-4 py-3 text-right font-medium hud-label text-xs">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-zinc-200 dark:divide-white/10">
               {loading ? (
-                <TableSkeletonRows columns={4} />
+                <TableSkeletonRows columns={5} />
               ) : plugins.length === 0 ? (
-                <tr className="bg-zinc-50 dark:bg-[#0c0c0e]"><td colSpan={4} className="px-4 py-8 text-center text-zinc-500">No plugins uploaded</td></tr>
+                <tr className="bg-zinc-50 dark:bg-[#0c0c0e]"><td colSpan={5} className="px-4 py-8 text-center text-zinc-500">No plugins uploaded</td></tr>
               ) : (
                 plugins.map(p => (
                   <tr key={p.filename} className="bg-zinc-50 dark:bg-[#000000] hover:bg-zinc-100/50 dark:hover:bg-white/[0.03]">
                     <td className="px-4 py-3 font-mono">{p.filename}</td>
                     <td className="px-4 py-3 text-zinc-600 dark:text-zinc-400">{p.size}</td>
                     <td className="px-4 py-3">{p.sha256 ? <CopyHash hash={p.sha256} /> : <span className="text-zinc-400 dark:text-zinc-600 text-xs">—</span>}</td>
+                    <td className="px-4 py-3">
+                      {p.verified
+                        ? <span className="inline-flex items-center gap-1 text-xs text-green-600 dark:text-green-400"><Icon name="checkbox-circle-line" size={13} /> Verified</span>
+                        : <span className="text-zinc-400 dark:text-zinc-600 text-xs">—</span>}
+                    </td>
                     <td className="px-4 py-3">
                       {canManage && (
                         <div className="flex justify-end">
@@ -195,6 +268,7 @@ function PluginsPage() {
         </div>
       </div>
       {showUpload && <UploadModal onClose={() => setShowUpload(false)} onUploaded={load} />}
+      {showChecksums && <ChecksumsModal onClose={() => setShowChecksums(false)} />}
     </Layout>
   )
 }

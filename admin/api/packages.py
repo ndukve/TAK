@@ -30,6 +30,24 @@ PKGS_DIR = os.path.join(TAK_DATA, "certs/files/clientpkgs")
 PLUGINS_DIR = "/opt/tak/plugins"   # tak_plugins volume → /opt/tak/plugins in admin container
 MAPS_DIR = "/opt/tak/maps"  # host packages/tak-maps/ → bind-mounted read-write here
 
+# Admin-maintained allowlist of known-good plugin SHA-256 hashes (from
+# tak.gov release pages) — one hex digest per line, '#' comments and blank
+# lines ignored. Lives in the same persistent volume as the plugins
+# themselves but doesn't match the .apk/.wpk/.zip listing filter above.
+CHECKSUMS_FILE = os.path.join(PLUGINS_DIR, ".allowed-checksums.txt")
+
+
+def _load_allowed_checksums() -> set[str]:
+    try:
+        with open(CHECKSUMS_FILE) as f:
+            return {
+                line.strip().lower()
+                for line in f
+                if line.strip() and not line.strip().startswith("#")
+            }
+    except OSError:
+        return set()
+
 
 def _sha256_stored(path: str) -> str | None:
     sidecar = path + ".sha256"
@@ -146,8 +164,41 @@ async def delete_package(name: str, db: AsyncSession = Depends(get_db), actor=De
 async def list_plugins(_=Depends(_admin_or_field)):
     if not os.path.isdir(PLUGINS_DIR):
         return {"plugins": []}
-    files = sorted(f for f in os.listdir(PLUGINS_DIR) if f.endswith(".apk") or f.endswith(".zip"))
-    return {"plugins": [{"filename": f, "size": _size(os.path.join(PLUGINS_DIR, f)), "sha256": _sha256_stored(os.path.join(PLUGINS_DIR, f))} for f in files]}
+    allowed = _load_allowed_checksums()
+    files = sorted(f for f in os.listdir(PLUGINS_DIR) if f.endswith(".apk") or f.endswith(".wpk") or f.endswith(".zip"))
+    plugins = []
+    for f in files:
+        sha256 = _sha256_stored(os.path.join(PLUGINS_DIR, f))
+        plugins.append({
+            "filename": f,
+            "size": _size(os.path.join(PLUGINS_DIR, f)),
+            "sha256": sha256,
+            "verified": bool(sha256 and sha256.lower() in allowed),
+        })
+    return {"plugins": plugins}
+
+
+@router.get("/api/plugins/checksums")
+async def get_allowed_checksums(_=Depends(_admin)):
+    try:
+        with open(CHECKSUMS_FILE) as f:
+            return {"content": f.read()}
+    except OSError:
+        return {"content": ""}
+
+
+class ChecksumsRequest(BaseModel):
+    content: str
+
+
+@router.put("/api/plugins/checksums")
+async def set_allowed_checksums(body: ChecksumsRequest, db: AsyncSession = Depends(get_db), actor=Depends(_admin)):
+    os.makedirs(PLUGINS_DIR, exist_ok=True)
+    with open(CHECKSUMS_FILE, "w") as f:
+        f.write(body.content)
+    count = len(_load_allowed_checksums())
+    await write_audit(db, actor.id, "update_plugin_checksums", f"{count} hashes")
+    return {"count": count}
 
 
 @router.get("/api/plugins/{filename}/download")
@@ -167,8 +218,8 @@ async def upload_plugin(
     actor=Depends(_admin),
 ):
     filename = file.filename or ""
-    if not (filename.endswith(".apk") or filename.endswith(".zip")):
-        raise HTTPException(status_code=400, detail="Only .apk or .zip files allowed")
+    if not (filename.endswith(".apk") or filename.endswith(".wpk") or filename.endswith(".zip")):
+        raise HTTPException(status_code=400, detail="Only .apk, .wpk, or .zip files allowed")
     os.makedirs(PLUGINS_DIR, exist_ok=True)
     dest = os.path.join(PLUGINS_DIR, os.path.basename(file.filename))
     data = await file.read(MAX_UPLOAD_BYTES + 1)
@@ -177,11 +228,12 @@ async def upload_plugin(
     actual_sha256 = hashlib.sha256(data).hexdigest()
     if expected_sha256 and expected_sha256.lower() != actual_sha256:
         raise HTTPException(status_code=400, detail=f"SHA-256 mismatch — got {actual_sha256}")
+    verified = actual_sha256 in _load_allowed_checksums()
     async with aiofiles.open(dest, "wb") as f:
         await f.write(data)
     _sha256_compute_and_store(data, dest)
     await write_audit(db, actor.id, "upload_plugin", file.filename)
-    return {"filename": file.filename, "size": _size(dest), "sha256": actual_sha256}
+    return {"filename": file.filename, "size": _size(dest), "sha256": actual_sha256, "verified": verified}
 
 
 @router.delete("/api/plugins/{filename}", status_code=204)

@@ -4,7 +4,10 @@ import { useAuth } from '@/store/auth'
 import { errorMessage } from '@/lib/api'
 import { useBranding } from '@/store/branding'
 import { notify } from '@/lib/notify'
-import { HudCorners } from '@/components/HudCorners'
+import { Card } from '@/components/ui/card'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
 import { PasswordInput } from '@/components/PasswordInput'
 
 export const Route = createFileRoute('/login')({
@@ -63,58 +66,47 @@ function LoginPage() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-zinc-50 dark:bg-hud-0 hud-grid-bg">
-      <div className="hud-frame w-full max-w-sm space-y-6 p-8 rounded-none border border-zinc-200 dark:border-white/10 hud-glass">
-        <HudCorners />
+    <div className="min-h-screen flex items-center justify-center bg-background hud-grid-bg">
+      <Card className="w-full max-w-sm space-y-6 p-8">
         <div className="flex flex-col items-center text-center">
-          {logoUrl && <img src={logoUrl} alt="" className="w-20 h-20 rounded-none object-contain mb-4" />}
-          <h1 className="text-3xl font-bold tracking-tight text-zinc-900 dark:text-white">{orgName}</h1>
-          <p className="hud-label text-xs text-zinc-500 dark:text-zinc-500 mt-2">Sign in to manage your TAK server</p>
+          {logoUrl && <img src={logoUrl} alt="" className="w-20 h-20 object-contain mb-4" />}
+          <h1 className="font-display text-3xl tracking-tight text-foreground">{orgName}</h1>
+          <p className="scout-label mt-2">Sign in to manage your TAK server</p>
         </div>
         <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="space-y-1">
-            <label className="hud-label text-xs text-zinc-500 dark:text-zinc-500">Username</label>
-            <input
-              type="text"
-              value={username}
-              onChange={e => setUsername(e.target.value)}
-              required
-              className="w-full px-3 py-2 rounded-none bg-zinc-200 dark:bg-[#141416] border border-zinc-300 dark:border-white/10 text-zinc-900 dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-accent-ring"
-            />
-          </div>
-          <div className="space-y-1">
-            <label className="hud-label text-xs text-zinc-500 dark:text-zinc-500">Password</label>
+          <Input
+            label="Username"
+            type="text"
+            value={username}
+            onChange={e => setUsername(e.target.value)}
+            required
+          />
+          <div className="flex flex-col gap-1.5">
+            <Label>Password</Label>
             <PasswordInput
               value={password}
               onChange={e => setPassword(e.target.value)}
               required
-              className="w-full px-3 py-2 rounded-none bg-zinc-200 dark:bg-[#141416] border border-zinc-300 dark:border-white/10 text-zinc-900 dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-accent-ring"
+              className="h-9 w-full min-w-0 border bg-surface-inset px-3 pr-10 font-sans text-sm text-foreground transition-[border-color,box-shadow] duration-120 ease-standard outline-none placeholder:text-subtle focus-visible:border-primary focus-visible:ring-3 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
             />
           </div>
-          <button
-            type="submit"
-            disabled={loading}
-            className="w-full py-2.5 rounded-none bg-accent-fill hover:bg-accent-fill-hover text-accent-text text-sm font-semibold uppercase tracking-wider disabled:opacity-50 transition-colors"
-          >
+          <Button type="submit" disabled={loading} className="w-full uppercase tracking-wider">
             {loading ? 'Signing in…' : 'Sign in'}
-          </button>
+          </Button>
         </form>
         {oidc?.enabled && (
           <>
             <div className="flex items-center gap-3">
-              <div className="flex-1 h-px bg-zinc-200 dark:bg-white/10" />
-              <span className="hud-label text-[10px] text-zinc-400 dark:text-zinc-600">or</span>
-              <div className="flex-1 h-px bg-zinc-200 dark:bg-white/10" />
+              <div className="flex-1 h-px bg-border" />
+              <span className="scout-label text-[10px]">or</span>
+              <div className="flex-1 h-px bg-border" />
             </div>
-            <a
-              href="/auth/oidc/login"
-              className="block w-full py-2.5 rounded-none border border-zinc-300 dark:border-white/10 bg-zinc-100 dark:bg-[#141416] hover:bg-zinc-200 dark:hover:bg-[#232326] text-zinc-900 dark:text-white text-sm font-semibold text-center transition-colors"
-            >
+            <Button render={<a href="/auth/oidc/login" />} variant="outline" className="w-full">
               Sign in with {oidc.provider_name}
-            </a>
+            </Button>
           </>
         )}
-      </div>
+      </Card>
     </div>
   )
 }

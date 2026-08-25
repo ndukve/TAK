@@ -1,5 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Icon } from '@/components/ui/icon'
+import { Button } from '@/components/ui/button'
+import { Card } from '@/components/ui/card'
 import { Link, useNavigate, useRouterState } from '@tanstack/react-router'
 import { useAuth } from '@/store/auth'
 import { useRoute } from '@/store/route'
@@ -10,6 +12,8 @@ import { useBranding } from '@/store/branding'
 import { useTheme } from '@/store/theme'
 import { useNotifications } from '@/store/notifications'
 import { PasswordInput } from '@/components/PasswordInput'
+
+const INPUT_CLASS = "h-9 w-full min-w-0 border bg-surface-inset px-3 font-sans text-sm text-foreground transition-[border-color,box-shadow] duration-120 ease-standard outline-none placeholder:text-subtle focus-visible:border-primary focus-visible:ring-3 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
 
 // Three-bar icon that morphs into an X on open — plain CSS transitions on
 // each bar's rotation/position/opacity, no icon-swap flash.
@@ -69,10 +73,10 @@ function passwordStrength(p: string): { score: number; label: string; color: str
   if (/[a-z]/.test(p)) score++
   if (/\d/.test(p)) score++
   if (/[^A-Za-z0-9]/.test(p)) score++
-  if (score <= 2) return { score, label: 'Weak', color: 'bg-red-600 dark:bg-red-500' }
-  if (score <= 4) return { score, label: 'Fair', color: 'bg-yellow-600 dark:bg-yellow-500' }
-  if (score === 5) return { score, label: 'Good', color: 'bg-blue-500' }
-  return { score, label: 'Strong', color: 'bg-green-600 dark:bg-green-500' }
+  if (score <= 2) return { score, label: 'Weak', color: 'bg-critical' }
+  if (score <= 4) return { score, label: 'Fair', color: 'bg-warning' }
+  if (score === 5) return { score, label: 'Good', color: 'bg-primary' }
+  return { score, label: 'Strong', color: 'bg-nominal' }
 }
 
 function ChangePasswordFields({ onClose, forced }: { onClose: () => void; forced?: boolean }) {
@@ -107,8 +111,8 @@ function ChangePasswordFields({ onClose, forced }: { onClose: () => void; forced
   if (ok) {
     return (
       <div className="space-y-4">
-        <p className="text-green-600 dark:text-green-400 text-sm">Password changed successfully.</p>
-        {!forced && <button onClick={onClose} className="w-full py-2 rounded-none bg-zinc-300 dark:bg-[#232326] hover:bg-zinc-400 dark:hover:bg-[#2b2b2f] text-sm">Close</button>}
+        <p className="text-nominal text-sm">Password changed successfully.</p>
+        {!forced && <Button type="button" variant="secondary" onClick={onClose} className="w-full">Close</Button>}
       </div>
     )
   }
@@ -116,30 +120,30 @@ function ChangePasswordFields({ onClose, forced }: { onClose: () => void; forced
   return (
     <form onSubmit={handleSubmit} className="space-y-3">
       {forced && (
-        <p className="text-xs text-yellow-600 dark:text-yellow-400 mb-1">Your password has expired and must be changed before continuing.</p>
+        <p className="text-xs text-warning mb-1">Your password has expired and must be changed before continuing.</p>
       )}
       <PasswordInput placeholder="Current password" value={current} onChange={e => setCurrent(e.target.value)}
-        className="w-full bg-zinc-200 dark:bg-[#141416] border border-zinc-300 dark:border-white/10 rounded-none px-3 py-2 text-sm" required />
+        className={cn(INPUT_CLASS, 'pr-10')} required />
       <div className="space-y-1">
         <PasswordInput placeholder="New password (min 12 chars)" value={next} onChange={e => setNext(e.target.value)}
-          className="w-full bg-zinc-200 dark:bg-[#141416] border border-zinc-300 dark:border-white/10 rounded-none px-3 py-2 text-sm" required />
+          className={cn(INPUT_CLASS, 'pr-10')} required />
         {next.length > 0 && (
           <div className="space-y-1">
             <div className="flex gap-1 h-1">
               {[1,2,3,4,5,6].map(i => (
-                <div key={i} className={`flex-1 rounded-full ${i <= strength.score ? strength.color : 'bg-zinc-300 dark:bg-[#232326]'}`} />
+                <div key={i} className={`flex-1 rounded-full ${i <= strength.score ? strength.color : 'bg-neutral-surface'}`} />
               ))}
             </div>
-            <p className="text-xs text-zinc-600 dark:text-zinc-400">{strength.label} · must have uppercase, lowercase, digit, special char</p>
+            <p className="text-xs text-muted-foreground">{strength.label} · must have uppercase, lowercase, digit, special char</p>
           </div>
         )}
       </div>
       <PasswordInput placeholder="Confirm new password" value={confirm} onChange={e => setConfirm(e.target.value)}
-        className="w-full bg-zinc-200 dark:bg-[#141416] border border-zinc-300 dark:border-white/10 rounded-none px-3 py-2 text-sm" required />
-      {error && <p className="text-red-600 dark:text-red-400 text-xs">{error}</p>}
+        className={cn(INPUT_CLASS, 'pr-10')} required />
+      {error && <p className="text-critical text-xs">{error}</p>}
       <div className="flex gap-2 pt-1">
-        {!forced && <button type="button" onClick={onClose} className="flex-1 py-2 rounded-none bg-zinc-300 dark:bg-[#232326] hover:bg-zinc-400 dark:hover:bg-[#2b2b2f] text-sm">Cancel</button>}
-        <button type="submit" className="flex-1 py-2 rounded-none bg-accent-fill hover:bg-accent-fill-hover text-accent-text text-sm">Change</button>
+        {!forced && <Button type="button" variant="secondary" onClick={onClose} className="flex-1">Cancel</Button>}
+        <Button type="submit" className="flex-1">Change</Button>
       </div>
     </form>
   )
@@ -147,11 +151,11 @@ function ChangePasswordFields({ onClose, forced }: { onClose: () => void; forced
 
 function ChangePasswordModal({ onClose, forced }: { onClose: () => void; forced?: boolean }) {
   return (
-    <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-[60]">
-      <div className="bg-zinc-100 dark:bg-[#0c0c0e] border border-zinc-300 dark:border-white/10 rounded-none p-6 w-full max-w-sm">
-        <h2 className="text-lg font-semibold mb-4">Change Password</h2>
+    <div className="fixed inset-0 bg-overlay flex items-center justify-center z-[60]">
+      <Card className="w-full max-w-sm">
+        <h2 className="font-display text-lg mb-4">Change Password</h2>
         <ChangePasswordFields onClose={onClose} forced={forced} />
-      </div>
+      </Card>
     </div>
   )
 }
@@ -186,34 +190,34 @@ function UserSettingsModal({ onClose }: { onClose: () => void }) {
   }
 
   return (
-    <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-[60]">
-      <div className="bg-zinc-100 dark:bg-[#0c0c0e] border border-zinc-300 dark:border-white/10 rounded-none p-6 w-full max-w-sm space-y-6">
+    <div className="fixed inset-0 bg-overlay flex items-center justify-center z-[60]">
+      <Card className="w-full max-w-sm space-y-6">
         <div className="flex items-center justify-between">
-          <h2 className="text-lg font-semibold">User Settings</h2>
-          <button onClick={onClose} className="text-zinc-500 hover:text-zinc-900 dark:hover:text-white text-sm">Close</button>
+          <h2 className="font-display text-lg">User Settings</h2>
+          <button onClick={onClose} className="text-subtle hover:text-foreground text-sm">Close</button>
         </div>
 
         <div>
-          <h3 className="text-sm font-semibold text-zinc-900 dark:text-zinc-100 mb-2">Change Username</h3>
+          <h3 className="scout-label mb-2">Change Username</h3>
           {usernameOk ? (
-            <p className="text-green-600 dark:text-green-400 text-sm">Username changed successfully.</p>
+            <p className="text-nominal text-sm">Username changed successfully.</p>
           ) : (
             <form onSubmit={handleUsernameSubmit} className="space-y-3">
               <input type="text" placeholder="New username" value={newUsername} onChange={e => setNewUsername(e.target.value)}
-                className="w-full bg-zinc-200 dark:bg-[#141416] border border-zinc-300 dark:border-white/10 rounded-none px-3 py-2 text-sm" required />
+                className={INPUT_CLASS} required />
               <PasswordInput placeholder="Current password" value={usernamePassword} onChange={e => setUsernamePassword(e.target.value)}
-                className="w-full bg-zinc-200 dark:bg-[#141416] border border-zinc-300 dark:border-white/10 rounded-none px-3 py-2 text-sm" required />
-              {usernameError && <p className="text-red-600 dark:text-red-400 text-xs">{usernameError}</p>}
-              <button type="submit" className="w-full py-2 rounded-none bg-accent-fill hover:bg-accent-fill-hover text-accent-text text-sm">Change Username</button>
+                className={cn(INPUT_CLASS, 'pr-10')} required />
+              {usernameError && <p className="text-critical text-xs">{usernameError}</p>}
+              <Button type="submit" className="w-full">Change Username</Button>
             </form>
           )}
         </div>
 
-        <div className="border-t border-zinc-300 dark:border-white/10 pt-6">
-          <h3 className="text-sm font-semibold text-zinc-900 dark:text-zinc-100 mb-2">Change Password</h3>
+        <div className="border-t border-border pt-6">
+          <h3 className="scout-label mb-2">Change Password</h3>
           <ChangePasswordFields onClose={onClose} />
         </div>
-      </div>
+      </Card>
     </div>
   )
 }
@@ -256,51 +260,51 @@ export function Layout({ children }: { children: React.ReactNode }) {
     : []
 
   return (
-    <div className="flex h-screen bg-zinc-50 dark:bg-black text-zinc-900 dark:text-zinc-100">
+    <div className="flex h-screen bg-background text-foreground">
       <a
         href="#main-content"
-        className="sr-only focus:not-sr-only focus:absolute focus:top-2 focus:left-2 focus:z-50 focus:px-3 focus:py-2 focus:rounded-none focus:bg-accent-fill focus:text-accent-text focus:text-sm"
+        className="sr-only focus:not-sr-only focus:absolute focus:top-2 focus:left-2 focus:z-50 focus:px-3 focus:py-2 focus:bg-primary focus:text-primary-foreground focus:text-sm"
       >
         Skip to content
       </a>
-      <header className="fixed top-0 left-0 right-0 z-50 h-14 pl-16 pr-4 flex items-center gap-2 min-w-0 border-b border-zinc-200 dark:border-white/10 bg-white/97 dark:bg-[#0c0c0e]/97 backdrop-blur-xl">
+      <header className="fixed top-0 left-0 right-0 z-50 h-14 pl-16 pr-4 flex items-center gap-2 min-w-0 border-b border-border bg-surface/95 backdrop-blur-xl">
         <button
           onClick={() => setSidebarOpen(v => !v)}
-          className="fixed top-2.5 left-3 z-50 flex items-center justify-center p-2.5 rounded-none bg-zinc-100 dark:bg-[#0c0c0e] border border-zinc-200 dark:border-white/10 text-zinc-700 dark:text-zinc-300 hover:text-zinc-900 dark:hover:text-white transition-colors"
+          className="fixed top-2.5 left-3 z-50 flex items-center justify-center p-2.5 border border-border bg-surface text-muted-foreground hover:text-foreground transition-colors"
           aria-label="Toggle menu"
           aria-expanded={sidebarOpen}
         >
           <HamburgerIcon open={sidebarOpen} />
         </button>
-        {logoUrl && <img src={logoUrl} alt="" className="w-7 h-7 rounded-none object-contain shrink-0" />}
+        {logoUrl && <img src={logoUrl} alt="" className="w-7 h-7 object-contain shrink-0" />}
         <span className="font-display font-bold text-xl tracking-tight truncate">{orgName}</span>
         <div className="relative ml-auto">
           <button
             onClick={() => setNotifOpen((v) => !v)}
             aria-label="Notifications"
-            className="p-1.5 rounded-none hover:bg-zinc-200 dark:hover:bg-[#141416] text-zinc-600 dark:text-zinc-400 relative focus:outline-none focus:ring-2 focus:ring-accent-ring"
+            className="p-1.5 hover:bg-neutral-surface text-muted-foreground relative focus:outline-none focus:ring-3 focus:ring-ring"
           >
             <Icon name="notification-3-line" size={16} />
             {notifications.length > 0 && (
-              <span className="absolute top-0.5 right-0.5 w-2 h-2 rounded-full bg-red-500" />
+              <span className="absolute top-0.5 right-0.5 w-2 h-2 rounded-full bg-critical" />
             )}
           </button>
           {notifOpen && (
-            <div className="fixed top-14 left-4 right-4 w-auto md:absolute md:top-full md:left-auto md:right-0 md:mt-2 md:w-72 rounded-none border border-zinc-200 dark:border-white/10 hud-glass shadow-lg z-50 max-h-80 overflow-y-auto">
-              <div className="flex items-center justify-between px-3 py-2 border-b border-zinc-200 dark:border-white/10">
-                <span className="hud-label text-xs font-semibold text-zinc-600 dark:text-zinc-400">Notifications</span>
-                <button onClick={clearNotifications} className="text-xs text-accent-ring hover:underline">Clear all</button>
+            <div className="fixed top-14 left-4 right-4 w-auto md:absolute md:top-full md:left-auto md:right-0 md:mt-2 md:w-72 border border-border bg-surface-raised shadow-lg z-50 max-h-80 overflow-y-auto">
+              <div className="flex items-center justify-between px-3 py-2 border-b border-border">
+                <span className="scout-label">Notifications</span>
+                <button onClick={clearNotifications} className="text-xs text-primary-emphasis hover:underline">Clear all</button>
               </div>
               {notifications.length === 0 ? (
-                <p className="px-3 py-4 text-sm text-zinc-500 text-center">No notifications yet</p>
+                <p className="px-3 py-4 text-sm text-subtle text-center">No notifications yet</p>
               ) : (
                 notifications.map((n) => {
                   const content = (
                     <>
-                      <span className={`w-1.5 h-1.5 rounded-full mt-1.5 ${n.type === 'success' ? 'bg-green-500' : 'bg-red-500'}`} />
+                      <span className={`w-1.5 h-1.5 rounded-full mt-1.5 ${n.type === 'success' ? 'bg-nominal' : 'bg-critical'}`} />
                       <div className="flex-1 min-w-0">
-                        <p className="text-sm text-zinc-900 dark:text-zinc-200 break-words">{n.message}</p>
-                        <p className="text-xs text-zinc-500">{new Date(n.timestamp).toLocaleTimeString()}</p>
+                        <p className="text-sm text-foreground break-words">{n.message}</p>
+                        <p className="text-xs text-subtle">{new Date(n.timestamp).toLocaleTimeString()}</p>
                       </div>
                     </>
                   )
@@ -309,12 +313,12 @@ export function Layout({ children }: { children: React.ReactNode }) {
                       key={n.id}
                       onClick={() => { setNotifOpen(false); navigate({ to: '/logs' }) }}
                       title="View logs"
-                      className="flex items-start gap-2 w-full text-left px-3 py-2 border-b border-zinc-100 dark:border-white/5 last:border-0 hover:bg-zinc-100 dark:hover:bg-white/[0.05] transition-colors"
+                      className="flex items-start gap-2 w-full text-left px-3 py-2 border-b border-border-faint last:border-0 hover:bg-neutral-surface transition-colors"
                     >
                       {content}
                     </button>
                   ) : (
-                    <div key={n.id} className="flex items-start gap-2 px-3 py-2 border-b border-zinc-100 dark:border-white/5 last:border-0">
+                    <div key={n.id} className="flex items-start gap-2 px-3 py-2 border-b border-border-faint last:border-0">
                       {content}
                     </div>
                   )
@@ -329,20 +333,20 @@ export function Layout({ children }: { children: React.ReactNode }) {
             onClick={() => setUserMenuOpen((v) => !v)}
             aria-label="User menu"
             aria-expanded={userMenuOpen}
-            className="w-7 h-7 rounded-full bg-accent-fill text-accent-text flex items-center justify-center text-xs font-semibold shrink-0 focus:outline-none focus:ring-2 focus:ring-accent-ring"
+            className="w-7 h-7 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-xs font-semibold shrink-0 focus:outline-none focus:ring-3 focus:ring-ring"
           >
             {(username ?? '?').slice(0, 2).toUpperCase()}
           </button>
           {userMenuOpen && (
-            <div className="fixed top-14 left-4 right-4 w-auto md:absolute md:top-full md:left-auto md:right-0 md:mt-2 md:w-56 rounded-none border border-zinc-200 dark:border-white/10 hud-glass shadow-lg z-50 overflow-hidden">
-              <div className="px-3 py-2.5 border-b border-zinc-200 dark:border-white/10">
-                <p className="text-sm text-zinc-800 dark:text-zinc-200 truncate">{username}</p>
-                <p className="text-xs text-zinc-500">{role}</p>
+            <div className="fixed top-14 left-4 right-4 w-auto md:absolute md:top-full md:left-auto md:right-0 md:mt-2 md:w-56 border border-border bg-surface-raised shadow-lg z-50 overflow-hidden">
+              <div className="px-3 py-2.5 border-b border-border">
+                <p className="text-sm text-foreground truncate">{username}</p>
+                <p className="text-xs text-subtle">{role}</p>
               </div>
               <div className="p-1">
                 <button
                   onClick={() => { toggleTheme(); setUserMenuOpen(false) }}
-                  className="flex items-center gap-3 w-full px-3 py-2 rounded-none text-sm text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white hover:bg-zinc-200/50 dark:hover:bg-white/[0.05] transition-colors"
+                  className="flex items-center gap-3 w-full px-3 py-2 text-sm text-muted-foreground hover:text-foreground hover:bg-neutral-surface transition-colors"
                 >
                   {theme === 'dark' ? <Icon name="sun-line" size={16} /> : <Icon name="moon-line" size={16} />}
                   {theme === 'dark' ? 'Light mode' : 'Dark mode'}
@@ -350,7 +354,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
                 {authProvider === 'local' && (
                   <button
                     onClick={() => { setUserMenuOpen(false); setShowUserSettings(true) }}
-                    className="flex items-center gap-3 w-full px-3 py-2 rounded-none text-sm text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white hover:bg-zinc-200/50 dark:hover:bg-white/[0.05] transition-colors"
+                    className="flex items-center gap-3 w-full px-3 py-2 text-sm text-muted-foreground hover:text-foreground hover:bg-neutral-surface transition-colors"
                   >
                     <Icon name="group-line" size={16} />
                     Account settings
@@ -360,7 +364,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
                   <Link
                     to="/branding"
                     onClick={() => setUserMenuOpen(false)}
-                    className="flex items-center gap-3 w-full px-3 py-2 rounded-none text-sm text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white hover:bg-zinc-200/50 dark:hover:bg-white/[0.05] transition-colors"
+                    className="flex items-center gap-3 w-full px-3 py-2 text-sm text-muted-foreground hover:text-foreground hover:bg-neutral-surface transition-colors"
                   >
                     <Icon name="settings-3-line" size={16} />
                     Settings
@@ -368,7 +372,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
                 )}
                 <button
                   onClick={() => { setUserMenuOpen(false); handleLogout() }}
-                  className="flex items-center gap-3 w-full px-3 py-2 rounded-none text-sm text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white hover:bg-zinc-200/50 dark:hover:bg-white/[0.05] transition-colors"
+                  className="flex items-center gap-3 w-full px-3 py-2 text-sm text-muted-foreground hover:text-foreground hover:bg-neutral-surface transition-colors"
                 >
                   <Icon name="logout-box-r-line" size={16} />
                   Sign out
@@ -379,11 +383,11 @@ export function Layout({ children }: { children: React.ReactNode }) {
         </div>
       </header>
       {sidebarOpen && (
-        <div className="fixed inset-0 top-14 bg-black/50 z-30" onClick={() => setSidebarOpen(false)} />
+        <div className="fixed inset-0 top-14 bg-overlay z-30" onClick={() => setSidebarOpen(false)} />
       )}
       <aside className={cn(
-        'w-64 flex-shrink-0 border-r border-zinc-200 dark:border-white/10 flex flex-col',
-        'fixed top-14 bottom-0 left-0 z-40 bg-white/97 dark:bg-[#0c0c0e]/97 shadow-xl backdrop-blur-xl transition-transform duration-300 ease-in-out',
+        'w-64 flex-shrink-0 border-r border-border flex flex-col',
+        'fixed top-14 bottom-0 left-0 z-40 bg-surface/95 shadow-xl backdrop-blur-xl transition-transform duration-300 ease-in-out',
         sidebarOpen ? 'translate-x-0' : '-translate-x-full'
       )}>
         <nav className="flex-1 p-2 space-y-1">
@@ -395,8 +399,8 @@ export function Layout({ children }: { children: React.ReactNode }) {
               className={cn(
                 'flex items-center gap-3 pl-3 pr-3 py-2 text-sm border-l-2 transition-colors',
                 current === to
-                  ? 'border-accent-fill text-zinc-900 dark:text-white'
-                  : 'border-transparent text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white hover:bg-zinc-200/50 dark:hover:bg-white/[0.05]'
+                  ? 'border-primary text-foreground'
+                  : 'border-transparent text-muted-foreground hover:text-foreground hover:bg-neutral-surface'
               )}
             >
               <Icon name={icon} size={16} />
@@ -405,7 +409,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
           ))}
           {adminItems.length > 0 && (
             <>
-              <div className="hud-label pt-3 pb-1 px-3 text-[10px] font-semibold text-zinc-400 dark:text-zinc-600">Admin</div>
+              <div className="scout-label pt-3 pb-1 px-3">Admin</div>
               {adminItems.map(({ to, label, icon }) => (
                 <Link
                   key={to}
@@ -414,8 +418,8 @@ export function Layout({ children }: { children: React.ReactNode }) {
                   className={cn(
                     'flex items-center gap-3 pl-3 pr-3 py-2 text-sm border-l-2 transition-colors',
                     current === to
-                      ? 'border-accent-fill text-zinc-900 dark:text-white'
-                      : 'border-transparent text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white hover:bg-zinc-200/50 dark:hover:bg-white/[0.05]'
+                      ? 'border-primary text-foreground'
+                      : 'border-transparent text-muted-foreground hover:text-foreground hover:bg-neutral-surface'
                   )}
                 >
                   <Icon name={icon} size={16} />
@@ -425,8 +429,8 @@ export function Layout({ children }: { children: React.ReactNode }) {
             </>
           )}
         </nav>
-        <div className="p-2 border-t border-zinc-200 dark:border-white/10">
-          <p className="px-3 pt-1 text-[10px] text-zinc-400 dark:text-zinc-600 text-center">TAK Admin {__APP_VERSION__}</p>
+        <div className="p-2 border-t border-border">
+          <p className="px-3 pt-1 text-[10px] text-subtle text-center">TAK Admin {__APP_VERSION__}</p>
         </div>
       </aside>
       <main id="main-content" tabIndex={-1} className="flex-1 overflow-auto pt-14 isolate hud-grid-bg">{children}</main>
