@@ -13,6 +13,7 @@ build:
 
 up:
 	@[ -f $(ENV_FILE) ] || { echo "Run './install.sh' first"; exit 1; }
+	@bash -c '. ./scripts/sync_server_address.sh && sync_server_address $(ENV_FILE)'
 	docker compose --env-file $(ENV_FILE) up -d
 
 down:

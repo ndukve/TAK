@@ -13,6 +13,8 @@ ENV_FILE="$SCRIPT_DIR/takserver.env"
 . "$SCRIPT_DIR/scripts/refresh_vendor.sh"
 # shellcheck source=scripts/scrub_admin_secret.sh
 . "$SCRIPT_DIR/scripts/scrub_admin_secret.sh"
+# shellcheck source=scripts/sync_server_address.sh
+. "$SCRIPT_DIR/scripts/sync_server_address.sh"
 
 # ── Preflight ─────────────────────────────────────────────────────────────────
 [ -f "$ENV_FILE" ] || fail "takserver.env not found — run ./install.sh first"
@@ -127,6 +129,8 @@ info "Building updated image..."
 docker compose --env-file "$ENV_FILE" build \
     || fail "Build failed (see output above)."
 ok "Image built"
+
+sync_server_address "$ENV_FILE"
 
 info "Restarting containers..."
 # up -d (no preceding down) only recreates containers whose image/config
