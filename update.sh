@@ -15,6 +15,8 @@ ENV_FILE="$SCRIPT_DIR/takserver.env"
 . "$SCRIPT_DIR/scripts/scrub_admin_secret.sh"
 # shellcheck source=scripts/sync_server_address.sh
 . "$SCRIPT_DIR/scripts/sync_server_address.sh"
+# shellcheck source=scripts/cleanup_stale_pycache.sh
+. "$SCRIPT_DIR/scripts/cleanup_stale_pycache.sh"
 
 # ── Preflight ─────────────────────────────────────────────────────────────────
 [ -f "$ENV_FILE" ] || fail "takserver.env not found — run ./install.sh first"
@@ -47,6 +49,7 @@ spin_stop "Up to date: $(git log -1 --format='%h %s')"
 
 if [ "$_OLD_HEAD" != "$(git rev-parse HEAD)" ]; then
     git --no-pager diff --stat "$_OLD_HEAD" HEAD
+    cleanup_stale_pycache "$_OLD_HEAD" HEAD
     printf "\n"
     # update.sh may just have rewritten itself on disk. Bash reads a running script
     # incrementally from disk by byte offset — continuing to execute the
