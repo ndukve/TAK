@@ -230,6 +230,15 @@ function MapsPage() {
             className="hidden"
             onChange={handleUpload}
           />
+          {maps.length > 0 && (
+            <button
+              onClick={() => downloadFile('/api/maps/download-all', 'maps.zip').catch((e) => notify.error(errorMessage(e)))}
+              className="flex items-center gap-2 px-4 py-2 bg-zinc-200 dark:bg-[#141416] hover:bg-zinc-300 dark:hover:bg-[#232326] text-zinc-700 dark:text-zinc-300 text-sm rounded-none transition-colors"
+            >
+              <Icon name="download-line" size={14} />
+              Download All ({maps.length})
+            </button>
+          )}
         </div>
 
         <div className="hud-frame relative rounded-none border border-zinc-200 dark:border-white/10 hud-glass">

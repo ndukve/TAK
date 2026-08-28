@@ -1,11 +1,15 @@
+import asyncio
 import hashlib
 import json
 import os
+import tempfile
+import zipfile
 
 import aiofiles
 from fastapi import APIRouter, Depends, File, Form, HTTPException, Request, UploadFile
 from pydantic import BaseModel
 from sqlalchemy.ext.asyncio import AsyncSession
+from starlette.background import BackgroundTask
 from starlette.responses import FileResponse
 
 from .deps import get_db, require_role, write_audit
@@ -55,6 +59,19 @@ def _sha256_stored(path: str) -> str | None:
         return open(sidecar).read().strip() or None
     except OSError:
         return None
+
+
+def _zip_files_to_tempfile(files: list[tuple[str, str]]) -> str:
+    """files: (absolute_path, arcname) pairs. Writes them into a new temp zip
+    on disk (not memory — maps can run into the multi-GB range) and returns
+    its path. ZIP_STORED: the contents (mbtiles, apk/wpk) are already
+    compressed, so re-compressing here would just burn CPU for no size win."""
+    fd, path = tempfile.mkstemp(suffix=".zip")
+    os.close(fd)
+    with zipfile.ZipFile(path, "w", compression=zipfile.ZIP_STORED) as archive:
+        for abs_path, arcname in files:
+            archive.write(abs_path, arcname)
+    return path
 
 
 def _sha256_compute_and_store(data: bytes, path: str) -> str:
@@ -176,6 +193,21 @@ async def list_plugins(_=Depends(_admin_or_field)):
             "verified": bool(sha256 and sha256.lower() in allowed),
         })
     return {"plugins": plugins}
+
+
+@router.get("/api/plugins/download-all")
+async def download_all_plugins(_=Depends(_admin_or_field)):
+    files: list[tuple[str, str]] = []
+    if os.path.isdir(PLUGINS_DIR):
+        files = [
+            (os.path.join(PLUGINS_DIR, f), f)
+            for f in sorted(os.listdir(PLUGINS_DIR))
+            if f.endswith(".apk") or f.endswith(".wpk") or f.endswith(".zip")
+        ]
+    if not files:
+        raise HTTPException(status_code=404, detail="No plugins uploaded")
+    zip_path = await asyncio.to_thread(_zip_files_to_tempfile, files)
+    return FileResponse(zip_path, filename="plugins.zip", media_type="application/zip", background=BackgroundTask(os.remove, zip_path))
 
 
 @router.get("/api/plugins/checksums")
@@ -300,6 +332,22 @@ async def list_maps(_=Depends(_admin_or_field)):
                 kind = "mbtiles" if fname.endswith(".mbtiles") else "xml"
                 result.append({"provider": provider, "filename": fname, "kind": kind, "size": _size(fpath), "sha256": _sha256_stored(fpath)})
     return {"maps": result}
+
+
+@router.get("/api/maps/download-all")
+async def download_all_maps(_=Depends(_admin_or_field)):
+    files: list[tuple[str, str]] = []
+    if os.path.isdir(MAPS_DIR):
+        for provider in sorted(os.listdir(MAPS_DIR)):
+            pdir = os.path.join(MAPS_DIR, provider)
+            if not os.path.isdir(pdir):
+                continue
+            for fname in sorted(f for f in os.listdir(pdir) if f.endswith(_MAP_EXTENSIONS)):
+                files.append((os.path.join(pdir, fname), f"{provider}/{fname}"))
+    if not files:
+        raise HTTPException(status_code=404, detail="No maps uploaded")
+    zip_path = await asyncio.to_thread(_zip_files_to_tempfile, files)
+    return FileResponse(zip_path, filename="maps.zip", media_type="application/zip", background=BackgroundTask(os.remove, zip_path))
 
 
 @router.post("/api/maps/uploads")

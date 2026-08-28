@@ -3,7 +3,7 @@ import { Icon } from '@/components/ui/icon'
 import { useEffect, useRef, useState } from 'react'
 import { Layout } from '@/components/Layout'
 import { PageHeader } from '@/components/PageHeader'
-import { apiFetch, apiJson, errorMessage } from '@/lib/api'
+import { apiFetch, apiJson, downloadFile, errorMessage } from '@/lib/api'
 import { useAuth } from '@/store/auth'
 import { notify } from '@/lib/notify'
 import { TableSkeletonRows } from '@/components/Skeleton'
@@ -208,6 +208,12 @@ function PluginsPage() {
           actions={
             canManage && (
               <div className="flex gap-2">
+                {plugins.length > 0 && (
+                  <button onClick={() => downloadFile('/api/plugins/download-all', 'plugins.zip').catch((e) => notify.error(errorMessage(e)))}
+                    className="flex items-center gap-2 px-4 py-2 bg-zinc-200 dark:bg-[#141416] hover:bg-zinc-300 dark:hover:bg-[#232326] text-zinc-700 dark:text-zinc-300 text-sm rounded-none transition-colors">
+                    <Icon name="download-line" size={14} /> Download All ({plugins.length})
+                  </button>
+                )}
                 <button onClick={() => setShowChecksums(true)}
                   className="flex items-center gap-2 px-4 py-2 bg-zinc-200 dark:bg-[#141416] hover:bg-zinc-300 dark:hover:bg-[#232326] text-zinc-700 dark:text-zinc-300 text-sm rounded-none transition-colors">
                   <Icon name="shield-check-line" size={14} /> Checksum Allowlist

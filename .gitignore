@@ -1,3 +1,11 @@
+# Local agent/editor state. Dot-prefixed names are not ignored by Git unless
+# they are listed explicitly.
+.claude/
+.codex/
+.agents/
+.cursor/
+.gemini/
+
 # Secrets — never commit
 .env
 takserver.env
