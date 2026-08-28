@@ -108,7 +108,7 @@ Every client still receives its own certificate. Clients can see one another bec
 
 `TAK-USERS` is the default name. To use another access-group name, set `TAK_USER_GROUP=<name>` in `takserver.env`, rebuild/restart the TAK containers, and repair existing certificate memberships as shown below. Changing this value does not alter map symbols, affiliations, or team colors.
 
-**The callsign must end in `-ATAK`, `-WinTAK`, or `-iTAK`** — e.g. `Alpha1-iTAK`. This isn't cosmetic: iTAK's importer requires a different zip layout (cert files at the root) than ATAK/WinTAK's Mission Package format (nested under `content/`), and the suffix is how the package builder knows which one to produce. Using the wrong client type will import silently with no server entry appearing.
+**The callsign must end in `-ATAK`, `-WinTAK`, `-iTAK`, or `-Service`** — e.g. `Alpha1-iTAK`. This isn't cosmetic: iTAK's importer requires a different zip layout (cert files at the root) than ATAK/WinTAK's Mission Package format (nested under `content/`), and the suffix is how the package builder knows which one to produce. Using the wrong client type will import silently with no server entry appearing.
 
 ### Standard flow (generate + authorise in one step)
 

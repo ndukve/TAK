@@ -192,6 +192,20 @@ Serverio įrašas atsiras automatiškai. Paspauskite **Connect**.
 2. Paspauskite ant `.xml` failo, kad atsisiųstumėte
 3. ATAK/WinTAK → hamburger → **Import Manager** → pasirinkite failą
 
+Superadministratoriai papildomai turi skiltį **Basemaps**: joje galima rinktis ESRI orų kompozicijas, GOES palydovinius vaizdus, NASA IMERG, NOAA/RainViewer radarą, atskirus bazlapius, įkeltus ATAK XML šaltinius arba serveryje sugeneruotas neprisijungusio režimo MBTiles sritis ir siųsti jas pasirinktiems, šiuo metu prie TAK serverio prijungtiems klientams. Serveris tokiu atveju sukuria kvietimu pagrįstą misiją su pasirinktais žemėlapio sluoksniais — ją reikia priimti pačiame EUD įrenginyje.
+
+Įmontuoti beveik gyvo laiko šaltiniai gaunami per pasirašytą TAK sluoksnių (tile) šliuzą adresu `https://<SERVERIO_IP>:8889`, saugomi serverio talpykloje ir ATAK pateikiami kaip standartiniai `MapTile` sluoksniai. Todėl EUD reikia tik tinklo prieigos iki paties TAK serverio — tiesioginė interneto prieiga prie kiekvieno orų ar vaizdų tiekėjo nereikalinga. `TAK_SERVER_ADDRESS` reikšmė turi būti tas IP arba domenas, kurį realiai naudoja EUD; jei šliuzas per klaidą sukonfigūruotas kaip `localhost`, Basemaps puslapis apie tai įspėja.
+
+Basemaps puslapyje taip pat yra šaltinių prieinamumo patikros, sluoksnių permatomumo ir eiliškumo valdymas, prijungtų klientų grupių pasirinkimas, išsaugoma pristatymo istorija, priėmimo skaičiai, pakartotinio siuntimo/trynimo valdikliai, senų misijų valymas, pasirinktinių šaltinių šalinimas bei ribotas AOI srities pavertimas į MBTiles. Už tiekėjų prieinamumą ir licencijavimą atsako operatorius — jei tiekėjas reikalauja prisijungimo duomenų ar sutartinio atributavimo, naudokite tik organizacijos patvirtintus XML šaltinius.
+
+Įdiegę serverį arba pakeitę jo adresą, repozitorijos kataloge paleiskite TLS patvirtinimo testą:
+
+```bash
+./scripts/basemap_smoke_test.sh https://<SERVERIO_IP>:8889 <SUPERADMIN_NAUDOTOJO_VARDAS>
+```
+
+Jis paprašys slaptažodžio (jo nerodydamas ekrane), atliks serverio pusės diagnostiką, tada atsisiųs vieną pasirašytą proxy sluoksnio (tile) failą, patikrindamas admin proxy pagal TAK šakninį CA. Testui pavykus, nusiųskite nedidelį bazlapį vienam prijungtam EUD, priimkite misijos kvietimą DataSync/ATAK programėlėje ir naudokite **Refresh acceptance** paskirstymo istorijoje, kad patvirtintumėte to kliento prenumeratą.
+
 ---
 
 ## Kliento papildiniai
