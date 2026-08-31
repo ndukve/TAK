@@ -21,6 +21,10 @@ _admin = require_role("admin", "superadmin")
 TAK_DATA = "/opt/tak/data/certs/files"
 CLIENTPKGS = f"{TAK_DATA}/clientpkgs"
 SERVER_ADDR = os.environ.get("TAK_SERVER_ADDRESS", "localhost")
+# Set only when a VPN is active (see scripts/sync_server_address.sh) — a
+# second, LAN-direct connection option for devices on the same local
+# network as the server, alongside the VPN address above.
+SERVER_ADDR_LAN = os.environ.get("TAK_SERVER_ADDRESS_LAN", "")
 TAK_USER_GROUP = os.environ.get("TAK_USER_GROUP", "TAK-USERS")
 
 _USERNAME_RE = re.compile(r'^[A-Za-z0-9_-]+$')
@@ -176,6 +180,8 @@ async def gen_cert(body: UsernameRequest, db: AsyncSession = Depends(get_db), ac
 async def make_package(body: MakePackageRequest, db: AsyncSession = Depends(get_db), actor=Depends(_admin)):
     username = _validate_new_username(body.username)
     env = {"CLIENT_CERT_NAME": username, "TAK_SERVER_ADDRESS": SERVER_ADDR}
+    if SERVER_ADDR_LAN:
+        env["TAK_SERVER_ADDRESS_LAN"] = SERVER_ADDR_LAN
     if body.team:
         env["TAK_LOCATION_TEAM"] = body.team
     if body.role:

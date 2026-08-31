@@ -308,6 +308,11 @@ cat > "$ENV_FILE" << ENVEOF
 # DO NOT commit this file to version control.
 
 TAK_SERVER_ADDRESS=${TAK_SERVER_ADDRESS}
+# Kept in sync automatically by scripts/sync_server_address.sh on every
+# 'make up' / update.sh — a second, LAN-direct connection option baked
+# into client packages alongside TAK_SERVER_ADDRESS when a VPN is active.
+# Leave blank; only relevant if you set up NetBird/Tailscale.
+TAK_SERVER_ADDRESS_LAN=
 TAK_SERVER_NAME=${TAK_SERVER_NAME}
 
 POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
