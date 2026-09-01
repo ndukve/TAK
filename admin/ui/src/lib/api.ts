@@ -90,3 +90,19 @@ export async function downloadFile(path: string, filename: string): Promise<void
   a.remove()
   URL.revokeObjectURL(url)
 }
+
+// downloadFile() above buffers the whole response into one JS Blob before
+// saving it, which chokes (or looks hung) on multi-gigabyte files like
+// offline .mbtiles map packs. This variant instead mints a one-time ticket
+// (auth can't travel via header on a plain <a> click) and lets the browser
+// stream the download to disk itself, the same way a normal file link works.
+export async function downloadFileStreamed(path: string, filename: string): Promise<void> {
+  const { ticket } = await apiJson<{ ticket: string }>('/auth/ws-ticket', { method: 'POST' })
+  const sep = path.includes('?') ? '&' : '?'
+  const a = document.createElement('a')
+  a.href = `${BASE}${path}${sep}ticket=${encodeURIComponent(ticket)}`
+  a.download = filename
+  document.body.appendChild(a)
+  a.click()
+  a.remove()
+}

@@ -12,11 +12,16 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from starlette.background import BackgroundTask
 from starlette.responses import FileResponse
 
+from .auth import require_role_or_ticket
 from .deps import get_db, require_role, write_audit
 
 router = APIRouter(tags=["packages"])
 _admin = require_role("admin", "superadmin")
 _admin_or_field = require_role("admin", "superadmin", "field")
+# Map downloads can run into multiple gigabytes (.mbtiles) — the browser
+# streams these via a plain <a href> instead of buffering the whole file
+# into a JS Blob, so auth travels as a one-time ticket, not a header.
+_admin_or_field_dl = require_role_or_ticket("admin", "superadmin", "field")
 
 
 def _base_callsign(filename: str) -> str:
@@ -335,7 +340,7 @@ async def list_maps(_=Depends(_admin_or_field)):
 
 
 @router.get("/api/maps/download-all")
-async def download_all_maps(_=Depends(_admin_or_field)):
+async def download_all_maps(_=Depends(_admin_or_field_dl)):
     files: list[tuple[str, str]] = []
     if os.path.isdir(MAPS_DIR):
         for provider in sorted(os.listdir(MAPS_DIR)):
@@ -445,7 +450,7 @@ async def upload_map_chunk(
 
 
 @router.get("/api/maps/{provider}/{filename}/download")
-async def download_map(provider: str, filename: str, _=Depends(_admin_or_field)):
+async def download_map(provider: str, filename: str, _=Depends(_admin_or_field_dl)):
     safe_provider = os.path.basename(provider)
     safe_filename = os.path.basename(filename)
     path = os.path.join(MAPS_DIR, safe_provider, safe_filename)

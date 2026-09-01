@@ -4,11 +4,12 @@ import secrets
 from datetime import UTC, datetime, timedelta
 
 from fastapi import APIRouter, Cookie, Depends, HTTPException, Response
+from fastapi.security import HTTPAuthorizationCredentials
 from sqlalchemy import select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from .db import SessionLocal, get_db
-from .deps import create_access_token, get_current_user, pwd_ctx, write_audit
+from .deps import bearer, create_access_token, get_current_user, pwd_ctx, write_audit
 from .models import AdminUser, RefreshToken
 from .schemas import LoginRequest, ShellElevateRequest, ShellTicketResponse, TokenResponse
 
@@ -194,8 +195,9 @@ def consume_shell_ticket(ticket: str) -> str | None:
 
 @router.post("/ws-ticket")
 async def issue_ws_ticket(user: AdminUser = Depends(get_current_user)):
-    if user.role not in ("admin", "superadmin"):
-        raise HTTPException(status_code=403, detail="Forbidden")
+    # No role gate here — the ticket just carries the caller's own role
+    # forward; each consumer (WS routes, download routes) enforces its own
+    # required roles when the ticket is redeemed via consume_ws_ticket.
     _purge_expired_tickets()
     ticket = secrets.token_urlsafe(32)
     ticket_hash = hashlib.sha256(ticket.encode()).hexdigest()
@@ -214,6 +216,27 @@ def consume_ws_ticket(ticket: str) -> str | None:
     if datetime.now(UTC) > expires:
         return None
     return role
+
+
+def require_role_or_ticket(*roles: str):
+    """Like deps.require_role, but also accepts a one-time ws-ticket in the
+    query string. File downloads triggered via a plain <a href> (so the
+    browser streams the response itself instead of buffering the whole file
+    into a JS Blob) can't carry an Authorization header, hence the ticket."""
+    async def _check(
+        ticket: str | None = None,
+        credentials: HTTPAuthorizationCredentials = Depends(bearer),
+        db: AsyncSession = Depends(get_db),
+    ) -> None:
+        if ticket is not None:
+            role = consume_ws_ticket(ticket)
+            if role not in roles:
+                raise HTTPException(status_code=401, detail="Invalid or expired ticket")
+            return
+        user = await get_current_user(credentials, db)
+        if user.role not in roles:
+            raise HTTPException(status_code=403, detail="Insufficient permissions")
+    return _check
 
 
 async def _ensure_first_user():
