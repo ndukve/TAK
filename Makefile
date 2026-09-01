@@ -7,9 +7,12 @@ ENV_FILE := takserver.env
 
 # ── Lifecycle ─────────────────────────────────────────────────────────────────
 
+## A build alone leaves running containers on the old image until something
+## recreates them, so always follow through to `up`.
 build:
 	@bash -c '. ./scripts/refresh_vendor.sh && load_vendored_images takserver-dist'
 	docker compose --env-file $(ENV_FILE) build
+	@$(MAKE) up
 
 up:
 	@[ -f $(ENV_FILE) ] || { echo "Run './install.sh' first"; exit 1; }
