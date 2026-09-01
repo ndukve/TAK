@@ -41,17 +41,30 @@ function glowIcon(color: string): L.DivIcon {
   return L.divIcon({
     className: 'tak-glow-marker-wrap',
     html: `<span class="tak-glow-marker" style="--glow-color:${color}"><span class="tak-radar-ping" style="--glow-color:${color}"></span><span class="tak-glow-dot"></span></span>`,
-    iconSize: [24, 24],
-    iconAnchor: [12, 12],
+    iconSize: [16, 16],
+    iconAnchor: [8, 8],
   })
 }
+
+// a-*-G-U-C ("ground unit, combatant", no further qualifier) is the bare
+// default self-marker type every generated package ships (see
+// templates/*/TAK_defaults.pref.tpl's locationUnitType) — i.e. what an
+// individual ATAK/WinTAK user reports with no specific role/platform set.
+// Standards-strict, that's a valid but glyph-less MIL-STD-2525C type, so
+// milsymbol correctly renders it as the bare unit frame (a large square
+// with an X — "no specific icon"). ATAK/WinTAK's own renderer instead
+// shows a plain dot for a lone person in this case; match that instead
+// of the technically-correct but oversized empty-frame look.
+const _BARE_UNIT_RE = /^a-[fhnu]-G-U-C$/
 
 // Renders the real MIL-STD-2525C symbol for a CoT type (matches how ATAK
 // itself draws the same type — e.g. hostile UAV -> red diamond frame with
 // the UAV glyph). Falls back to a plain glow dot for anything milsymbol
-// can't resolve (non-atom types, unrecognized function IDs).
+// can't resolve (non-atom types, unrecognized function IDs) or for the
+// bare unit type above.
 function cotIcon(cotType: string, fallbackColor: string): L.DivIcon {
-  const symbol = renderCotSymbol(cotType)
+  if (_BARE_UNIT_RE.test(cotType)) return glowIcon(fallbackColor)
+  const symbol = renderCotSymbol(cotType, 20)
   if (!symbol) return glowIcon(fallbackColor)
   return L.divIcon({
     className: 'tak-symbol-marker-wrap',
@@ -121,11 +134,15 @@ export function LiveMapWidget({ height, showControls = false, pollMs = 5000 }: L
     if (!mapRef.current || mapInstance.current) return
     const map = L.map(mapRef.current, { zoomControl: false }).setView([55.17, 23.88], 7) // Lithuania
     L.control.zoom({ position: 'topright' }).addTo(map)
-    L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
-      attribution: '&copy; OpenStreetMap contributors &copy; CARTO',
-      subdomains: 'abcd',
+    // Plain OSM tiles — no API key required (CARTO's free tier now needs
+    // one; every request came back watermarked "API KEY REQUIRED" instead
+    // of the actual map). tak-dark-tiles (index.css) inverts them to match
+    // the dark theme, same trick every other no-key dark-mode Leaflet map
+    // uses since there's no free no-key dark tile provider left.
+    L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: '&copy; OpenStreetMap contributors',
+      className: 'tak-dark-tiles',
       maxZoom: 19,
-      detectRetina: true,
     }).addTo(map)
     mapInstance.current = map
     return () => {

@@ -349,3 +349,9 @@
   background: #18181b;
   color: #e4e4e7;
 }
+/* Plain OSM tiles are light by default (no free no-key dark tile provider
+   left) — invert then hue-rotate back to natural-ish colors, the standard
+   trick for a dark basemap without a paid/keyed tile source. */
+.tak-dark-tiles {
+  filter: invert(1) hue-rotate(180deg) brightness(0.9) contrast(0.9);
+}
