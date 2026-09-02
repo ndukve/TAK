@@ -18,8 +18,8 @@ def test_proxy_csp_allows_live_map_tiles():
     repo_root = Path(__file__).resolve().parents[2]
     widget = (repo_root / "admin/ui/src/components/LiveMapWidget.tsx").read_text()
     nginx = (repo_root / "admin/nginx/nginx.conf").read_text()
-    assert "basemaps.cartocdn.com" in widget
-    assert "https://*.basemaps.cartocdn.com" in nginx
+    assert "tile.openstreetmap.org" in widget
+    assert "https://tile.openstreetmap.org" in nginx
 
 
 def test_affiliation_unknown_for_non_atom_types():
