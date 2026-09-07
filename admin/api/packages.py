@@ -66,6 +66,30 @@ def _sha256_stored(path: str) -> str | None:
         return None
 
 
+def _derive_plugin_type(filename: str) -> str:
+    if filename.endswith(".wpk"):
+        return "WinTAK"
+    if filename.endswith(".apk"):
+        return "ATAK"
+    return "Other"
+
+
+def _plugin_meta(path: str) -> dict:
+    """Per-plugin app-type/version tag, stored as a sidecar file next to the
+    plugin (same pattern as the .sha256 sidecar) since these are admin-set
+    labels, not something derivable from the file itself beyond a type guess."""
+    try:
+        with open(path + ".meta.json") as f:
+            return json.load(f)
+    except (OSError, json.JSONDecodeError):
+        return {}
+
+
+def _save_plugin_meta(path: str, plugin_type: str, version: str) -> None:
+    with open(path + ".meta.json", "w") as f:
+        json.dump({"type": plugin_type, "version": version}, f)
+
+
 def _zip_files_to_tempfile(files: list[tuple[str, str]]) -> str:
     """files: (absolute_path, arcname) pairs. Writes them into a new temp zip
     on disk (not memory — maps can run into the multi-GB range) and returns
@@ -187,16 +211,21 @@ async def list_plugins(_=Depends(_admin_or_field)):
     if not os.path.isdir(PLUGINS_DIR):
         return {"plugins": []}
     allowed = _load_allowed_checksums()
-    files = sorted(f for f in os.listdir(PLUGINS_DIR) if f.endswith(".apk") or f.endswith(".wpk") or f.endswith(".zip"))
+    files = [f for f in os.listdir(PLUGINS_DIR) if f.endswith(".apk") or f.endswith(".wpk") or f.endswith(".zip")]
     plugins = []
     for f in files:
-        sha256 = _sha256_stored(os.path.join(PLUGINS_DIR, f))
+        path = os.path.join(PLUGINS_DIR, f)
+        sha256 = _sha256_stored(path)
+        meta = _plugin_meta(path)
         plugins.append({
             "filename": f,
-            "size": _size(os.path.join(PLUGINS_DIR, f)),
+            "size": _size(path),
             "sha256": sha256,
             "verified": bool(sha256 and sha256.lower() in allowed),
+            "type": meta.get("type") or _derive_plugin_type(f),
+            "version": meta.get("version") or "",
         })
+    plugins.sort(key=lambda p: (p["type"], p["filename"]))
     return {"plugins": plugins}
 
 
@@ -249,28 +278,43 @@ async def download_plugin(filename: str, _=Depends(_admin_or_field)):
 
 @router.post("/api/plugins", status_code=201)
 async def upload_plugin(
-    file: UploadFile = File(...),
+    files: list[UploadFile] = File(...),
     expected_sha256: str | None = Form(None),
+    plugin_type: str | None = Form(None),
+    version: str | None = Form(None),
     db: AsyncSession = Depends(get_db),
     actor=Depends(_admin),
 ):
-    filename = file.filename or ""
-    if not (filename.endswith(".apk") or filename.endswith(".wpk") or filename.endswith(".zip")):
-        raise HTTPException(status_code=400, detail="Only .apk, .wpk, or .zip files allowed")
     os.makedirs(PLUGINS_DIR, exist_ok=True)
-    dest = os.path.join(PLUGINS_DIR, os.path.basename(file.filename))
-    data = await file.read(MAX_UPLOAD_BYTES + 1)
-    if len(data) > MAX_UPLOAD_BYTES:
-        raise HTTPException(status_code=413, detail="File too large (max 100 MB)")
-    actual_sha256 = hashlib.sha256(data).hexdigest()
-    if expected_sha256 and expected_sha256.lower() != actual_sha256:
-        raise HTTPException(status_code=400, detail=f"SHA-256 mismatch — got {actual_sha256}")
-    verified = actual_sha256 in _load_allowed_checksums()
-    async with aiofiles.open(dest, "wb") as f:
-        await f.write(data)
-    _sha256_compute_and_store(data, dest)
-    await write_audit(db, actor.id, "upload_plugin", file.filename)
-    return {"filename": file.filename, "size": _size(dest), "sha256": actual_sha256, "verified": verified}
+    # A caller-supplied expected_sha256 only makes sense pinned to one file —
+    # applying it across a batch would reject every file but the one match.
+    if expected_sha256 and len(files) > 1:
+        raise HTTPException(status_code=400, detail="expected_sha256 can only be used when uploading a single file")
+
+    results = []
+    for file in files:
+        filename = file.filename or ""
+        if not (filename.endswith(".apk") or filename.endswith(".wpk") or filename.endswith(".zip")):
+            raise HTTPException(status_code=400, detail=f"{filename}: only .apk, .wpk, or .zip files allowed")
+        dest = os.path.join(PLUGINS_DIR, os.path.basename(filename))
+        data = await file.read(MAX_UPLOAD_BYTES + 1)
+        if len(data) > MAX_UPLOAD_BYTES:
+            raise HTTPException(status_code=413, detail=f"{filename}: file too large (max 100 MB)")
+        actual_sha256 = hashlib.sha256(data).hexdigest()
+        if expected_sha256 and expected_sha256.lower() != actual_sha256:
+            raise HTTPException(status_code=400, detail=f"{filename}: SHA-256 mismatch — got {actual_sha256}")
+        verified = actual_sha256 in _load_allowed_checksums()
+        async with aiofiles.open(dest, "wb") as f:
+            await f.write(data)
+        _sha256_compute_and_store(data, dest)
+        resolved_type = plugin_type or _derive_plugin_type(filename)
+        _save_plugin_meta(dest, resolved_type, version or "")
+        await write_audit(db, actor.id, "upload_plugin", filename)
+        results.append({
+            "filename": filename, "size": _size(dest), "sha256": actual_sha256,
+            "verified": verified, "type": resolved_type, "version": version or "",
+        })
+    return {"plugins": results}
 
 
 @router.delete("/api/plugins/{filename}", status_code=204)
@@ -280,6 +324,10 @@ async def delete_plugin(filename: str, db: AsyncSession = Depends(get_db), actor
     if not os.path.isfile(path):
         raise HTTPException(status_code=404, detail="Plugin not found")
     os.remove(path)
+    try:
+        os.remove(path + ".meta.json")
+    except OSError:
+        pass
     await write_audit(db, actor.id, "delete_plugin", safe_name)
 
 

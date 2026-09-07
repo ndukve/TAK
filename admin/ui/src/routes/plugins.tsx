@@ -22,7 +22,11 @@ interface Plugin {
   size: string
   sha256: string | null
   verified: boolean
+  type: string
+  version: string
 }
+
+const PLUGIN_TYPES = ['ATAK', 'WinTAK', 'iTAK', 'Other']
 
 function CopyHash({ hash }: { hash: string }) {
   const [copied, setCopied] = useState(false)
@@ -40,17 +44,21 @@ function CopyHash({ hash }: { hash: string }) {
 }
 
 function UploadModal({ onClose, onUploaded }: { onClose: () => void; onUploaded: () => void }) {
-  const [file, setFile] = useState<File | null>(null)
+  const [files, setFiles] = useState<File[]>([])
+  const [pluginType, setPluginType] = useState('')
+  const [version, setVersion] = useState('')
   const [expectedHash, setExpectedHash] = useState('')
   const [uploading, setUploading] = useState(false)
   const fileRef = useRef<HTMLInputElement>(null)
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
-    if (!file) return
+    if (files.length === 0) return
     const form = new FormData()
-    form.append('file', file)
-    if (expectedHash.trim()) form.append('expected_sha256', expectedHash.trim().toLowerCase())
+    for (const f of files) form.append('files', f)
+    if (pluginType) form.append('plugin_type', pluginType)
+    if (version.trim()) form.append('version', version.trim())
+    if (files.length === 1 && expectedHash.trim()) form.append('expected_sha256', expectedHash.trim().toLowerCase())
     setUploading(true)
     try {
       const res = await apiFetch('/api/plugins', { method: 'POST', body: form })
@@ -59,9 +67,15 @@ function UploadModal({ onClose, onUploaded }: { onClose: () => void; onUploaded:
         throw new Error(err.detail ?? res.statusText)
       }
       const data = await res.json()
-      notify.success(data.verified
-        ? `${file.name} uploaded — checksum verified against allowlist`
-        : `${file.name} uploaded — SHA-256: ${data.sha256?.slice(0, 16)}… (not in checksum allowlist)`)
+      const uploaded = data.plugins as { filename: string; verified: boolean; sha256: string }[]
+      if (uploaded.length === 1) {
+        const p = uploaded[0]
+        notify.success(p.verified
+          ? `${p.filename} uploaded — checksum verified against allowlist`
+          : `${p.filename} uploaded — SHA-256: ${p.sha256?.slice(0, 16)}… (not in checksum allowlist)`)
+      } else {
+        notify.success(`${uploaded.length} plugins uploaded`)
+      }
       onUploaded()
       onClose()
     } catch (e) {
@@ -77,23 +91,43 @@ function UploadModal({ onClose, onUploaded }: { onClose: () => void; onUploaded:
         <h2 className="text-lg font-semibold mb-4">Upload Plugin</h2>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <input ref={fileRef} type="file" accept=".apk,.wpk,.zip" className="hidden"
-              onChange={e => setFile(e.target.files?.[0] ?? null)} />
+            <input ref={fileRef} type="file" accept=".apk,.wpk,.zip" multiple className="hidden"
+              onChange={e => setFiles(Array.from(e.target.files ?? []))} />
             <button type="button" onClick={() => fileRef.current?.click()}
               className="w-full py-8 border-2 border-dashed border-zinc-300 dark:border-white/10 rounded-none text-zinc-600 dark:text-zinc-400 hover:border-zinc-500 hover:text-zinc-800 dark:hover:text-zinc-200 transition-colors text-sm">
-              {file ? file.name : 'Click to select .apk, .wpk, or .zip'}
+              {files.length === 0
+                ? 'Click to select .apk, .wpk, or .zip (multiple allowed)'
+                : files.length === 1 ? files[0].name : `${files.length} files selected`}
             </button>
           </div>
-          <div className="space-y-1">
-            <label className="text-xs text-zinc-600 dark:text-zinc-400">Expected SHA-256 (optional — only needed if not already in your checksum allowlist)</label>
-            <input type="text" value={expectedHash} onChange={e => setExpectedHash(e.target.value)}
-              placeholder="e.g. a3f2c1…"
-              className="w-full bg-zinc-200 dark:bg-[#141416] border border-zinc-300 dark:border-white/10 rounded-none px-3 py-2 text-xs font-mono" />
-            <p className="text-xs text-zinc-500">Uploads are auto-checked against the checksum allowlist first. If provided here too, upload is rejected if this hash doesn't match.</p>
+          <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-1">
+              <label className="text-xs text-zinc-600 dark:text-zinc-400">App</label>
+              <select value={pluginType} onChange={e => setPluginType(e.target.value)}
+                className="w-full bg-zinc-200 dark:bg-[#141416] border border-zinc-300 dark:border-white/10 rounded-none px-3 py-2 text-sm">
+                <option value="">Auto-detect (by extension)</option>
+                {PLUGIN_TYPES.map(t => <option key={t} value={t}>{t}</option>)}
+              </select>
+            </div>
+            <div className="space-y-1">
+              <label className="text-xs text-zinc-600 dark:text-zinc-400">Version (optional)</label>
+              <input type="text" value={version} onChange={e => setVersion(e.target.value)}
+                placeholder="e.g. 5.4.0"
+                className="w-full bg-zinc-200 dark:bg-[#141416] border border-zinc-300 dark:border-white/10 rounded-none px-3 py-2 text-sm" />
+            </div>
           </div>
+          {files.length <= 1 && (
+            <div className="space-y-1">
+              <label className="text-xs text-zinc-600 dark:text-zinc-400">Expected SHA-256 (optional — only needed if not already in your checksum allowlist)</label>
+              <input type="text" value={expectedHash} onChange={e => setExpectedHash(e.target.value)}
+                placeholder="e.g. a3f2c1…"
+                className="w-full bg-zinc-200 dark:bg-[#141416] border border-zinc-300 dark:border-white/10 rounded-none px-3 py-2 text-xs font-mono" />
+              <p className="text-xs text-zinc-500">Uploads are auto-checked against the checksum allowlist first. If provided here too, upload is rejected if this hash doesn't match.</p>
+            </div>
+          )}
           <div className="flex gap-2">
             <button type="button" onClick={onClose} className="flex-1 py-2 rounded-none bg-zinc-300 dark:bg-[#232326] hover:bg-zinc-400 dark:hover:bg-[#2b2b2f] text-sm">Cancel</button>
-            <button type="submit" disabled={!file || uploading}
+            <button type="submit" disabled={files.length === 0 || uploading}
               className="flex-1 py-2 rounded-none bg-accent-fill hover:bg-accent-fill-hover text-accent-text disabled:opacity-50 text-sm">
               {uploading ? 'Uploading…' : 'Upload'}
             </button>
@@ -234,6 +268,8 @@ function PluginsPage() {
             <thead className="bg-zinc-100 dark:bg-[#141416] text-zinc-600 dark:text-zinc-400">
               <tr>
                 <th className="px-4 py-3 text-left font-medium hud-label text-xs">File</th>
+                <th className="px-4 py-3 text-left font-medium hud-label text-xs">App</th>
+                <th className="px-4 py-3 text-left font-medium hud-label text-xs">Version</th>
                 <th className="px-4 py-3 text-left font-medium hud-label text-xs">Size</th>
                 <th className="px-4 py-3 text-left font-medium hud-label text-xs">SHA-256</th>
                 <th className="px-4 py-3 text-left font-medium hud-label text-xs">Verified</th>
@@ -242,13 +278,15 @@ function PluginsPage() {
             </thead>
             <tbody className="divide-y divide-zinc-200 dark:divide-white/10">
               {loading ? (
-                <TableSkeletonRows columns={5} />
+                <TableSkeletonRows columns={7} />
               ) : plugins.length === 0 ? (
-                <tr className="bg-zinc-50 dark:bg-[#0c0c0e]"><td colSpan={5} className="px-4 py-8 text-center text-zinc-500">No plugins uploaded</td></tr>
+                <tr className="bg-zinc-50 dark:bg-[#0c0c0e]"><td colSpan={7} className="px-4 py-8 text-center text-zinc-500">No plugins uploaded</td></tr>
               ) : (
                 plugins.map(p => (
                   <tr key={p.filename} className="bg-zinc-50 dark:bg-[#000000] hover:bg-zinc-100/50 dark:hover:bg-white/[0.03]">
                     <td className="px-4 py-3 font-mono">{p.filename}</td>
+                    <td className="px-4 py-3 text-zinc-600 dark:text-zinc-400">{p.type}</td>
+                    <td className="px-4 py-3 text-zinc-600 dark:text-zinc-400">{p.version || <span className="text-zinc-400 dark:text-zinc-600">—</span>}</td>
                     <td className="px-4 py-3 text-zinc-600 dark:text-zinc-400">{p.size}</td>
                     <td className="px-4 py-3">{p.sha256 ? <CopyHash hash={p.sha256} /> : <span className="text-zinc-400 dark:text-zinc-600 text-xs">—</span>}</td>
                     <td className="px-4 py-3">

@@ -94,8 +94,13 @@ cmd_repair_groups() {
 
     [ -n "$USERS" ] || { warn "No packaged TAK clients found."; return; }
 
-    local USERNAME COUNT=0
-    while IFS= read -r USERNAME; do
+    # Read into an array before looping — a while-read loop fed by a here-string
+    # shares stdin with commands run inside its body, and `docker compose exec`
+    # (even with -T) still inherits stdin, so the first iteration's exec drains
+    # the rest of $USERS and every subsequent `read` sees EOF immediately.
+    local USERNAME COUNT=0 USER_LIST
+    mapfile -t USER_LIST <<< "$USERS"
+    for USERNAME in "${USER_LIST[@]}"; do
         [[ "$USERNAME" =~ $_NAME_RE || "$USERNAME" = "efdi-bridge" ]] \
             || { warn "Skipping unexpected package name: $USERNAME"; continue; }
         run_spin "Assigning $USERNAME to $TAK_USER_GROUP" "Assigned $USERNAME" \
@@ -105,7 +110,7 @@ cmd_repair_groups() {
                 takserver_config bash /opt/scripts/enable_user.sh \
             || fail "Group assignment failed for $USERNAME (see output above)."
         COUNT=$((COUNT + 1))
-    done <<< "$USERS"
+    done
 
     ok "$COUNT client certificate(s) assigned to $TAK_USER_GROUP with IN + OUT access"
 }

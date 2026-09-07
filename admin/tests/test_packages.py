@@ -9,14 +9,14 @@ async def test_upload_plugin_checksum_mismatch_does_not_delete_existing_file(sup
     good = b"real plugin bytes"
     res = await superadmin_client.post(
         "/api/plugins",
-        files={"file": ("test.zip", good, "application/zip")},
+        files={"files": ("test.zip", good, "application/zip")},
     )
     assert res.status_code == 201
     assert (tmp_path / "test.zip").read_bytes() == good
 
     res2 = await superadmin_client.post(
         "/api/plugins",
-        files={"file": ("test.zip", b"attacker-controlled bytes", "application/zip")},
+        files={"files": ("test.zip", b"attacker-controlled bytes", "application/zip")},
         data={"expected_sha256": "0" * 64},
     )
     assert res2.status_code == 400
@@ -32,7 +32,7 @@ async def test_upload_plugin_checksum_match_succeeds(superadmin_client, tmp_path
     digest = hashlib.sha256(data).hexdigest()
     res = await superadmin_client.post(
         "/api/plugins",
-        files={"file": ("ok.zip", data, "application/zip")},
+        files={"files": ("ok.zip", data, "application/zip")},
         data={"expected_sha256": digest},
     )
     assert res.status_code == 201
