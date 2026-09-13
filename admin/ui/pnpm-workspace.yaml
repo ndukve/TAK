@@ -12,6 +12,7 @@ overrides:
   brace-expansion@1: ^1.1.18   # GHSA-mh99-v99m-4gvg, GHSA-rgw5-rvv9-x895
   brace-expansion@5: ^5.0.9    # GHSA-mh99-v99m-4gvg, GHSA-rgw5-rvv9-x895
   postcss: ^8.5.18             # GHSA-r28c-9q8g-f849
-  js-yaml: ^4.3.1              # GHSA-5p4m-2wfm-xmqj
+  js-yaml: ^4.3.2              # GHSA-5p4m-2wfm-xmqj, GHSA-2883-xcg3-v3hh
   nanoid: ^3.3.17              # GHSA-28wg-ghj8-5hjv, GHSA-2v37-7h3g-55p8
   browserslist: ^4.28.7        # GHSA-c83g-rgw3-j3cx, GHSA-73wf-gq98-2v4g
+  fast-uri: ^3.1.6             # GHSA-fph4-wmhf-6fwf, GHSA-jqff-g426-hqxp
