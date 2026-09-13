@@ -14,12 +14,64 @@ def test_affiliation_maps_known_codes():
     assert _affiliation("a-u-G") == "unknown"
 
 
-def test_proxy_csp_allows_live_map_tiles():
+def test_widget_fetches_tiles_through_our_own_proxy():
+    # Fetching tile.openstreetmap.org straight from the browser can't set a
+    # real User-Agent and can't be cached — got this deployment 403'd for
+    # violating OSM's tile usage policy. Tiles must come from our own
+    # same-origin proxy instead (see test_tile_proxy_sets_identifying_user_agent).
     repo_root = Path(__file__).resolve().parents[2]
     widget = (repo_root / "admin/ui/src/components/LiveMapWidget.tsx").read_text()
-    nginx = (repo_root / "admin/nginx/nginx.conf").read_text()
-    assert "tile.openstreetmap.org" in widget
-    assert "https://tile.openstreetmap.org" in nginx
+    assert "L.tileLayer('/api/live-map/tiles/" in widget
+    assert "tile.openstreetmap.org/{z}/{x}/{y}.png'" not in widget
+
+
+def test_tile_proxy_sets_identifying_user_agent(monkeypatch, tmp_path):
+    monkeypatch.setattr(live_map_module, "TILE_CACHE_DIR", str(tmp_path))
+    captured = {}
+
+    class FakeResponse:
+        status_code = 200
+        content = b"fake-png-bytes"
+
+    class FakeAsyncClient:
+        def __init__(self, *a, **kw):
+            pass
+
+        async def __aenter__(self):
+            return self
+
+        async def __aexit__(self, *a):
+            return False
+
+        async def get(self, url, headers=None):
+            captured["url"] = url
+            captured["headers"] = headers
+            return FakeResponse()
+
+    monkeypatch.setattr(live_map_module.httpx, "AsyncClient", FakeAsyncClient)
+
+    import asyncio
+    asyncio.run(live_map_module.get_tile(5, 10, 15))
+
+    assert captured["url"] == "https://tile.openstreetmap.org/5/10/15.png"
+    assert captured["headers"]["User-Agent"] == live_map_module.TILE_USER_AGENT
+    assert "OSM" not in captured["headers"]["User-Agent"]  # sanity: not the old bare browser-style fetch
+    assert (tmp_path / "5" / "10" / "15.png").read_bytes() == b"fake-png-bytes"
+
+
+async def test_tile_proxy_serves_from_cache_without_refetching(monkeypatch, tmp_path):
+    monkeypatch.setattr(live_map_module, "TILE_CACHE_DIR", str(tmp_path))
+    cache_file = tmp_path / "5" / "10" / "15.png"
+    cache_file.parent.mkdir(parents=True)
+    cache_file.write_bytes(b"cached-bytes")
+
+    def _boom(*a, **kw):
+        raise AssertionError("should not hit the network when a cached tile exists")
+
+    monkeypatch.setattr(live_map_module.httpx, "AsyncClient", _boom)
+
+    resp = await live_map_module.get_tile(5, 10, 15)
+    assert resp.path == str(cache_file)
 
 
 def test_affiliation_unknown_for_non_atom_types():

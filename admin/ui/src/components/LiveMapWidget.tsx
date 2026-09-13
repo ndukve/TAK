@@ -134,12 +134,15 @@ export function LiveMapWidget({ height, showControls = false, pollMs = 5000 }: L
     if (!mapRef.current || mapInstance.current) return
     const map = L.map(mapRef.current, { zoomControl: false }).setView([55.17, 23.88], 7) // Lithuania
     L.control.zoom({ position: 'topright' }).addTo(map)
-    // Plain OSM tiles — no API key required (CARTO's free tier now needs
-    // one; every request came back watermarked "API KEY REQUIRED" instead
-    // of the actual map). tak-dark-tiles (index.css) inverts them to match
-    // the dark theme, same trick every other no-key dark-mode Leaflet map
-    // uses since there's no free no-key dark tile provider left.
-    L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    // Tiles proxy through our own backend (/api/live-map/tiles), which caches
+    // them and sets a real User-Agent — fetching tile.openstreetmap.org
+    // straight from the browser got this deployment 403'd for violating
+    // OSM's tile usage policy (no way for a browser to identify itself, no
+    // caching, every open tab re-fetching the same tiles). tak-dark-tiles
+    // (index.css) inverts them to match the dark theme, same trick every
+    // other no-key dark-mode Leaflet map uses since there's no free no-key
+    // dark tile provider left.
+    L.tileLayer('/api/live-map/tiles/{z}/{x}/{y}.png', {
       attribution: '&copy; OpenStreetMap contributors',
       className: 'tak-dark-tiles',
       maxZoom: 19,

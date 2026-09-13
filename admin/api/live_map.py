@@ -1,11 +1,15 @@
 import asyncio
+import os
 import re
 import time
 import xml.etree.ElementTree as ET
 
+import aiofiles
+import httpx
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
+from starlette.responses import FileResponse, Response
 
 from .db import get_db
 from .deps import require_role
@@ -16,6 +20,17 @@ from .replay_recorder import _open_cot_connection
 router = APIRouter(prefix="/api/live-map", tags=["live-map"])
 _viewer = require_role("admin", "superadmin")
 _superadmin = require_role("superadmin")
+
+# OpenStreetMap's tile usage policy (operations.osmfoundation.org/policies/tiles)
+# requires a real, identifying User-Agent and forbids heavy direct/uncached use
+# from browsers — neither of which a Leaflet <img> tag hitting tile servers
+# straight from the client can satisfy (browsers won't let JS set a custom
+# User-Agent, and every open tab re-fetches the same tiles). Proxying and
+# caching tiles here is what got this deployment 403'd for policy violations
+# fixed: we identify ourselves properly and only hit OSM once per tile ever.
+TILE_CACHE_DIR = "/opt/tak/data/tile-cache"
+# TODO: replace with a real contact URL/email per OSM's tile usage policy.
+TILE_USER_AGENT = "TAK-Admin-LiveMap/1.0 (self-hosted internal deployment)"
 
 # CoT events older than this (no fresh update) are dropped from the live picture
 # rather than left stale on the map.
@@ -136,6 +151,33 @@ async def _service_cert_ready(db: AsyncSession) -> bool:
     result = await db.execute(select(ReplaySettings).where(ReplaySettings.id == "singleton"))
     settings = result.scalar_one_or_none()
     return bool(settings and settings.service_cert_ready)
+
+
+# No auth dependency here, unlike every other route in this file — Leaflet
+# requests tiles as plain <img> tags, which can't carry the bearer token this
+# app uses everywhere else. Tile imagery itself isn't sensitive; only the
+# live contact positions (served above, with auth) are.
+@router.get("/tiles/{z}/{x}/{y}.png")
+async def get_tile(z: int, x: int, y: int):
+    cache_path = os.path.join(TILE_CACHE_DIR, str(z), str(x), f"{y}.png")
+    if os.path.isfile(cache_path):
+        return FileResponse(cache_path, media_type="image/png")
+
+    os.makedirs(os.path.dirname(cache_path), exist_ok=True)
+    async with httpx.AsyncClient(timeout=10) as client:
+        try:
+            resp = await client.get(
+                f"https://tile.openstreetmap.org/{z}/{x}/{y}.png",
+                headers={"User-Agent": TILE_USER_AGENT},
+            )
+        except httpx.HTTPError as exc:
+            raise HTTPException(status_code=502, detail=f"Tile fetch failed: {exc}") from exc
+    if resp.status_code != 200:
+        raise HTTPException(status_code=resp.status_code, detail="Tile upstream error")
+
+    async with aiofiles.open(cache_path, "wb") as f:
+        await f.write(resp.content)
+    return Response(content=resp.content, media_type="image/png")
 
 
 @router.get("/status")
