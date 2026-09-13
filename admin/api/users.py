@@ -123,6 +123,13 @@ class RenameFieldAccountRequest(BaseModel):
     new_username: str
 
 
+class RenewUserRequest(BaseModel):
+    username: str
+    new_username: str | None = None
+    team: str | None = None
+    role: str | None = None
+
+
 @router.get("")
 async def list_users(db: AsyncSession = Depends(get_db), _=Depends(_admin)):
     code, out = await run_in_container(["bash", "-c", f"ls {CLIENTPKGS}/*.zip 2>/dev/null || true"])
@@ -205,6 +212,83 @@ async def make_package(body: MakePackageRequest, db: AsyncSession = Depends(get_
         "field_account_created": created,
         "field_account_password": password,
         "field_username": base,
+    }
+
+
+@router.post("/renew", status_code=201)
+async def renew_user(body: RenewUserRequest, db: AsyncSession = Depends(get_db), actor=Depends(_admin)):
+    """Reissue a client's certificate/package, optionally under a new name.
+    Same-name renewal must purge the old cert/package files first (the
+    generator scripts refuse to overwrite an existing name) — a failure
+    between purge and reissue leaves the old identity gone, same accepted
+    risk the New User wizard already has on a mid-flow failure. Renaming
+    issues the new identity first and only purges the old one once that
+    succeeds, so a collision or failure never destroys a working cert."""
+    username = _validate_username(body.username)
+    if not os.path.isfile(os.path.join(CLIENTPKGS, f"{username}.zip")):
+        raise HTTPException(status_code=404, detail="No package with that name exists")
+
+    target = _validate_new_username(body.new_username or username)
+    renaming = target != username
+
+    async def _issue(name: str):
+        code, out = await run_in_container(
+            ["bash", "/opt/scripts/gen_client_cert.sh"], env={"CLIENT_CERT_NAME": name},
+        )
+        if code != 0:
+            raise HTTPException(status_code=500, detail=f"gen-cert failed: {out}")
+        env = {"CLIENT_CERT_NAME": name, "TAK_SERVER_ADDRESS": SERVER_ADDR}
+        if SERVER_ADDR_LAN:
+            env["TAK_SERVER_ADDRESS_LAN"] = SERVER_ADDR_LAN
+        if body.team:
+            env["TAK_LOCATION_TEAM"] = body.team
+        if body.role:
+            env["TAK_ATAK_ROLE"] = body.role
+        code, out = await run_in_container(["bash", "/opt/scripts/make_pkg_zip.sh"], env=env)
+        if code != 0:
+            raise HTTPException(status_code=500, detail=f"make-package failed: {out}")
+        code, out = await run_in_container(
+            ["bash", "/opt/scripts/enable_user.sh"],
+            env={"USER_CERT_NAME": name, "TAK_USER_GROUP": TAK_USER_GROUP},
+        )
+        if code != 0:
+            raise HTTPException(status_code=500, detail=f"enable failed: {out}")
+
+    async def _purge(name: str):
+        code, out = await run_in_container(["bash", "/opt/scripts/delete_user.sh"], env={"USER_CERT_NAME": name})
+        if code != 0:
+            raise HTTPException(status_code=500, detail=f"purge of {name} failed: {out}")
+
+    if renaming:
+        if os.path.isfile(os.path.join(CLIENTPKGS, f"{target}.zip")):
+            raise HTTPException(status_code=409, detail=f"{target} package already exists")
+        await _issue(target)
+        await _purge(username)
+    else:
+        await _purge(username)
+        await _issue(target)
+
+    await write_audit(db, actor.id, "renew_cert", f"{username} -> {target}" if renaming else username)
+
+    field_migrated = False
+    if renaming:
+        old_base, new_base = _base_callsign(username), _base_callsign(target)
+        result = await db.execute(
+            select(AdminUser).where(AdminUser.role == "field", AdminUser.owned_callsign == old_base)
+        )
+        account = result.scalar_one_or_none()
+        if account is not None:
+            account.owned_callsign = new_base
+            await db.commit()
+            field_migrated = True
+            await write_audit(db, actor.id, "migrate_field_account", f"{old_base} -> {new_base}")
+
+    return {
+        "status": "ok",
+        "package_name": target,
+        "renamed": renaming,
+        "old_username": username if renaming else None,
+        "field_migrated": field_migrated,
     }
 
 

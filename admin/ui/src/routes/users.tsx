@@ -27,7 +27,7 @@ function CertBadge({ daysRemaining }: { daysRemaining: number | null }) {
   return <StatusPill text={`${daysRemaining}d`} tone={tone} />
 }
 
-function UserTable({ users, loading, emptyText, createFieldLogin, renameFieldAccount, downloadPackage, enableUser, disableUser, setSetPwUser, deleteUser, pendingUsers }: {
+function UserTable({ users, loading, emptyText, createFieldLogin, renameFieldAccount, downloadPackage, enableUser, disableUser, setSetPwUser, deleteUser, setRenewUser, pendingUsers }: {
   users: TakUser[]
   loading: boolean
   emptyText: string
@@ -38,6 +38,7 @@ function UserTable({ users, loading, emptyText, createFieldLogin, renameFieldAcc
   disableUser: (username: string) => void
   setSetPwUser: (username: string) => void
   deleteUser: (username: string) => void
+  setRenewUser: (u: TakUser) => void
   pendingUsers: Set<string>
 }) {
   return (
@@ -83,6 +84,13 @@ function UserTable({ users, loading, emptyText, createFieldLogin, renameFieldAcc
                   <button onClick={() => enableUser(u.username)} disabled={pendingUsers.has(u.username)} title="Enable" aria-label="Enable" className="p-1.5 rounded-none hover:bg-zinc-200 dark:hover:bg-[#141416] text-green-600 dark:text-green-400 focus:outline-none focus:ring-2 focus:ring-accent-ring disabled:opacity-50"><Icon name="checkbox-circle-line" size={14} /></button>
                   {!u.always_enabled && <button onClick={() => disableUser(u.username)} disabled={pendingUsers.has(u.username)} title="Disable" aria-label="Disable" className="p-1.5 rounded-none hover:bg-zinc-200 dark:hover:bg-[#141416] text-yellow-600 dark:text-yellow-400 focus:outline-none focus:ring-2 focus:ring-accent-ring disabled:opacity-50"><Icon name="close-circle-line" size={14} /></button>}
                   <button onClick={() => setSetPwUser(u.username)} title="Set Password" aria-label="Set Password" className="p-1.5 rounded-none hover:bg-zinc-200 dark:hover:bg-[#141416] text-accent-ring focus:outline-none focus:ring-2 focus:ring-accent-ring"><Icon name="key-2-line" size={14} /></button>
+                  <button
+                    onClick={() => {
+                      if (u.always_enabled && !confirm(`${u.username} is a live production identity in active use. Renewing it reissues the certificate — the old one stops working immediately. Continue?`)) return
+                      setRenewUser(u)
+                    }}
+                    disabled={pendingUsers.has(u.username)} title="Renew certificate" aria-label="Renew certificate"
+                    className="p-1.5 rounded-none hover:bg-zinc-200 dark:hover:bg-[#141416] text-accent-ring focus:outline-none focus:ring-2 focus:ring-accent-ring disabled:opacity-50"><Icon name="restart-line" size={14} /></button>
                   {!u.always_enabled && <button onClick={() => deleteUser(u.username)} disabled={pendingUsers.has(u.username)} title="Delete" aria-label="Delete" className="p-1.5 rounded-none hover:bg-zinc-200 dark:hover:bg-[#141416] text-red-600 dark:text-red-400 focus:outline-none focus:ring-2 focus:ring-accent-ring disabled:opacity-50"><Icon name="delete-bin-2-line" size={14} /></button>}
                 </td>
               </tr>
@@ -254,6 +262,146 @@ function NewUserModal({ onClose, onCreated }: { onClose: () => void; onCreated: 
   )
 }
 
+function RenewCertModal({ user, onClose, onRenewed }: { user: TakUser; onClose: () => void; onRenewed: () => void }) {
+  const parsed = (() => {
+    for (const suffix of ['ATAK', 'WinTAK', 'iTAK', 'Service'] as const) {
+      if (user.username.endsWith(`-${suffix}`)) return { callsign: user.username.slice(0, -(suffix.length + 1)), clientType: suffix }
+    }
+    return { callsign: user.username, clientType: 'iTAK' as const }
+  })()
+  const [callsign, setCallsign] = useState(parsed.callsign)
+  const [clientType, setClientType] = useState<'ATAK' | 'WinTAK' | 'iTAK' | 'Service'>(parsed.clientType)
+  const [team, setTeam] = useState('')
+  const [role, setRole] = useState('')
+  const [loading, setLoading] = useState(false)
+  const [result, setResult] = useState<{ package_name: string; renamed: boolean; field_migrated: boolean } | null>(null)
+
+  const newUsername = callsign.trim() ? `${callsign}-${clientType}` : ''
+  const renaming = newUsername !== user.username
+
+  async function handleRenew(e: React.FormEvent) {
+    e.preventDefault()
+    if (!newUsername.trim()) return
+    setLoading(true)
+    try {
+      const res = await apiJson<{ package_name: string; renamed: boolean; field_migrated: boolean }>(
+        '/api/users/renew', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ username: user.username, new_username: newUsername, team: team || null, role: role || null }),
+        }
+      )
+      setResult(res)
+      onRenewed()
+    } catch (e) {
+      notify.error(errorMessage(e))
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  return (
+    <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50">
+      <div className="bg-zinc-100 dark:bg-[#0c0c0e] border border-zinc-300 dark:border-white/10 rounded-none p-6 w-full max-w-md">
+        <h2 className="text-lg font-semibold mb-1">Renew Certificate</h2>
+        <p className="text-sm text-zinc-600 dark:text-zinc-400 mb-4">
+          Reissues <span className="font-mono text-zinc-800 dark:text-zinc-200">{user.username}</span>'s certificate and package. The old certificate stops working as soon as this completes.
+        </p>
+
+        {!result ? (
+          <form onSubmit={handleRenew} className="space-y-4">
+            <div className="space-y-1">
+              <label className="text-sm text-zinc-700 dark:text-zinc-300">Callsign</label>
+              <input type="text" value={callsign}
+                onChange={e => setCallsign(e.target.value.replace(/[^a-zA-Z0-9_-]/g, ''))}
+                required
+                className="w-full px-3 py-2 rounded-none bg-zinc-200 dark:bg-[#141416] border border-zinc-300 dark:border-white/10 text-zinc-900 dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-accent-ring" />
+            </div>
+            <div className="space-y-1">
+              <label className="text-sm text-zinc-700 dark:text-zinc-300">Client</label>
+              <select value={clientType} onChange={e => setClientType(e.target.value as 'ATAK' | 'WinTAK' | 'iTAK' | 'Service')}
+                className="w-full px-3 py-2 rounded-none bg-zinc-200 dark:bg-[#141416] border border-zinc-300 dark:border-white/10 text-zinc-900 dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-accent-ring">
+                <option value="iTAK">iTAK (iOS)</option>
+                <option value="ATAK">ATAK (Android)</option>
+                <option value="WinTAK">WinTAK (Windows)</option>
+                <option value="Service">Service (no client app)</option>
+              </select>
+            </div>
+            {clientType !== 'Service' && (
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1">
+                  <label className="text-sm text-zinc-700 dark:text-zinc-300">Team</label>
+                  <select value={team} onChange={e => setTeam(e.target.value)}
+                    className="w-full px-3 py-2 rounded-none bg-zinc-200 dark:bg-[#141416] border border-zinc-300 dark:border-white/10 text-zinc-900 dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-accent-ring">
+                    <option value="">Unset (device default)</option>
+                    <option value="Cyan">Cyan</option>
+                    <option value="Dark Blue">Dark Blue</option>
+                    <option value="Green">Green</option>
+                    <option value="Maroon">Maroon</option>
+                    <option value="Orange">Orange</option>
+                    <option value="Purple">Purple</option>
+                    <option value="Red">Red</option>
+                    <option value="White">White</option>
+                    <option value="Yellow">Yellow</option>
+                  </select>
+                </div>
+                <div className="space-y-1">
+                  <label className="text-sm text-zinc-700 dark:text-zinc-300">Role</label>
+                  <select value={role} onChange={e => setRole(e.target.value)}
+                    className="w-full px-3 py-2 rounded-none bg-zinc-200 dark:bg-[#141416] border border-zinc-300 dark:border-white/10 text-zinc-900 dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-accent-ring">
+                    <option value="">Unset (device default)</option>
+                    <option value="Team Member">Team Member</option>
+                    <option value="Team Lead">Team Lead</option>
+                    <option value="HQ">HQ</option>
+                    <option value="Sniper">Sniper</option>
+                    <option value="Medic">Medic</option>
+                    <option value="Forward Observer">Forward Observer</option>
+                    <option value="RTO">RTO</option>
+                    <option value="K9">K9</option>
+                  </select>
+                </div>
+              </div>
+            )}
+            {renaming && newUsername && (
+              <p className="text-xs text-yellow-700 dark:text-yellow-300">
+                Renaming to <span className="font-mono">{newUsername}</span> —{' '}
+                {user.has_field_account ? `web login "${user.field_username}" will be migrated automatically.` : 'no web login exists to migrate.'}
+              </p>
+            )}
+            <div className="flex gap-2">
+              <button type="button" onClick={onClose} className="flex-1 py-2 rounded-none bg-zinc-300 dark:bg-[#232326] hover:bg-zinc-400 dark:hover:bg-[#2b2b2f] text-sm">Cancel</button>
+              <button type="submit" disabled={!newUsername.trim() || loading}
+                className="flex-1 py-2 rounded-none bg-accent-fill hover:bg-accent-fill-hover text-accent-text text-sm disabled:opacity-50">
+                {loading ? 'Renewing…' : 'Renew'}
+              </button>
+            </div>
+          </form>
+        ) : (
+          <div className="space-y-4">
+            <div className="flex items-center gap-2 text-green-600 dark:text-green-400">
+              <Icon name="checkbox-circle-line" size={18} />
+              <span className="font-medium">{result.package_name} renewed</span>
+            </div>
+            {result.renamed && (
+              <p className="text-sm text-zinc-600 dark:text-zinc-400">
+                Old package <span className="font-mono">{user.username}</span> revoked and removed.
+                {result.field_migrated && ' Web login migrated to the new name.'}
+              </p>
+            )}
+            <button onClick={() => downloadFile(`/api/packages/${encodeURIComponent(result.package_name)}/download`, `${result.package_name}.zip`).catch((e) => notify.error(errorMessage(e)))}
+              className="inline-block px-4 py-2 bg-zinc-200 dark:bg-[#141416] hover:bg-zinc-300 dark:hover:bg-[#232326] text-zinc-900 dark:text-white text-sm rounded-none transition-colors">
+              Download new data package
+            </button>
+            <button onClick={onClose}
+              className="block px-4 py-2 bg-zinc-300 dark:bg-[#232326] hover:bg-zinc-400 dark:hover:bg-[#2b2b2f] text-zinc-900 dark:text-white text-sm rounded-none transition-colors">
+              Close
+            </button>
+          </div>
+        )}
+      </div>
+    </div>
+  )
+}
+
 function SetPasswordModal({ username, onClose }: { username: string; onClose: () => void }) {
   const [password, setPassword] = useState('')
   const [confirm, setConfirm] = useState('')
@@ -317,6 +465,7 @@ function UsersPage() {
   const [loading, setLoading] = useState(true)
   const [showNew, setShowNew] = useState(false)
   const [setPwUser, setSetPwUser] = useState<string | null>(null)
+  const [renewUser, setRenewUser] = useState<TakUser | null>(null)
   const [syncing, setSyncing] = useState(false)
   const [fieldResult, setFieldResult] = useState<{ username: string; password: string | null; created: boolean } | null>(null)
   const [syncedAccounts, setSyncedAccounts] = useState<{ username: string; password: string }[]>([])
@@ -462,6 +611,7 @@ function UsersPage() {
           disableUser={disableUser}
           setSetPwUser={setSetPwUser}
           deleteUser={deleteUser}
+          setRenewUser={setRenewUser}
           pendingUsers={pendingUsers}
         />
 
@@ -477,11 +627,13 @@ function UsersPage() {
           disableUser={disableUser}
           setSetPwUser={setSetPwUser}
           deleteUser={deleteUser}
+          setRenewUser={setRenewUser}
           pendingUsers={pendingUsers}
         />
       </div>
       {showNew && <NewUserModal onClose={() => setShowNew(false)} onCreated={load} />}
       {setPwUser && <SetPasswordModal username={setPwUser} onClose={() => setSetPwUser(null)} />}
+      {renewUser && <RenewCertModal user={renewUser} onClose={() => setRenewUser(null)} onRenewed={load} />}
     </Layout>
   )
 }
