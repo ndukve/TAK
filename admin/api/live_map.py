@@ -28,7 +28,11 @@ _superadmin = require_role("superadmin")
 # User-Agent, and every open tab re-fetches the same tiles). Proxying and
 # caching tiles here is what got this deployment 403'd for policy violations
 # fixed: we identify ourselves properly and only hit OSM once per tile ever.
-TILE_CACHE_DIR = "/opt/tak/data/tile-cache"
+#
+# Lives under /tmp (the admin_tmp volume), not /opt/tak/data — that directory
+# is owned 10000:10000 (takserver's own uid) with no group-write bit, so the
+# admin container (uid 10001) can't create new subdirectories there.
+TILE_CACHE_DIR = "/tmp/tile-cache"
 # TODO: replace with a real contact URL/email per OSM's tile usage policy.
 TILE_USER_AGENT = "TAK-Admin-LiveMap/1.0 (self-hosted internal deployment)"
 
