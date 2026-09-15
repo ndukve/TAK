@@ -87,14 +87,14 @@ function UploadModal({ onClose, onUploaded }: { onClose: () => void; onUploaded:
 
   return (
     <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50">
-      <div className="bg-zinc-100 dark:bg-[#0c0c0e] border border-zinc-300 dark:border-white/10 rounded-none p-6 w-full max-w-md">
+      <div className="bg-zinc-100 dark:bg-zinc-900 border border-zinc-300 dark:border-white/10 rounded-lg p-6 w-full max-w-md">
         <h2 className="text-lg font-semibold mb-4">Upload Plugin</h2>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
             <input ref={fileRef} type="file" accept=".apk,.wpk,.zip" multiple className="hidden"
               onChange={e => setFiles(Array.from(e.target.files ?? []))} />
             <button type="button" onClick={() => fileRef.current?.click()}
-              className="w-full py-8 border-2 border-dashed border-zinc-300 dark:border-white/10 rounded-none text-zinc-600 dark:text-zinc-400 hover:border-zinc-500 hover:text-zinc-800 dark:hover:text-zinc-200 transition-colors text-sm">
+              className="w-full py-8 border-2 border-dashed border-zinc-300 dark:border-white/10 rounded-lg text-zinc-600 dark:text-zinc-400 hover:border-zinc-500 hover:text-zinc-800 dark:hover:text-zinc-200 transition-colors text-sm">
               {files.length === 0
                 ? 'Click to select .apk, .wpk, or .zip (multiple allowed)'
                 : files.length === 1 ? files[0].name : `${files.length} files selected`}
@@ -104,7 +104,7 @@ function UploadModal({ onClose, onUploaded }: { onClose: () => void; onUploaded:
             <div className="space-y-1">
               <label className="text-xs text-zinc-600 dark:text-zinc-400">App</label>
               <select value={pluginType} onChange={e => setPluginType(e.target.value)}
-                className="w-full bg-zinc-200 dark:bg-[#141416] border border-zinc-300 dark:border-white/10 rounded-none px-3 py-2 text-sm">
+                className="w-full bg-zinc-200 dark:bg-zinc-950 border border-zinc-300 dark:border-white/10 rounded-lg px-3 py-2 text-sm">
                 <option value="">Auto-detect (by extension)</option>
                 {PLUGIN_TYPES.map(t => <option key={t} value={t}>{t}</option>)}
               </select>
@@ -113,7 +113,7 @@ function UploadModal({ onClose, onUploaded }: { onClose: () => void; onUploaded:
               <label className="text-xs text-zinc-600 dark:text-zinc-400">Version (optional)</label>
               <input type="text" value={version} onChange={e => setVersion(e.target.value)}
                 placeholder="e.g. 5.4.0"
-                className="w-full bg-zinc-200 dark:bg-[#141416] border border-zinc-300 dark:border-white/10 rounded-none px-3 py-2 text-sm" />
+                className="w-full bg-zinc-200 dark:bg-zinc-950 border border-zinc-300 dark:border-white/10 rounded-lg px-3 py-2 text-sm" />
             </div>
           </div>
           {files.length <= 1 && (
@@ -121,14 +121,14 @@ function UploadModal({ onClose, onUploaded }: { onClose: () => void; onUploaded:
               <label className="text-xs text-zinc-600 dark:text-zinc-400">Expected SHA-256 (optional — only needed if not already in your checksum allowlist)</label>
               <input type="text" value={expectedHash} onChange={e => setExpectedHash(e.target.value)}
                 placeholder="e.g. a3f2c1…"
-                className="w-full bg-zinc-200 dark:bg-[#141416] border border-zinc-300 dark:border-white/10 rounded-none px-3 py-2 text-xs font-mono" />
+                className="w-full bg-zinc-200 dark:bg-zinc-950 border border-zinc-300 dark:border-white/10 rounded-lg px-3 py-2 text-xs font-mono" />
               <p className="text-xs text-zinc-500">Uploads are auto-checked against the checksum allowlist first. If provided here too, upload is rejected if this hash doesn't match.</p>
             </div>
           )}
           <div className="flex gap-2">
-            <button type="button" onClick={onClose} className="flex-1 py-2 rounded-none bg-zinc-300 dark:bg-[#232326] hover:bg-zinc-400 dark:hover:bg-[#2b2b2f] text-sm">Cancel</button>
+            <button type="button" onClick={onClose} className="flex-1 py-2 rounded-lg bg-zinc-300 dark:bg-zinc-800 hover:bg-zinc-400 dark:hover:bg-zinc-700 text-sm">Cancel</button>
             <button type="submit" disabled={files.length === 0 || uploading}
-              className="flex-1 py-2 rounded-none bg-accent-fill hover:bg-accent-fill-hover text-accent-text disabled:opacity-50 text-sm">
+              className="flex-1 py-2 rounded-lg bg-accent-fill hover:bg-accent-fill-hover text-accent-text disabled:opacity-50 text-sm">
               {uploading ? 'Uploading…' : 'Upload'}
             </button>
           </div>
@@ -172,7 +172,7 @@ function ChecksumsModal({ onClose }: { onClose: () => void }) {
 
   return (
     <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50">
-      <div className="bg-zinc-100 dark:bg-[#0c0c0e] border border-zinc-300 dark:border-white/10 rounded-none p-6 w-full max-w-lg">
+      <div className="bg-zinc-100 dark:bg-zinc-900 border border-zinc-300 dark:border-white/10 rounded-lg p-6 w-full max-w-lg">
         <h2 className="text-lg font-semibold mb-1">Checksum Allowlist</h2>
         <p className="text-xs text-zinc-500 mb-4">One SHA-256 hash per line (from tak.gov release pages). Uploaded plugins are auto-verified against this list — filename doesn't need to match. Lines starting with # are ignored.</p>
         {loading ? (
@@ -181,12 +181,12 @@ function ChecksumsModal({ onClose }: { onClose: () => void }) {
           <textarea value={content} onChange={e => setContent(e.target.value)}
             spellCheck={false}
             placeholder="88f2cf56025e30af110cc1e7a0ced555&#10;# comment&#10;a3f2c1…"
-            className="w-full h-48 bg-zinc-200 dark:bg-[#141416] border border-zinc-300 dark:border-white/10 rounded-none px-3 py-2 text-xs font-mono resize-none" />
+            className="w-full h-48 bg-zinc-200 dark:bg-zinc-950 border border-zinc-300 dark:border-white/10 rounded-lg px-3 py-2 text-xs font-mono resize-none" />
         )}
         <div className="flex gap-2 mt-4">
-          <button type="button" onClick={onClose} className="flex-1 py-2 rounded-none bg-zinc-300 dark:bg-[#232326] hover:bg-zinc-400 dark:hover:bg-[#2b2b2f] text-sm">Cancel</button>
+          <button type="button" onClick={onClose} className="flex-1 py-2 rounded-lg bg-zinc-300 dark:bg-zinc-800 hover:bg-zinc-400 dark:hover:bg-zinc-700 text-sm">Cancel</button>
           <button type="button" onClick={handleSave} disabled={loading || saving}
-            className="flex-1 py-2 rounded-none bg-accent-fill hover:bg-accent-fill-hover text-accent-text disabled:opacity-50 text-sm">
+            className="flex-1 py-2 rounded-lg bg-accent-fill hover:bg-accent-fill-hover text-accent-text disabled:opacity-50 text-sm">
             {saving ? 'Saving…' : 'Save'}
           </button>
         </div>
@@ -244,16 +244,16 @@ function PluginsPage() {
               <div className="flex gap-2">
                 {plugins.length > 0 && (
                   <button onClick={() => downloadFile('/api/plugins/download-all', 'plugins.zip').catch((e) => notify.error(errorMessage(e)))}
-                    className="flex items-center gap-2 px-4 py-2 bg-zinc-200 dark:bg-[#141416] hover:bg-zinc-300 dark:hover:bg-[#232326] text-zinc-700 dark:text-zinc-300 text-sm rounded-none transition-colors">
+                    className="flex items-center gap-2 px-4 py-2 bg-zinc-200 dark:bg-zinc-950 hover:bg-zinc-300 dark:hover:bg-zinc-800 text-zinc-700 dark:text-zinc-300 text-sm rounded-lg transition-colors">
                     <Icon name="download-line" size={14} /> Download All ({plugins.length})
                   </button>
                 )}
                 <button onClick={() => setShowChecksums(true)}
-                  className="flex items-center gap-2 px-4 py-2 bg-zinc-200 dark:bg-[#141416] hover:bg-zinc-300 dark:hover:bg-[#232326] text-zinc-700 dark:text-zinc-300 text-sm rounded-none transition-colors">
+                  className="flex items-center gap-2 px-4 py-2 bg-zinc-200 dark:bg-zinc-950 hover:bg-zinc-300 dark:hover:bg-zinc-800 text-zinc-700 dark:text-zinc-300 text-sm rounded-lg transition-colors">
                   <Icon name="shield-check-line" size={14} /> Checksum Allowlist
                 </button>
                 <button onClick={() => setShowUpload(true)}
-                  className="flex items-center gap-2 px-4 py-2 bg-accent-fill hover:bg-accent-fill-hover text-accent-text text-sm rounded-none transition-colors">
+                  className="flex items-center gap-2 px-4 py-2 bg-accent-fill hover:bg-accent-fill-hover text-accent-text text-sm rounded-lg transition-colors">
                   <Icon name="upload-line" size={14} /> Upload Plugin
                 </button>
               </div>
@@ -261,11 +261,11 @@ function PluginsPage() {
           }
         />
 
-        <div className="hud-frame relative rounded-none border border-zinc-200 dark:border-white/10 hud-glass">
+        <div className="hud-frame relative rounded-lg border border-zinc-200 dark:border-white/10 hud-glass">
           <HudCorners />
           <div className="overflow-hidden">
           <table className="w-full text-sm">
-            <thead className="bg-zinc-100 dark:bg-[#141416] text-zinc-600 dark:text-zinc-400">
+            <thead className="bg-zinc-100 dark:bg-zinc-950 text-zinc-600 dark:text-zinc-400">
               <tr>
                 <th className="px-4 py-3 text-left font-medium hud-label text-xs">File</th>
                 <th className="px-4 py-3 text-left font-medium hud-label text-xs">App</th>
@@ -280,10 +280,10 @@ function PluginsPage() {
               {loading ? (
                 <TableSkeletonRows columns={7} />
               ) : plugins.length === 0 ? (
-                <tr className="bg-zinc-50 dark:bg-[#0c0c0e]"><td colSpan={7} className="px-4 py-8 text-center text-zinc-500">No plugins uploaded</td></tr>
+                <tr className="bg-zinc-50 dark:bg-zinc-900"><td colSpan={7} className="px-4 py-8 text-center text-zinc-500">No plugins uploaded</td></tr>
               ) : (
                 plugins.map(p => (
-                  <tr key={p.filename} className="bg-zinc-50 dark:bg-[#000000] hover:bg-zinc-100/50 dark:hover:bg-white/[0.03]">
+                  <tr key={p.filename} className="bg-zinc-50 dark:bg-zinc-950 hover:bg-zinc-100/50 dark:hover:bg-white/[0.03]">
                     <td className="px-4 py-3 font-mono">{p.filename}</td>
                     <td className="px-4 py-3 text-zinc-600 dark:text-zinc-400">{p.type}</td>
                     <td className="px-4 py-3 text-zinc-600 dark:text-zinc-400">{p.version || <span className="text-zinc-400 dark:text-zinc-600">—</span>}</td>
@@ -297,7 +297,7 @@ function PluginsPage() {
                     <td className="px-4 py-3">
                       {canManage && (
                         <div className="flex justify-end">
-                          <button onClick={() => handleDelete(p)} className="p-1.5 rounded-none hover:bg-zinc-200 dark:hover:bg-[#141416] text-red-600 dark:text-red-400 focus:outline-none focus:ring-2 focus:ring-accent-ring" title="Delete" aria-label="Delete">
+                          <button onClick={() => handleDelete(p)} className="p-1.5 rounded-lg hover:bg-zinc-200 dark:hover:bg-zinc-950 text-red-600 dark:text-red-400 focus:outline-none focus:ring-2 focus:ring-accent-ring" title="Delete" aria-label="Delete">
                             <Icon name="delete-bin-2-line" size={14} />
                           </button>
                         </div>

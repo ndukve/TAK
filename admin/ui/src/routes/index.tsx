@@ -185,7 +185,7 @@ function DashboardPage() {
             </>
           ) : (
             Array.from({ length: 6 }).map((_, i) => (
-              <div key={i} className="bg-white dark:bg-[#0c0c0e] p-4 min-h-28">
+              <div key={i} className="bg-white dark:bg-zinc-900 p-4 min-h-28">
                 <div className="flex items-start justify-between mb-3">
                   <Skeleton className="h-2.5 w-10" />
                 </div>
@@ -229,7 +229,7 @@ function DashboardPage() {
 function SystemStatCard({ num, label, value, state = 'ok' }: { num: string; label: string; value: string; state?: 'ok' | 'warn' | 'critical' }) {
   const textClass = state === 'critical' ? 'text-red-600 dark:text-red-400' : state === 'warn' ? 'text-yellow-600 dark:text-yellow-400' : 'text-zinc-900 dark:text-zinc-100'
   return (
-    <div className="bg-white dark:bg-[#0c0c0e] p-4 min-h-28 flex flex-col justify-between">
+    <div className="bg-white dark:bg-zinc-900 p-4 min-h-28 flex flex-col justify-between">
       <span className="text-[10px] tracking-[0.1em] text-zinc-500">{num} / {label.toUpperCase()}</span>
       <p title={value} className={cn('font-mono text-xl font-semibold tracking-tight truncate', textClass)}>{value}</p>
     </div>
@@ -252,7 +252,7 @@ function ServiceTopology({ services }: { services: ServiceState[] }) {
             return (
               <div key={s.name} className="flex flex-col items-center flex-1">
                 <div className="w-px h-4 bg-zinc-300 dark:bg-white/20" />
-                <div className="border border-zinc-200 dark:border-white/10 bg-white dark:bg-[#0c0c0e] px-2 py-2.5 text-center w-full">
+                <div className="border border-zinc-200 dark:border-white/10 bg-white dark:bg-zinc-900 px-2 py-2.5 text-center w-full">
                   <span className={cn('inline-block w-1.5 h-1.5 mb-1.5', running ? 'bg-green-500' : 'bg-red-500')} />
                   <div className="text-[10px] font-medium truncate" title={s.name}>{s.name.replace('takserver_', '')}</div>
                   <div className="text-[8px] tracking-[0.08em] text-zinc-500 mt-1 uppercase">[ {s.status} ]</div>

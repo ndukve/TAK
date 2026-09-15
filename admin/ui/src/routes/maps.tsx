@@ -213,12 +213,12 @@ function MapsPage() {
             placeholder="Provider (e.g. Google)"
             value={provider}
             onChange={e => setProvider(e.target.value)}
-            className="px-3 py-2 bg-zinc-100 dark:bg-[#0c0c0e] border border-zinc-300 dark:border-white/10 rounded-none text-sm text-zinc-900 dark:text-white placeholder-zinc-500 w-48"
+            className="px-3 py-2 bg-zinc-100 dark:bg-zinc-900 border border-zinc-300 dark:border-white/10 rounded-lg text-sm text-zinc-900 dark:text-white placeholder-zinc-500 w-48"
           />
           <button
             onClick={handleUploadClick}
             disabled={uploadProgress !== null}
-            className="flex items-center gap-2 px-4 py-2 bg-accent-fill hover:bg-accent-fill-hover disabled:opacity-50 text-accent-text text-sm rounded-none transition-colors"
+            className="flex items-center gap-2 px-4 py-2 bg-accent-fill hover:bg-accent-fill-hover disabled:opacity-50 text-accent-text text-sm rounded-lg transition-colors"
           >
             <Icon name="upload-line" size={14} />
             {uploadProgress?.phase === 'uploading' ? 'Uploading…' : 'Upload Map'}
@@ -233,7 +233,7 @@ function MapsPage() {
           {maps.length > 0 && (
             <button
               onClick={() => downloadFileStreamed('/api/maps/download-all', 'maps.zip').catch((e) => notify.error(errorMessage(e)))}
-              className="flex items-center gap-2 px-4 py-2 bg-zinc-200 dark:bg-[#141416] hover:bg-zinc-300 dark:hover:bg-[#232326] text-zinc-700 dark:text-zinc-300 text-sm rounded-none transition-colors"
+              className="flex items-center gap-2 px-4 py-2 bg-zinc-200 dark:bg-zinc-950 hover:bg-zinc-300 dark:hover:bg-zinc-800 text-zinc-700 dark:text-zinc-300 text-sm rounded-lg transition-colors"
             >
               <Icon name="download-line" size={14} />
               Download All ({maps.length})
@@ -241,11 +241,11 @@ function MapsPage() {
           )}
         </div>
 
-        <div className="hud-frame relative rounded-none border border-zinc-200 dark:border-white/10 hud-glass">
+        <div className="hud-frame relative rounded-lg border border-zinc-200 dark:border-white/10 hud-glass">
           <HudCorners />
           <div className="overflow-x-auto">
           <table className="w-full text-sm min-w-[600px]">
-            <thead className="bg-zinc-100 dark:bg-[#141416] text-zinc-600 dark:text-zinc-400">
+            <thead className="bg-zinc-100 dark:bg-zinc-950 text-zinc-600 dark:text-zinc-400">
               <tr>
                 <th className="px-4 py-3 text-left font-medium hud-label text-xs">Provider</th>
                 <th className="px-4 py-3 text-left font-medium hud-label text-xs">File</th>
@@ -259,18 +259,18 @@ function MapsPage() {
               {loading ? (
                 <TableSkeletonRows columns={6} />
               ) : maps.length === 0 ? (
-                <tr className="bg-zinc-50 dark:bg-[#0c0c0e]">
+                <tr className="bg-zinc-50 dark:bg-zinc-900">
                   <td colSpan={6} className="px-4 py-8 text-center text-zinc-500">
                     No map sources loaded
                   </td>
                 </tr>
               ) : (
                 maps.map(m => (
-                  <tr key={`${m.provider}/${m.filename}`} className="bg-zinc-50 dark:bg-[#000000] hover:bg-zinc-100/50 dark:hover:bg-white/[0.03]">
+                  <tr key={`${m.provider}/${m.filename}`} className="bg-zinc-50 dark:bg-zinc-950 hover:bg-zinc-100/50 dark:hover:bg-white/[0.03]">
                     <td className="px-4 py-3 text-zinc-600 dark:text-zinc-400">{m.provider}</td>
                     <td className="px-4 py-3 font-mono">{m.filename}</td>
                     <td className="px-4 py-3">
-                      <span className={`px-1.5 py-0.5 rounded-none text-xs font-mono ${m.kind === 'mbtiles' ? 'bg-accent-fill/20 text-accent-ring' : 'bg-zinc-200 dark:bg-white/10 text-zinc-600 dark:text-zinc-400'}`}>
+                      <span className={`px-1.5 py-0.5 rounded-lg text-xs font-mono ${m.kind === 'mbtiles' ? 'bg-accent-fill/20 text-accent-ring' : 'bg-zinc-200 dark:bg-white/10 text-zinc-600 dark:text-zinc-400'}`}>
                         {m.kind === 'mbtiles' ? 'offline' : 'xml'}
                       </span>
                     </td>
@@ -280,14 +280,14 @@ function MapsPage() {
                       <div className="flex justify-end gap-1">
                         <button
                           onClick={() => handleDownload(m)}
-                          className="p-1.5 rounded-none hover:bg-zinc-200 dark:hover:bg-[#141416] text-accent-ring"
+                          className="p-1.5 rounded-lg hover:bg-zinc-200 dark:hover:bg-zinc-950 text-accent-ring"
                           title="Download"
                         >
                           <Icon name="download-line" size={14} />
                         </button>
                         <button
                           onClick={() => handleDelete(m)}
-                          className="p-1.5 rounded-none hover:bg-zinc-200 dark:hover:bg-[#141416] text-red-600 dark:text-red-400"
+                          className="p-1.5 rounded-lg hover:bg-zinc-200 dark:hover:bg-zinc-950 text-red-600 dark:text-red-400"
                           title="Delete"
                         >
                           <Icon name="delete-bin-2-line" size={14} />
@@ -304,13 +304,13 @@ function MapsPage() {
 
         {uploadProgress && (
           <div className="fixed inset-0 z-[1000] flex items-center justify-center bg-black/65 px-4" role="dialog" aria-modal="true" aria-labelledby="map-upload-title">
-            <div className="w-full max-w-md rounded-none border border-zinc-300 dark:border-white/15 hud-glass p-5 shadow-2xl">
+            <div className="w-full max-w-md rounded-lg border border-zinc-300 dark:border-white/15 hud-glass p-5 shadow-2xl">
               <div className="flex items-start justify-between gap-4">
                 <div className="min-w-0">
                   <h2 id="map-upload-title" className="text-base font-semibold text-zinc-900 dark:text-white">Map upload</h2>
                   <p className="mt-1 truncate font-mono text-xs text-zinc-500">{uploadProgress.provider}/{uploadProgress.filename}</p>
                 </div>
-                <button onClick={closeUploadPrompt} className="rounded-none p-1 text-zinc-500 hover:bg-zinc-100 dark:hover:bg-white/10" aria-label="Close upload dialog">
+                <button onClick={closeUploadPrompt} className="rounded-lg p-1 text-zinc-500 hover:bg-zinc-100 dark:hover:bg-white/10" aria-label="Close upload dialog">
                   <Icon name="close-line" size={16} />
                 </button>
               </div>
@@ -335,17 +335,17 @@ function MapsPage() {
 
               <div className="mt-5 flex justify-end gap-2">
                 {uploadProgress.phase === 'uploading' && (
-                  <button onClick={pauseUpload} className="flex items-center gap-2 rounded-none border border-zinc-300 dark:border-white/15 px-3 py-2 text-sm hover:bg-zinc-100 dark:hover:bg-white/10">
+                  <button onClick={pauseUpload} className="flex items-center gap-2 rounded-lg border border-zinc-300 dark:border-white/15 px-3 py-2 text-sm hover:bg-zinc-100 dark:hover:bg-white/10">
                     <Icon name="pause-line" size={14} /> Pause
                   </button>
                 )}
                 {(uploadProgress.phase === 'paused' || uploadProgress.phase === 'failed') && (
-                  <button onClick={resumeUpload} className="flex items-center gap-2 rounded-none bg-accent-fill px-3 py-2 text-sm text-accent-text hover:bg-accent-fill-hover">
+                  <button onClick={resumeUpload} className="flex items-center gap-2 rounded-lg bg-accent-fill px-3 py-2 text-sm text-accent-text hover:bg-accent-fill-hover">
                     <Icon name="arrow-go-back-line" size={14} /> Resume upload
                   </button>
                 )}
                 {uploadProgress.phase === 'complete' && (
-                  <button onClick={closeUploadPrompt} className="rounded-none bg-accent-fill px-3 py-2 text-sm text-accent-text hover:bg-accent-fill-hover">Close</button>
+                  <button onClick={closeUploadPrompt} className="rounded-lg bg-accent-fill px-3 py-2 text-sm text-accent-text hover:bg-accent-fill-hover">Close</button>
                 )}
               </div>
             </div>

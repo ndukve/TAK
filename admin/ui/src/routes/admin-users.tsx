@@ -53,31 +53,31 @@ function NewAdminModal({ onClose, onCreated }: { onClose: () => void; onCreated:
 
   return (
     <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50">
-      <div className="hud-glass border border-zinc-200 dark:border-white/10 rounded-none p-6 w-full max-w-sm">
+      <div className="hud-glass border border-zinc-200 dark:border-white/10 rounded-lg p-6 w-full max-w-sm">
         <h2 className="text-lg font-semibold mb-4">New Admin User</h2>
         <form onSubmit={handleSubmit} className="space-y-3">
           <div className="space-y-1">
             <label className="text-sm text-zinc-700 dark:text-zinc-300">Username</label>
             <input type="text" value={username} onChange={e => setUsername(e.target.value)} required
-              className="w-full px-3 py-2 rounded-none bg-zinc-200 dark:bg-[#141416] border border-zinc-300 dark:border-white/10 text-zinc-900 dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-accent-ring" />
+              className="w-full px-3 py-2 rounded-lg bg-zinc-200 dark:bg-zinc-950 border border-zinc-300 dark:border-white/10 text-zinc-900 dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-accent-ring" />
           </div>
           <div className="space-y-1">
             <label className="text-sm text-zinc-700 dark:text-zinc-300">Password (min 12 chars)</label>
             <PasswordInput value={password} onChange={e => setPassword(e.target.value)} required
-              className="w-full px-3 py-2 rounded-none bg-zinc-200 dark:bg-[#141416] border border-zinc-300 dark:border-white/10 text-zinc-900 dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-accent-ring" />
+              className="w-full px-3 py-2 rounded-lg bg-zinc-200 dark:bg-zinc-950 border border-zinc-300 dark:border-white/10 text-zinc-900 dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-accent-ring" />
           </div>
           <div className="space-y-1">
             <label className="text-sm text-zinc-700 dark:text-zinc-300">Role</label>
             <select value={role} onChange={e => setRole(e.target.value as 'admin' | 'superadmin')}
-              className="w-full px-3 py-2 rounded-none bg-zinc-200 dark:bg-[#141416] border border-zinc-300 dark:border-white/10 text-zinc-900 dark:text-white text-sm focus:outline-none">
+              className="w-full px-3 py-2 rounded-lg bg-zinc-200 dark:bg-zinc-950 border border-zinc-300 dark:border-white/10 text-zinc-900 dark:text-white text-sm focus:outline-none">
               <option value="admin">admin</option>
               <option value="superadmin">superadmin</option>
             </select>
           </div>
           <div className="flex gap-2 pt-1">
-            <button type="button" onClick={onClose} className="flex-1 py-2 rounded-none bg-zinc-300 dark:bg-[#232326] hover:bg-zinc-400 dark:hover:bg-[#2b2b2f] text-sm">Cancel</button>
+            <button type="button" onClick={onClose} className="flex-1 py-2 rounded-lg bg-zinc-300 dark:bg-zinc-800 hover:bg-zinc-400 dark:hover:bg-zinc-700 text-sm">Cancel</button>
             <button type="submit" disabled={loading}
-              className="flex-1 py-2 rounded-none bg-accent-fill hover:bg-accent-fill-hover text-accent-text text-sm disabled:opacity-50">
+              className="flex-1 py-2 rounded-lg bg-accent-fill hover:bg-accent-fill-hover text-accent-text text-sm disabled:opacity-50">
               {loading ? 'Creating…' : 'Create'}
             </button>
           </div>
@@ -153,16 +153,16 @@ function AdminUsersPage() {
           countLabel="admins"
           actions={
             <button onClick={() => setShowNew(true)}
-              className="flex items-center gap-2 px-4 py-2 bg-accent-fill hover:bg-accent-fill-hover text-accent-text text-sm rounded-none transition-colors">
+              className="flex items-center gap-2 px-4 py-2 bg-accent-fill hover:bg-accent-fill-hover text-accent-text text-sm rounded-lg transition-colors">
               <Icon name="user-add-line" size={14} /> New Admin
             </button>
           }
         />
-        <div className="hud-frame relative rounded-none border border-zinc-200 dark:border-white/10 hud-glass">
+        <div className="hud-frame relative rounded-lg border border-zinc-200 dark:border-white/10 hud-glass">
           <HudCorners />
           <div className="overflow-hidden">
           <table className="w-full text-sm">
-            <thead className="bg-zinc-100 dark:bg-[#141416] text-zinc-600 dark:text-zinc-400">
+            <thead className="bg-zinc-100 dark:bg-zinc-950 text-zinc-600 dark:text-zinc-400">
               <tr>
                 <th className="px-4 py-3 text-left font-medium hud-label text-xs">Username</th>
                 <th className="px-4 py-3 text-left font-medium hud-label text-xs">Role</th>
@@ -174,10 +174,10 @@ function AdminUsersPage() {
               {loading ? (
                 <TableSkeletonRows columns={4} />
               ) : users.length === 0 ? (
-                <tr className="bg-zinc-50 dark:bg-[#0c0c0e]"><td colSpan={4} className="px-4 py-8 text-center text-zinc-500">No admin users</td></tr>
+                <tr className="bg-zinc-50 dark:bg-zinc-900"><td colSpan={4} className="px-4 py-8 text-center text-zinc-500">No admin users</td></tr>
               ) : (
                 users.map(u => (
-                  <tr key={u.id} className="bg-zinc-50 dark:bg-[#000000] hover:bg-zinc-100/50 dark:hover:bg-white/[0.03]">
+                  <tr key={u.id} className="bg-zinc-50 dark:bg-zinc-950 hover:bg-zinc-100/50 dark:hover:bg-white/[0.03]">
                     <td className="px-4 py-3 font-mono">{u.username}</td>
                     <td className="px-4 py-3">
                       <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${ROLE_COLORS[u.role] ?? 'text-zinc-600 dark:text-zinc-400 bg-zinc-600/10 dark:bg-zinc-400/10'}`}>{u.role}</span>
@@ -189,7 +189,7 @@ function AdminUsersPage() {
                       </button>
                     </td>
                     <td className="px-4 py-3 flex justify-end">
-                      <button onClick={() => deleteUser(u.id, u.username)} disabled={pendingIds.has(u.id)} title="Delete" aria-label="Delete" className="p-1.5 rounded-none hover:bg-zinc-200 dark:hover:bg-[#141416] text-red-600 dark:text-red-400 focus:outline-none focus:ring-2 focus:ring-accent-ring disabled:opacity-50"><Icon name="delete-bin-2-line" size={14} /></button>
+                      <button onClick={() => deleteUser(u.id, u.username)} disabled={pendingIds.has(u.id)} title="Delete" aria-label="Delete" className="p-1.5 rounded-lg hover:bg-zinc-200 dark:hover:bg-zinc-950 text-red-600 dark:text-red-400 focus:outline-none focus:ring-2 focus:ring-accent-ring disabled:opacity-50"><Icon name="delete-bin-2-line" size={14} /></button>
                     </td>
                   </tr>
                 ))
