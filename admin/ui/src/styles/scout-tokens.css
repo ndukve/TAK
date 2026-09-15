@@ -13,82 +13,93 @@
      apply correctly without redefining the `dark:` variant here. */
 @import "tw-animate-css";
 @import "shadcn/tailwind.css";
-@import "@fontsource/aldrich";
-@import "@fontsource-variable/spline-sans";
-@import "@fontsource-variable/spline-sans-mono";
+@import "@fontsource-variable/ibm-plex-sans";
+@import "@fontsource/ibm-plex-mono";
 @import "remixicon/fonts/remixicon.css";
 
 @source "../**/*.{ts,tsx}";
 @source "../**/*.{ts,tsx}";
 
 :root {
-  /* --- Neutral steel ramp (cool, slightly blue) --- */
-  --steel-950: oklch(0.145 0.006 248);
-  --steel-900: oklch(0.178 0.007 244);
-  --steel-850: oklch(0.208 0.008 240);
-  --steel-800: oklch(0.242 0.009 238);
-  --steel-700: oklch(0.31 0.011 236);
-  --steel-600: oklch(0.42 0.013 234);
-  --steel-500: oklch(0.55 0.014 232);
-  --steel-400: oklch(0.66 0.014 230);
-  --steel-300: oklch(0.76 0.012 226);
-  --steel-200: oklch(0.86 0.008 222);
-  --steel-100: oklch(0.93 0.005 220);
-  --steel-050: oklch(0.972 0.003 216);
+  /* --- mainline.inc TERMINAL palette, direct copy (dark values, this app's
+     default) — replaces the old steel/blue/green-amber-red Scout ramp. --- */
+  --background: oklch(14.1% 0.005 285.823);
+  --foreground: oklch(98.5% 0 0);
+  --card: oklch(21% 0.006 285.885);
+  --card-foreground: oklch(98.5% 0 0);
+  --popover: oklch(21% 0.006 285.885);
+  --popover-foreground: oklch(98.5% 0 0);
+  --primary: oklch(44.3% 0.11 240.79);
+  --primary-foreground: oklch(97.7% 0.013 236.62);
+  --secondary: oklch(27.4% 0.006 286.033);
+  --secondary-foreground: oklch(98.5% 0 0);
+  --muted: oklch(27.4% 0.006 286.033);
+  --muted-foreground: oklch(70.5% 0.015 286.067);
+  --accent: oklch(27.4% 0.006 286.033);
+  --accent-foreground: oklch(98.5% 0 0);
+  --destructive: oklch(70.4% 0.191 22.216);
+  --border: oklch(100% 0 0 / 0.1);
+  --input: oklch(100% 0 0 / 0.15);
+  --ring: oklch(55.2% 0.016 285.938);
+  --chart-1: oklch(82.8% 0.111 230.318);
+  --chart-2: oklch(68.5% 0.169 237.323);
+  --chart-3: oklch(58.8% 0.158 241.966);
+  --chart-4: oklch(50% 0.134 242.749);
+  --chart-5: oklch(44.3% 0.11 240.79);
+  --sidebar: oklch(21% 0.006 285.885);
+  --sidebar-foreground: oklch(98.5% 0 0);
+  --sidebar-primary: oklch(68.5% 0.169 237.323);
+  --sidebar-primary-foreground: oklch(29.3% 0.066 243.157);
+  --sidebar-accent: oklch(27.4% 0.006 286.033);
+  --sidebar-accent-foreground: oklch(98.5% 0 0);
+  --sidebar-border: oklch(100% 0 0 / 0.1);
+  --sidebar-ring: oklch(55.2% 0.016 285.938);
 
-  /* --- Signal blue (primary) --- */
-  --blue-700: oklch(0.44 0.2 264);
-  --blue-600: oklch(0.52 0.22 264);
-  --blue-500: oklch(0.62 0.2 262);
-  --blue-400: oklch(0.72 0.15 260);
-  --blue-300: oklch(0.82 0.1 258);
+  /* TERMINAL's 5-state status vocabulary, replaces --nominal/--warning/--critical */
+  --status-ok: oklch(74% 0.17 150);
+  --status-warn: oklch(78% 0.15 75);
+  --status-crit: oklch(70.4% 0.191 22.216);
+  --status-info: oklch(68.5% 0.169 237.323);
+  --status-off: oklch(55% 0.012 286);
 
-  /* --- Operational status --- */
-  --green-500: oklch(0.74 0.18 153);
-  --green-400: oklch(0.82 0.19 150);
-  --amber-500: oklch(0.79 0.15 76);
-  --amber-400: oklch(0.86 0.16 88);
-  --red-500: oklch(0.64 0.23 26);
-  --red-400: oklch(0.72 0.2 24);
+  /* --- Old semantic-alias names kept so existing components keep working,
+     now pointing at the TERMINAL tokens above instead of the steel/blue
+     ramp. --- */
+  --bg: var(--background);
+  --bg-sunken: oklch(10% 0.005 285.823);
+  --surface: var(--card);
+  --surface-raised: var(--popover);
+  --surface-inset: var(--background);
+  --overlay: oklch(21% 0.006 285.885 / 0.72);
 
-  /* === Semantic aliases (dark default) === */
-  --bg: var(--steel-950);
-  --bg-sunken: oklch(0.115 0.006 248);
-  --surface: var(--steel-900);
-  --surface-raised: var(--steel-850);
-  --surface-inset: var(--steel-950);
-  --overlay: oklch(0.208 0.008 240 / 0.72);
+  --text: var(--foreground);
+  --text-muted: var(--muted-foreground);
+  --text-subtle: oklch(55.2% 0.016 285.938);
+  --text-inverted: var(--background);
 
-  --text: var(--steel-050);
-  --text-muted: var(--steel-400);
-  --text-subtle: var(--steel-500);
-  --text-inverted: var(--steel-950);
+  --border-strong: oklch(100% 0 0 / 0.18);
+  --border-faint: oklch(100% 0 0 / 0.055);
 
-  --border: oklch(1 0 0 / 0.1);
-  --border-strong: oklch(1 0 0 / 0.18);
-  --border-faint: oklch(1 0 0 / 0.055);
+  --primary-hover: oklch(50% 0.134 242.749);
+  --primary-text: var(--primary-foreground);
+  --primary-emphasis: oklch(58.8% 0.158 241.966);
+  --primary-soft: oklch(44.3% 0.11 240.79 / 0.14);
+  --primary-ring: oklch(55.2% 0.016 285.938 / 0.5);
 
-  --primary: var(--blue-600);
-  --primary-hover: var(--blue-500);
-  --primary-text: oklch(0.98 0.01 260);
-  --primary-emphasis: var(--blue-400);
-  --primary-soft: oklch(0.52 0.22 264 / 0.14);
-  --primary-ring: oklch(0.62 0.2 262 / 0.5);
-
-  --nominal: var(--green-400);
-  --nominal-surface: oklch(0.74 0.18 153 / 0.13);
-  --nominal-border: oklch(0.74 0.18 153 / 0.34);
-  --warning: var(--amber-400);
-  --warning-surface: oklch(0.79 0.15 76 / 0.14);
-  --warning-border: oklch(0.79 0.15 76 / 0.34);
-  --critical: var(--red-400);
-  --critical-surface: oklch(0.64 0.23 26 / 0.15);
-  --critical-border: oklch(0.64 0.23 26 / 0.4);
-  --neutral-surface: oklch(1 0 0 / 0.06);
+  --nominal: var(--status-ok);
+  --nominal-surface: oklch(74% 0.17 150 / 0.13);
+  --nominal-border: oklch(74% 0.17 150 / 0.34);
+  --warning: var(--status-warn);
+  --warning-surface: oklch(78% 0.15 75 / 0.14);
+  --warning-border: oklch(78% 0.15 75 / 0.34);
+  --critical: var(--status-crit);
+  --critical-surface: oklch(70.4% 0.191 22.216 / 0.15);
+  --critical-border: oklch(70.4% 0.191 22.216 / 0.4);
+  --neutral-surface: oklch(100% 0 0 / 0.06);
 
   /* Live/telemetry signal (bright terminal green for active pulses) */
-  --signal: oklch(0.85 0.21 148);
-  --signal-glow: oklch(0.85 0.21 148 / 0.45);
+  --signal: var(--status-ok);
+  --signal-glow: oklch(74% 0.17 150 / 0.45);
 
   /* Layout & control metrics (4px grid, dense) */
   --container: 80rem;
@@ -105,7 +116,7 @@
   --shadow-deep: 0 12px 32px oklch(0 0 0 / 0.45), 0 2px 8px oklch(0 0 0 / 0.35);
   --shadow-pop: 0 18px 48px oklch(0 0 0 / 0.55);
   --glow-signal: 0 0 10px var(--signal-glow);
-  --bracket-color: var(--border-strong);
+  --bracket-color: transparent;   /* TERMINAL has no corner-bracket motif — see .scout-bracketed below */
   --bracket-size: 10px;
 
   /* Motion — precise & mechanical, no bounce */
@@ -116,83 +127,88 @@
   --ease-exit: cubic-bezier(0.16, 1, 0.3, 1);
   --ease-enter: cubic-bezier(0.4, 0, 1, 1);
 
-  /* --- shadcn-compat aliases (existing components keep working) --- */
-  --background: var(--bg);
-  --foreground: var(--text);
-  --card: var(--surface);
-  --card-foreground: var(--text);
-  --popover: var(--surface-raised);
-  --popover-foreground: var(--text);
-  --primary-foreground: var(--primary-text);
-  --secondary: var(--neutral-surface);
-  --secondary-foreground: var(--text);
-  --muted: var(--neutral-surface);
-  --muted-foreground: var(--text-muted);
-  --accent: var(--neutral-surface);
-  --accent-foreground: var(--text);
-  --destructive: var(--critical);
-  --input: var(--border);
-  --ring: var(--primary-ring);
-  --radius: 0px;
-  --chart-1: var(--blue-500);
-  --chart-2: var(--green-400);
-  --chart-3: var(--amber-400);
-  --chart-4: var(--red-400);
-  --chart-5: var(--steel-400);
-  --sidebar: var(--bg-sunken);
-  --sidebar-foreground: var(--text);
-  --sidebar-primary: var(--primary);
-  --sidebar-primary-foreground: var(--primary-text);
-  --sidebar-accent: var(--neutral-surface);
-  --sidebar-accent-foreground: var(--text);
-  --sidebar-border: var(--border);
-  --sidebar-ring: var(--primary-ring);
+  --radius: 0.625rem;
 
   color-scheme: dark;
 }
 
 [data-theme="light"] {
-  --bg: var(--steel-050);
-  --bg-sunken: oklch(0.955 0.004 216);
-  --surface: oklch(1 0 0);
-  --surface-raised: oklch(1 0 0);
-  --surface-inset: var(--steel-100);
-  --overlay: oklch(0.145 0.006 248 / 0.4);
+  /* --- mainline.inc TERMINAL palette, direct copy (light values) --- */
+  --background: oklch(100% 0 0);
+  --foreground: oklch(14.1% 0.005 285.823);
+  --card: oklch(100% 0 0);
+  --card-foreground: oklch(14.1% 0.005 285.823);
+  --popover: oklch(100% 0 0);
+  --popover-foreground: oklch(14.1% 0.005 285.823);
+  --primary: oklch(50% 0.134 242.749);
+  --primary-foreground: oklch(97.7% 0.013 236.62);
+  --secondary: oklch(96.7% 0.001 286.375);
+  --secondary-foreground: oklch(21% 0.006 285.885);
+  --muted: oklch(96.7% 0.001 286.375);
+  --muted-foreground: oklch(55.2% 0.016 285.938);
+  --accent: oklch(96.7% 0.001 286.375);
+  --accent-foreground: oklch(21% 0.006 285.885);
+  --destructive: oklch(57.7% 0.245 27.325);
+  --border: oklch(92% 0.004 286.32);
+  --input: oklch(92% 0.004 286.32);
+  --ring: oklch(70.5% 0.015 286.067);
+  --sidebar: oklch(98.5% 0 0);
+  --sidebar-foreground: oklch(14.1% 0.005 285.823);
+  --sidebar-primary: oklch(58.8% 0.158 241.966);
+  --sidebar-primary-foreground: oklch(97.7% 0.013 236.62);
+  --sidebar-accent: oklch(96.7% 0.001 286.375);
+  --sidebar-accent-foreground: oklch(21% 0.006 285.885);
+  --sidebar-border: oklch(92% 0.004 286.32);
+  --sidebar-ring: oklch(70.5% 0.015 286.067);
 
-  --text: var(--steel-950);
-  --text-muted: var(--steel-600);
-  --text-subtle: var(--steel-500);
-  --text-inverted: var(--steel-050);
+  --status-ok: oklch(60% 0.15 150);
+  --status-warn: oklch(66% 0.14 70);
+  --status-crit: oklch(57.7% 0.245 27.325);
+  --status-info: oklch(58.8% 0.158 241.966);
+  --status-off: oklch(62% 0.01 286);
 
-  --border: oklch(0.145 0.006 248 / 0.12);
-  --border-strong: oklch(0.145 0.006 248 / 0.22);
-  --border-faint: oklch(0.145 0.006 248 / 0.06);
+  --bg: var(--background);
+  --bg-sunken: oklch(95.5% 0.004 216);
+  --surface: var(--card);
+  --surface-raised: var(--popover);
+  --surface-inset: oklch(93% 0.005 220);
+  --overlay: oklch(14.1% 0.005 285.823 / 0.4);
 
-  --primary: var(--blue-600);
-  --primary-hover: var(--blue-700);
-  --primary-text: oklch(0.98 0.01 260);
-  --primary-emphasis: var(--blue-700);
-  --primary-soft: oklch(0.52 0.22 264 / 0.09);
-  --primary-ring: oklch(0.52 0.22 264 / 0.4);
+  --text: var(--foreground);
+  --text-muted: var(--muted-foreground);
+  --text-subtle: oklch(55.2% 0.016 285.938);
+  --text-inverted: var(--background);
 
-  --nominal: oklch(0.53 0.14 152);
-  --nominal-surface: oklch(0.74 0.18 153 / 0.12);
-  --nominal-border: oklch(0.6 0.15 152 / 0.4);
-  --warning: oklch(0.68 0.14 70);
-  --warning-surface: oklch(0.79 0.15 76 / 0.15);
-  --warning-border: oklch(0.79 0.15 76 / 0.36);
-  --critical: var(--red-500);
-  --critical-surface: oklch(0.64 0.23 26 / 0.1);
-  --critical-border: oklch(0.64 0.23 26 / 0.32);
-  --neutral-surface: oklch(0.145 0.006 248 / 0.055);
+  --border-strong: oklch(14.1% 0.005 285.823 / 0.22);
+  --border-faint: oklch(14.1% 0.005 285.823 / 0.06);
 
-  --signal: var(--green-500);
-  --signal-glow: oklch(0.74 0.18 153 / 0.35);
+  --primary-hover: oklch(44.3% 0.11 240.79);
+  --primary-text: var(--primary-foreground);
+  --primary-emphasis: oklch(44.3% 0.11 240.79);
+  --primary-soft: oklch(50% 0.134 242.749 / 0.09);
+  --primary-ring: oklch(50% 0.134 242.749 / 0.4);
+
+  --nominal: var(--status-ok);
+  --nominal-surface: oklch(60% 0.15 150 / 0.12);
+  --nominal-border: oklch(60% 0.15 150 / 0.4);
+  --warning: var(--status-warn);
+  --warning-surface: oklch(66% 0.14 70 / 0.15);
+  --warning-border: oklch(66% 0.14 70 / 0.36);
+  --critical: var(--status-crit);
+  --critical-surface: oklch(57.7% 0.245 27.325 / 0.1);
+  --critical-border: oklch(57.7% 0.245 27.325 / 0.32);
+  --neutral-surface: oklch(14.1% 0.005 285.823 / 0.055);
+
+  --signal: var(--status-ok);
+  --signal-glow: oklch(60% 0.15 150 / 0.35);
 
   --shadow-soft: 0 1px 2px oklch(0 0 0 / 0.08);
   --shadow-mid: 0 2px 6px oklch(0 0 0 / 0.1), 0 1px 2px oklch(0 0 0 / 0.08);
   --shadow-deep: 0 12px 32px oklch(0 0 0 / 0.16), 0 2px 8px oklch(0 0 0 / 0.1);
   --shadow-pop: 0 18px 48px oklch(0 0 0 / 0.22);
+  --bracket-color: transparent;
+
+  --radius: 0.625rem;
 
   color-scheme: light;
 }
@@ -242,19 +258,6 @@
   --color-neutral-surface: var(--neutral-surface);
   --color-signal: var(--signal);
 
-  /* Steel ramp (rarely needed directly — prefer semantic tokens) */
-  --color-steel-950: var(--steel-950);
-  --color-steel-900: var(--steel-900);
-  --color-steel-850: var(--steel-850);
-  --color-steel-800: var(--steel-800);
-  --color-steel-700: var(--steel-700);
-  --color-steel-600: var(--steel-600);
-  --color-steel-500: var(--steel-500);
-  --color-steel-400: var(--steel-400);
-  --color-steel-300: var(--steel-300);
-  --color-steel-200: var(--steel-200);
-  --color-steel-100: var(--steel-100);
-  --color-steel-050: var(--steel-050);
 
   --color-chart-1: var(--chart-1);
   --color-chart-2: var(--chart-2);
@@ -270,24 +273,23 @@
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-ring: var(--sidebar-ring);
 
-  /* Square everywhere — panels are framed with corner brackets, never rounded */
-  --radius-xs: 0px;
-  --radius-sm: 0px;
-  --radius-md: 0px;
-  --radius-lg: 0px;
-  --radius-xl: 0px;
-  --radius-2xl: 0px;
-  --radius-3xl: 0px;
-  --radius-4xl: 0px;
+  /* mainline.inc TERMINAL uses a 0.625rem base radius, rounded corners
+     throughout — replaces the old square/bracket-framed Scout look. */
+  --radius-xs: calc(var(--radius) * 0.2);
+  --radius-sm: calc(var(--radius) * 0.6);
+  --radius-md: calc(var(--radius) * 0.8);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) * 1.6);
+  --radius-2xl: calc(var(--radius) * 2.4);
+  --radius-3xl: calc(var(--radius) * 3.2);
+  --radius-4xl: calc(var(--radius) * 4);
 
-  /* Type — Aldrich display (single 400 weight — never bold it, track it),
-     Spline Sans body, Spline Sans Mono data */
-  --font-sans: "Spline Sans Variable", "Spline Sans", system-ui, sans-serif;
-  --font-mono:
-    "Spline Sans Mono Variable", "Spline Sans Mono", ui-monospace,
-    "SFMono-Regular", Menlo, monospace;
-  --font-display: "Aldrich", "Spline Sans Variable", system-ui, sans-serif;
-  --font-heading: "Aldrich", "Spline Sans Variable", system-ui, sans-serif;
+  /* Type — IBM Plex Sans Variable (UI), IBM Plex Mono (values/data),
+     direct copy of TERMINAL's own type system. No separate display face. */
+  --font-sans: "IBM Plex Sans Variable", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+  --font-display: "IBM Plex Sans Variable", ui-sans-serif, system-ui, sans-serif;
+  --font-heading: "IBM Plex Sans Variable", ui-sans-serif, system-ui, sans-serif;
 
   /* Dense type scale */
   --text-2xs: 0.6875rem;
@@ -350,8 +352,8 @@
     @apply bg-background text-base text-foreground antialiased;
     text-rendering: optimizeLegibility;
   }
-  /* Aldrich ships a single 400 weight — synthetic bold distorts it, so
-     headings rely on size and tracking, never weight. */
+  /* Matches TERMINAL's own headings: regular weight, size/tracking carry
+     hierarchy rather than bold. */
   h1,
   h2,
   h3,

@@ -44,6 +44,12 @@ _EVENT_RE = re.compile(rb"<event\b.*?</event>", re.DOTALL)
 
 _AFFILIATION = {"f": "friendly", "h": "hostile", "n": "neutral", "u": "unknown"}
 
+# EFDI's tak_layer.py embeds a detection's audio clip URL as a plain
+# "AUDIO: <url>" line inside <detail><remarks> for dronuradaras acoustic
+# sensor tracks (see compose/layers/tak_layer.py in the EFDI repo) — there's
+# no dedicated CoT field for it, so pull it back out of the free-text remarks.
+_AUDIO_URL_RE = re.compile(r"AUDIO:\s*(\S+)")
+
 
 def _affiliation(cot_type: str) -> str:
     parts = cot_type.split("-")
@@ -75,6 +81,11 @@ def _parse_events(buffer: bytes) -> tuple[list[dict], bytes]:
         if lat == 0 and lon == 0:
             continue
         contact = root.find("detail/contact")
+        track = root.find("detail/track")
+        remarks_el = root.find("detail/remarks")
+        remarks = remarks_el.text if remarks_el is not None and remarks_el.text else None
+        audio_match = _AUDIO_URL_RE.search(remarks) if remarks else None
+        image_link = root.find("detail/link[@relation='r-u']")
         contacts.append({
             "uid": root.get("uid", ""),
             "type": root.get("type", ""),
@@ -83,8 +94,16 @@ def _parse_events(buffer: bytes) -> tuple[list[dict], bytes]:
             "lat": lat,
             "lon": lon,
             "hae": point.get("hae"),
+            "ce": point.get("ce"),
+            "le": point.get("le"),
+            "speed": track.get("speed") if track is not None else None,
+            "course": track.get("course") if track is not None else None,
+            "how": root.get("how"),
             "time": root.get("time"),
             "stale": root.get("stale"),
+            "remarks": remarks,
+            "audio_url": audio_match.group(1) if audio_match else None,
+            "image_url": image_link.get("url") if image_link is not None else None,
         })
     return contacts, buffer[last_end:]
 

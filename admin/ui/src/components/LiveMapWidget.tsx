@@ -21,6 +21,17 @@ interface Contact {
   callsign: string
   lat: number
   lon: number
+  hae?: string | null
+  ce?: string | null
+  le?: string | null
+  speed?: string | null
+  course?: string | null
+  how?: string | null
+  time?: string | null
+  stale?: string | null
+  remarks?: string | null
+  audio_url?: string | null
+  image_url?: string | null
 }
 
 const AFFILIATION_COLOR: Record<string, string> = {
@@ -41,8 +52,8 @@ function glowIcon(color: string): L.DivIcon {
   return L.divIcon({
     className: 'tak-glow-marker-wrap',
     html: `<span class="tak-glow-marker" style="--glow-color:${color}"><span class="tak-radar-ping" style="--glow-color:${color}"></span><span class="tak-glow-dot"></span></span>`,
-    iconSize: [16, 16],
-    iconAnchor: [8, 8],
+    iconSize: [10, 10],
+    iconAnchor: [5, 5],
   })
 }
 
@@ -64,7 +75,7 @@ const _BARE_UNIT_RE = /^a-[fhnu]-G-U-C$/
 // bare unit type above.
 function cotIcon(cotType: string, fallbackColor: string): L.DivIcon {
   if (_BARE_UNIT_RE.test(cotType)) return glowIcon(fallbackColor)
-  const symbol = renderCotSymbol(cotType, 20)
+  const symbol = renderCotSymbol(cotType, 14)
   if (!symbol) return glowIcon(fallbackColor)
   return L.divIcon({
     className: 'tak-symbol-marker-wrap',
@@ -72,6 +83,54 @@ function cotIcon(cotType: string, fallbackColor: string): L.DivIcon {
     iconSize: [symbol.width, symbol.height],
     iconAnchor: [symbol.anchorX, symbol.anchorY],
   })
+}
+
+function escapeHtml(s: string): string {
+  return s.replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]!)
+}
+
+// Same stat-card fields ATAK/WinTAK show when you tap a point's marker:
+// callsign, type, affiliation, position (with altitude/accuracy), track
+// (speed/course), how it was reported, receipt/staleness time, remarks, and
+// any attached imagery or audio.
+function buildStatCard(c: Contact, color: string): string {
+  const rows: string[] = []
+  const row = (label: string, value: string) =>
+    rows.push(`<div class="tak-statcard-row"><span class="tak-statcard-label">${label}</span><span>${value}</span></div>`)
+
+  row('UID', `<span class="font-mono text-xs">${escapeHtml(c.uid)}</span>`)
+  row('Position', `${c.lat.toFixed(6)}, ${c.lon.toFixed(6)}`)
+  if (c.hae != null && c.hae !== '' && c.hae !== '9999999.0') row('Altitude (HAE)', `${Number(c.hae).toFixed(1)} m`)
+  if (c.ce != null && c.ce !== '' && c.ce !== '9999999.0') row('Accuracy (CE)', `${Number(c.ce).toFixed(1)} m`)
+  if (c.speed != null && c.speed !== '' && Number(c.speed) > 0) row('Speed', `${Number(c.speed).toFixed(1)} m/s`)
+  if (c.course != null && c.course !== '') row('Course', `${Number(c.course).toFixed(0)}°`)
+  if (c.how) row('How', escapeHtml(c.how))
+  if (c.time) row('Time', escapeHtml(c.time))
+  if (c.stale) row('Stale', escapeHtml(c.stale))
+
+  const remarksText = c.remarks?.replace(/AUDIO:\s*\S+/, '').trim()
+  const remarks = remarksText
+    ? `<div class="tak-statcard-remarks">${escapeHtml(remarksText)}</div>`
+    : ''
+  const image = c.image_url
+    ? `<img class="tak-statcard-image" src="${escapeHtml(c.image_url)}" alt="" />`
+    : ''
+  const audio = c.audio_url
+    ? `<audio class="tak-statcard-audio" controls preload="none" src="${escapeHtml(c.audio_url)}"></audio>`
+    : ''
+
+  return `
+    <div class="tak-statcard">
+      <div class="tak-statcard-header" style="--card-color:${color}">
+        <strong>${escapeHtml(c.callsign)}</strong>
+        <span class="tak-statcard-type">${escapeHtml(c.type)}</span>
+      </div>
+      ${rows.join('')}
+      ${remarks}
+      ${image}
+      ${audio}
+    </div>
+  `
 }
 
 interface LiveMapWidgetProps {
@@ -107,7 +166,7 @@ export function LiveMapWidget({ height, showControls = false, pollMs = 5000 }: L
         seen.add(c.uid)
         const color = AFFILIATION_COLOR[c.affiliation] ?? AFFILIATION_COLOR.unknown
         const icon = cotIcon(c.type, color)
-        const popup = `<strong>${c.callsign}</strong><br/>${c.type}<br/><span class="font-mono text-xs">${c.uid}</span>`
+        const popup = buildStatCard(c, color)
         const existing = markersRef.current.get(c.uid)
         if (existing) {
           existing.setLatLng([c.lat, c.lon])
@@ -115,7 +174,7 @@ export function LiveMapWidget({ height, showControls = false, pollMs = 5000 }: L
           existing.setPopupContent(popup)
         } else {
           const marker = L.marker([c.lat, c.lon], { icon }).addTo(mapInstance.current)
-          marker.bindPopup(popup)
+          marker.bindPopup(popup, { maxWidth: 280 })
           markersRef.current.set(c.uid, marker)
         }
       }

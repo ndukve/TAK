@@ -107,6 +107,44 @@ def test_parse_events_leaves_incomplete_tail():
     assert tail == partial
 
 
+def test_parse_events_extracts_audio_url_from_remarks():
+    xml = (
+        b"<event uid='u1' type='a-f-G'><point lat='1' lon='1'/>"
+        b"<detail><remarks>ALERT AUDIO: https://example.com/detections/1/audio</remarks></detail>"
+        b"</event>"
+    )
+    contacts, _ = _parse_events(xml)
+    assert contacts[0]["audio_url"] == "https://example.com/detections/1/audio"
+
+
+def test_parse_events_audio_url_none_when_no_remarks():
+    xml = b"<event uid='u1' type='a-f-G'><point lat='1' lon='1'/></event>"
+    contacts, _ = _parse_events(xml)
+    assert contacts[0]["audio_url"] is None
+
+
+def test_parse_events_extracts_full_statcard_fields():
+    xml = (
+        b"<event uid='u1' type='a-f-A-M-F-Q' how='m-g' time='t' stale='s'>"
+        b"<point lat='1.5' lon='2.5' hae='120.0' ce='5.0' le='9999999.0'/>"
+        b"<detail><contact callsign='ALPHA'/><track speed='12.3' course='90'/>"
+        b"<remarks>ALERT AUDIO: https://example.com/a</remarks>"
+        b"<link relation='r-u' url='https://example.com/img.jpg' type='image/jpeg'/>"
+        b"</detail></event>"
+    )
+    contacts, _ = _parse_events(xml)
+    c = contacts[0]
+    assert c["hae"] == "120.0"
+    assert c["ce"] == "5.0"
+    assert c["le"] == "9999999.0"
+    assert c["speed"] == "12.3"
+    assert c["course"] == "90"
+    assert c["how"] == "m-g"
+    assert c["remarks"] == "ALERT AUDIO: https://example.com/a"
+    assert c["audio_url"] == "https://example.com/a"
+    assert c["image_url"] == "https://example.com/img.jpg"
+
+
 def test_parse_events_skips_events_without_point():
     xml = b"<event uid='u1' type='a-f-G'><detail/></event>"
     contacts, tail = _parse_events(xml)
