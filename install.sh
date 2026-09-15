@@ -40,6 +40,19 @@ WT_BACKTITLE="TAK Server Installer"
 # shellcheck source=scripts/scrub_admin_secret.sh
 . "$SCRIPT_DIR/scripts/scrub_admin_secret.sh"
 
+# ── Startup banner (ported from the INTCORE installer's ASCII splash) ──────
+echo -e "${C}"
+cat <<'BANNER'
+===========================================================
+ _____  _    _  __  ____  _____ ______     _______ ____
+|_   _|/ \  | |/ / / ___|| ____|  _ \ \   / / ____|  _ \
+  | | / _ \ | ' /  \___ \|  _| | |_) \ \ / /|  _| | |_) |
+  | |/ ___ \| . \   ___) | |___|  _ < \ V / | |___|  _ <
+  |_/_/   \_\_|\_\ |____/|_____|_| \_\ \_/  |_____|_| \_\
+===========================================================
+BANNER
+echo -e "${NC}"
+
 echo "Updating the system..."
 if command -v apt-get &>/dev/null; then
     apt-get update -qq && apt-get upgrade -y -qq
