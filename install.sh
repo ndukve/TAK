@@ -154,11 +154,10 @@ if [ -f "$ENV_FILE" ]; then
         wt_msg "Reinstall Complete" "TAK Server is starting up.\n\nSSL CoT     : ${TAK_SERVER_ADDRESS}:8089\nHTTPS API   : https://${TAK_SERVER_ADDRESS}:8443\nAdmin panel : https://${TAK_SERVER_ADDRESS}:8889/ (packages under /packages)" 14 72
 
         clear
-        printf "\n"
-        printf "  ${G}┌─────────────────────────────────────────────────┐${NC}\n"
-        printf "  ${G}│${NC}          ${W}TAK Server is starting up${NC}               ${G}│${NC}\n"
-        printf "  ${G}└─────────────────────────────────────────────────┘${NC}\n"
-        printf "\n"
+        _RULE="$(printf '=%.0s' $(seq 1 60))"
+        printf "\n${G}%s${NC}\n" "$_RULE"
+        printf "${G}\033[1m  TAK SERVER REINSTALL COMPLETED SUCCESSFULLY${NC}\n"
+        printf "${G}%s${NC}\n\n" "$_RULE"
         printf "  ${DIM}%-18s${NC}  %s\n" "SSL CoT"     "${TAK_SERVER_ADDRESS}:8089"
         printf "  ${DIM}%-18s${NC}  %s\n" "HTTPS API"   "https://${TAK_SERVER_ADDRESS}:8443"
         printf "  ${DIM}%-18s${NC}  %s\n" "Admin panel" "https://${TAK_SERVER_ADDRESS}:8889/ (packages under /packages)"
@@ -386,13 +385,13 @@ scrub_admin_bootstrap_secret "$ENV_FILE" \
 
 wt_msg "Installation Complete" "TAK Server is starting up.\n\nSSL CoT     : ${TAK_SERVER_ADDRESS}:8089\nHTTPS API   : https://${TAK_SERVER_ADDRESS}:8443\nAdmin panel : https://${TAK_SERVER_ADDRESS}:8889/ (packages under /packages)\n\nAdmin user     : ${ADMIN_FIRST_USER}\nAdmin password : ${ADMIN_FIRST_PASS}" 18 72
 
-# ── Done (plain-text summary stays in scrollback) ────────────────────────────
+# ── Done (plain-text summary stays in scrollback, ported from the INTCORE
+# installer's final "====\nCOMPLETED SUCCESSFULLY\n====" banner) ───────────
 clear
-printf "\n"
-printf "  ${G}┌─────────────────────────────────────────────────┐${NC}\n"
-printf "  ${G}│${NC}          ${W}TAK Server is starting up${NC}               ${G}│${NC}\n"
-printf "  ${G}└─────────────────────────────────────────────────┘${NC}\n"
-printf "\n"
+_RULE="$(printf '=%.0s' $(seq 1 60))"
+printf "\n${G}%s${NC}\n" "$_RULE"
+printf "${G}\033[1m  TAK SERVER INSTALLATION COMPLETED SUCCESSFULLY${NC}\n"
+printf "${G}%s${NC}\n\n" "$_RULE"
 printf "  ${DIM}%-18s${NC}  %s\n" "SSL CoT"       "${TAK_SERVER_ADDRESS}:8089"
 printf "  ${DIM}%-18s${NC}  %s\n" "HTTPS API"     "https://${TAK_SERVER_ADDRESS}:8443"
 printf "  ${DIM}%-18s${NC}  %s\n" "Admin panel"   "https://${TAK_SERVER_ADDRESS}:8889/ (packages under /packages)"

@@ -18,16 +18,48 @@ ENV_FILE="$SCRIPT_DIR/takserver.env"
 # shellcheck source=scripts/cleanup_stale_pycache.sh
 . "$SCRIPT_DIR/scripts/cleanup_stale_pycache.sh"
 
-# ── Preflight ─────────────────────────────────────────────────────────────────
-[ -f "$ENV_FILE" ] || fail "takserver.env not found — run ./install.sh first"
-[ -d "$SCRIPT_DIR/.git" ] || fail "Not a git repo — clone via git, not manual download"
+# ── Startup banner (ported from the INTCORE installer's ASCII splash) ──────
+echo -e "${C}"
+cat <<'BANNER'
+===========================================================
+ _____  _    _  __  ____  _____ ______     _______ ____
+|_   _|/ \  | |/ / / ___|| ____|  _ \ \   / / ____|  _ \
+  | | / _ \ | ' /  \___ \|  _| | |_) \ \ / /|  _| | |_) |
+  | |/ ___ \| . \   ___) | |___|  _ < \ V / | |___|  _ <
+  |_/_/   \_\_|\_\ |____/|_____|_| \_\ \_/  |_____|_| \_\
+===========================================================
+BANNER
+echo -e "${NC}"
 
 banner "Update"
+
+# Numbered, framed step banners (ported from the INTCORE installer's
+# "====\n[N/TOTAL] Title...\n====" style), overriding _spinner.sh's plain
+# underlined section() for this script only.
+TOTAL_STEPS=8
+STEP=0
+SECTION_TITLE=""
+_SECTION_RULE="$(printf '=%.0s' $(seq 1 70))"
+section() {
+    STEP=$((STEP + 1))
+    SECTION_TITLE="$*"
+    echo -e "\n${C}${_SECTION_RULE}${NC}"
+    echo -e "${C}[$STEP/$TOTAL_STEPS] ${SECTION_TITLE}...${NC}"
+    echo -e "${C}${_SECTION_RULE}${NC}\n"
+}
+section_done() { ok "[$STEP/$TOTAL_STEPS] ${SECTION_TITLE} COMPLETED."; }
+
+# ── Preflight ─────────────────────────────────────────────────────────────────
+section "Preflight checks"
+[ -f "$ENV_FILE" ] || fail "takserver.env not found — run ./install.sh first"
+[ -d "$SCRIPT_DIR/.git" ] || fail "Not a git repo — clone via git, not manual download"
+section_done
 
 # Host OS packages — separate from the pinned container/Python/JS dependency
 # versions rebuilt below, and previously never touched by this script at all.
 # Only apt-based hosts are supported; anything else is skipped with a warning
 # rather than failing the whole update over it.
+section "Host OS packages"
 if command -v apt-get >/dev/null 2>&1; then
     _apt=(apt-get)
     if [ "$(id -u)" -ne 0 ]; then
@@ -59,8 +91,10 @@ else
     warn "apt-get not found — skipping host OS package update (unsupported host OS)"
 fi
 cd "$SCRIPT_DIR"
+section_done
 
 # ── Pull ──────────────────────────────────────────────────────────────────────
+section "Pulling latest changes"
 BRANCH="$(git rev-parse --abbrev-ref HEAD)"
 [ "$BRANCH" = "HEAD" ] && fail "Repo is in detached HEAD state — run: git checkout main"
 _OLD_HEAD="$(git rev-parse HEAD)"
@@ -98,8 +132,10 @@ if [ "$_OLD_HEAD" != "$(git rev-parse HEAD)" ]; then
 else
     dim "No changes — already up to date."
 fi
+section_done
 
 # ── Backfill env vars ─────────────────────────────────────────────────────────
+section "Environment backfill"
 chmod 600 "$ENV_FILE"
 info "Checking for missing env vars..."
 backfill() {
@@ -123,11 +159,13 @@ else
     printf 'DOCKER_SOCKET_GID=%s\n' "$DOCKER_SOCKET_GID" >> "$ENV_FILE"
     ok "Added DOCKER_SOCKET_GID"
 fi
+section_done
 
 # Building TAK temporarily needs room for its distribution, expanded WAR, base
 # layers, and the previous image (which must remain available until replacement
 # containers start). Fail before a long BuildKit run instead of dying halfway
 # through extraction with an opaque unzip write error.
+section "Docker storage preflight"
 MIN_DOCKER_FREE_MB=${TAK_UPDATE_MIN_FREE_MB:-8192}
 [[ "$MIN_DOCKER_FREE_MB" =~ ^[0-9]+$ ]] \
     || fail "TAK_UPDATE_MIN_FREE_MB must be a non-negative integer"
@@ -145,8 +183,10 @@ if (( DOCKER_FREE_MB < MIN_DOCKER_FREE_MB )); then
     fail "Only ${DOCKER_FREE_MB} MiB free on Docker storage ($DOCKER_ROOT); ${MIN_DOCKER_FREE_MB} MiB required. Free space deliberately, then retry. Set TAK_UPDATE_MIN_FREE_MB only to override this preflight intentionally."
 fi
 ok "Docker storage preflight: ${DOCKER_FREE_MB} MiB free"
+section_done
 
 # ── Admin DB ──────────────────────────────────────────────────────────────────
+section "Admin database"
 info "Ensuring admin database exists..."
 PGUSER=$(grep '^POSTGRES_USER=' "$ENV_FILE" | cut -d= -f2)
 PGUSER="${PGUSER:-martiuser}"
@@ -154,8 +194,10 @@ docker compose exec -T takdb psql -U "$PGUSER" \
     -c "CREATE DATABASE admin;" 2>/dev/null \
     && ok "admin database created" \
     || ok "admin database already exists"
+section_done
 
 # ── Rebuild ───────────────────────────────────────────────────────────────────
+section "Rebuild and restart"
 GIT_COMMIT="$(git rev-parse HEAD)"
 export GIT_COMMIT
 
@@ -212,6 +254,7 @@ info "Restarting admin_proxy (picks up admin's current address)..."
 docker compose --env-file "$ENV_FILE" restart admin_proxy \
     || fail "admin_proxy restart failed (see output above)."
 ok "admin_proxy restarted"
+section_done
 
 # ── Self-test, with automatic self-heal on failure ────────────────────────────
 # A quick functional check right after the normal build — see scripts/_selftest.sh.
@@ -220,18 +263,17 @@ ok "admin_proxy restarted"
 # Rather than leaving a broken deployment for a human to debug, automatically
 # escalate to health.sh, which forces a clean --no-cache rebuild and retests.
 # Only if health.sh ALSO can't fix it do we fail hard.
-printf "\n"
+section "Self-test"
 if ! package_selftest; then
     warn "Self-test failed — escalating to health.sh for automatic recovery"
     printf "\n"
     TAK_NONINTERACTIVE=1 bash "$SCRIPT_DIR/health.sh" || fail "Health check failed — see output above."
 fi
+section_done
 
 # ── Done ──────────────────────────────────────────────────────────────────────
-printf "\n"
-printf "  ${G}┌────────────────────────────────────────────────┐${NC}\n"
-printf "  ${G}│${NC}  ${W}Update complete${NC}                              ${G}│${NC}\n"
-printf "  ${G}└────────────────────────────────────────────────┘${NC}\n"
-printf "\n"
+echo -e "\n${G}${_SECTION_RULE}${NC}"
+echo -e "${G}\033[1m  TAK SERVER UPDATE COMPLETED SUCCESSFULLY${NC}"
+echo -e "${G}${_SECTION_RULE}${NC}\n"
 printf "  ${DIM}Logs:${NC}  docker compose --env-file takserver.env logs -f\n"
 printf "\n"
