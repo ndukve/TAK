@@ -12,6 +12,7 @@ interface Status {
   service_cert_ready: boolean
   tracking: boolean
   contact_count: number
+  mapbox_enabled: boolean
 }
 
 interface Contact {
@@ -146,6 +147,7 @@ export function LiveMapWidget({ height, showControls = false, pollMs = 5000 }: L
   const [contacts, setContacts] = useState<Contact[]>([])
   const mapRef = useRef<HTMLDivElement>(null)
   const mapInstance = useRef<L.Map | null>(null)
+  const tileLayerRef = useRef<L.TileLayer | null>(null)
   const markersRef = useRef<Map<string, L.Marker>>(new Map())
 
   async function loadStatus() {
@@ -193,25 +195,36 @@ export function LiveMapWidget({ height, showControls = false, pollMs = 5000 }: L
     if (!mapRef.current || mapInstance.current) return
     const map = L.map(mapRef.current, { zoomControl: false }).setView([55.17, 23.88], 7) // Lithuania
     L.control.zoom({ position: 'topright' }).addTo(map)
-    // Tiles proxy through our own backend (/api/live-map/tiles), which caches
-    // them and sets a real User-Agent — fetching tile.openstreetmap.org
-    // straight from the browser got this deployment 403'd for violating
-    // OSM's tile usage policy (no way for a browser to identify itself, no
-    // caching, every open tab re-fetching the same tiles). tak-dark-tiles
-    // (index.css) inverts them to match the dark theme, same trick every
-    // other no-key dark-mode Leaflet map uses since there's no free no-key
-    // dark tile provider left.
-    L.tileLayer('/api/live-map/tiles/{z}/{x}/{y}.png', {
-      attribution: '&copy; OpenStreetMap contributors',
-      className: 'tak-dark-tiles',
-      maxZoom: 19,
-    }).addTo(map)
     mapInstance.current = map
     return () => {
       map.remove()
       mapInstance.current = null
+      tileLayerRef.current = null
     }
   }, [])
+
+  // Tiles proxy through our own backend (/api/live-map/tiles), which caches
+  // them and sets a real User-Agent — fetching tile.openstreetmap.org
+  // straight from the browser got this deployment 403'd for violating OSM's
+  // tile usage policy (no way for a browser to identify itself, no caching,
+  // every open tab re-fetching the same tiles). When MAPBOX_ACCESS_TOKEN is
+  // configured the backend serves Mapbox's satellite-streets tiles instead
+  // (same style EFDI's own mainline.inc TERMINAL reference uses) — real
+  // satellite imagery, so the OSM-only dark-mode invert filter
+  // (tak-dark-tiles) would wash its colors out and is skipped; falls back
+  // to plain OSM + that filter until /status answers (or if unconfigured).
+  useEffect(() => {
+    if (!mapInstance.current) return
+    const mapboxEnabled = status?.mapbox_enabled ?? false
+    tileLayerRef.current?.remove()
+    const layer = L.tileLayer('/api/live-map/tiles/{z}/{x}/{y}.png', {
+      attribution: '&copy; Mapbox &copy; OpenStreetMap <a href="https://www.mapbox.com/about/maps/" target="_blank" rel="noopener">Improve this map</a>',
+      className: mapboxEnabled ? undefined : 'tak-dark-tiles',
+      maxZoom: mapboxEnabled ? 22 : 19,
+    }).addTo(mapInstance.current)
+    layer.bringToBack()
+    tileLayerRef.current = layer
+  }, [status?.mapbox_enabled])
 
   useEffect(() => {
     loadStatus()

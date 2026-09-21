@@ -8,7 +8,7 @@ Oficialaus Java TAK Server 5.7 diegimas Docker konteineriuose, su savo administr
 
 Nėra GitOps ar automatinio sinchronizavimo sluoksnio: konfigūracija gyvena `takserver.env` faile serveryje, o pakeitimai atliekami rankiniu `git pull` + skriptų paleidimu (žr. [10-atnaujinimai.md](10-atnaujinimai.md)).
 
-## Minimali sistema vaizdas
+## Minimalus sistemos vaizdas
 
 ```mermaid
 flowchart LR

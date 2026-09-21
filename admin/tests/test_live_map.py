@@ -25,30 +25,34 @@ def test_widget_fetches_tiles_through_our_own_proxy():
     assert "tile.openstreetmap.org/{z}/{x}/{y}.png'" not in widget
 
 
+class _FakeResponse:
+    status_code = 200
+    content = b"fake-png-bytes"
+    headers = {"content-type": "image/png"}
+
+
+class _FakeAsyncClient:
+    def __init__(self, captured, *a, **kw):
+        self._captured = captured
+
+    async def __aenter__(self):
+        return self
+
+    async def __aexit__(self, *a):
+        return False
+
+    async def get(self, url, headers=None, params=None):
+        self._captured["url"] = url
+        self._captured["headers"] = headers
+        self._captured["params"] = params
+        return _FakeResponse()
+
+
 def test_tile_proxy_sets_identifying_user_agent(monkeypatch, tmp_path):
     monkeypatch.setattr(live_map_module, "TILE_CACHE_DIR", str(tmp_path))
+    monkeypatch.setattr(live_map_module, "MAPBOX_ACCESS_TOKEN", "")
     captured = {}
-
-    class FakeResponse:
-        status_code = 200
-        content = b"fake-png-bytes"
-
-    class FakeAsyncClient:
-        def __init__(self, *a, **kw):
-            pass
-
-        async def __aenter__(self):
-            return self
-
-        async def __aexit__(self, *a):
-            return False
-
-        async def get(self, url, headers=None):
-            captured["url"] = url
-            captured["headers"] = headers
-            return FakeResponse()
-
-    monkeypatch.setattr(live_map_module.httpx, "AsyncClient", FakeAsyncClient)
+    monkeypatch.setattr(live_map_module.httpx, "AsyncClient", lambda *a, **kw: _FakeAsyncClient(captured))
 
     import asyncio
     asyncio.run(live_map_module.get_tile(5, 10, 15))
@@ -56,14 +60,34 @@ def test_tile_proxy_sets_identifying_user_agent(monkeypatch, tmp_path):
     assert captured["url"] == "https://tile.openstreetmap.org/5/10/15.png"
     assert captured["headers"]["User-Agent"] == live_map_module.TILE_USER_AGENT
     assert "OSM" not in captured["headers"]["User-Agent"]  # sanity: not the old bare browser-style fetch
-    assert (tmp_path / "5" / "10" / "15.png").read_bytes() == b"fake-png-bytes"
+    assert (tmp_path / "osm" / "5" / "10" / "15.tile").read_bytes() == b"fake-png-bytes"
+
+
+def test_tile_proxy_uses_mapbox_when_a_token_is_configured(monkeypatch, tmp_path):
+    # Matches EFDI's own mainline.inc TERMINAL reference, which uses Mapbox's
+    # satellite-streets style — falls back to OSM (test above) when unset.
+    monkeypatch.setattr(live_map_module, "TILE_CACHE_DIR", str(tmp_path))
+    monkeypatch.setattr(live_map_module, "MAPBOX_ACCESS_TOKEN", "pk.test-token")
+    captured = {}
+    monkeypatch.setattr(live_map_module.httpx, "AsyncClient", lambda *a, **kw: _FakeAsyncClient(captured))
+
+    import asyncio
+    asyncio.run(live_map_module.get_tile(5, 10, 15))
+
+    assert captured["url"] == (
+        f"https://api.mapbox.com/styles/v1/{live_map_module.MAPBOX_STYLE}/tiles/512/5/10/15@2x"
+    )
+    assert captured["params"] == {"access_token": "pk.test-token"}
+    assert (tmp_path / "mapbox" / "5" / "10" / "15.tile").read_bytes() == b"fake-png-bytes"
 
 
 async def test_tile_proxy_serves_from_cache_without_refetching(monkeypatch, tmp_path):
     monkeypatch.setattr(live_map_module, "TILE_CACHE_DIR", str(tmp_path))
-    cache_file = tmp_path / "5" / "10" / "15.png"
-    cache_file.parent.mkdir(parents=True)
-    cache_file.write_bytes(b"cached-bytes")
+    monkeypatch.setattr(live_map_module, "MAPBOX_ACCESS_TOKEN", "")
+    cache_dir = tmp_path / "osm" / "5" / "10"
+    cache_dir.mkdir(parents=True)
+    (cache_dir / "15.tile").write_bytes(b"cached-bytes")
+    (cache_dir / "15.content-type").write_text("image/png")
 
     def _boom(*a, **kw):
         raise AssertionError("should not hit the network when a cached tile exists")
@@ -71,7 +95,7 @@ async def test_tile_proxy_serves_from_cache_without_refetching(monkeypatch, tmp_
     monkeypatch.setattr(live_map_module.httpx, "AsyncClient", _boom)
 
     resp = await live_map_module.get_tile(5, 10, 15)
-    assert resp.path == str(cache_file)
+    assert resp.path == str(cache_dir / "15.tile")
 
 
 def test_affiliation_unknown_for_non_atom_types():
@@ -158,6 +182,13 @@ async def test_get_status_defaults(admin_client):
     assert data["service_cert_ready"] is False
     assert data["tracking"] is False
     assert data["contact_count"] == 0
+    assert data["mapbox_enabled"] is False
+
+
+async def test_get_status_reports_mapbox_enabled_when_token_configured(admin_client, monkeypatch):
+    monkeypatch.setattr(live_map_module, "MAPBOX_ACCESS_TOKEN", "pk.test-token")
+    resp = await admin_client.get("/api/live-map/status")
+    assert resp.json()["mapbox_enabled"] is True
 
 
 async def test_status_forbidden_for_readonly(readonly_client):

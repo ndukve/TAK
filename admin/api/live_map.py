@@ -36,6 +36,14 @@ TILE_CACHE_DIR = "/tmp/tile-cache"
 # TODO: replace with a real contact URL/email per OSM's tile usage policy.
 TILE_USER_AGENT = "TAK-Admin-LiveMap/1.0 (self-hosted internal deployment)"
 
+# Optional: matches EFDI's own mainline.inc TERMINAL reference, which uses
+# Mapbox's satellite-streets style (satellite imagery with roads/labels
+# composited server-side) rather than plain OSM raster. Falls back to plain
+# OSM below when unset, so a deployment without a Mapbox token keeps working
+# exactly as before.
+MAPBOX_ACCESS_TOKEN = os.environ.get("MAPBOX_ACCESS_TOKEN", "").strip()
+MAPBOX_STYLE = "mapbox/satellite-streets-v12"
+
 # CoT events older than this (no fresh update) are dropped from the live picture
 # rather than left stale on the map.
 STALE_AFTER_SECONDS = 300
@@ -182,25 +190,45 @@ async def _service_cert_ready(db: AsyncSession) -> bool:
 # live contact positions (served above, with auth) are.
 @router.get("/tiles/{z}/{x}/{y}.png")
 async def get_tile(z: int, x: int, y: int):
-    cache_path = os.path.join(TILE_CACHE_DIR, str(z), str(x), f"{y}.png")
+    # Namespaced by provider so an operator adding (or removing)
+    # MAPBOX_ACCESS_TOKEN later doesn't serve the other provider's stale
+    # tiles straight out of the cache.
+    provider = "mapbox" if MAPBOX_ACCESS_TOKEN else "osm"
+    cache_dir = os.path.join(TILE_CACHE_DIR, provider, str(z), str(x))
+    cache_path = os.path.join(cache_dir, f"{y}.tile")
+    content_type_path = os.path.join(cache_dir, f"{y}.content-type")
     if os.path.isfile(cache_path):
-        return FileResponse(cache_path, media_type="image/png")
+        try:
+            async with aiofiles.open(content_type_path) as f:
+                cached_content_type = (await f.read()).strip() or "image/png"
+        except OSError:
+            cached_content_type = "image/png"
+        return FileResponse(cache_path, media_type=cached_content_type)
 
-    os.makedirs(os.path.dirname(cache_path), exist_ok=True)
+    os.makedirs(cache_dir, exist_ok=True)
     async with httpx.AsyncClient(timeout=10) as client:
         try:
-            resp = await client.get(
-                f"https://tile.openstreetmap.org/{z}/{x}/{y}.png",
-                headers={"User-Agent": TILE_USER_AGENT},
-            )
+            if MAPBOX_ACCESS_TOKEN:
+                resp = await client.get(
+                    f"https://api.mapbox.com/styles/v1/{MAPBOX_STYLE}/tiles/512/{z}/{x}/{y}@2x",
+                    params={"access_token": MAPBOX_ACCESS_TOKEN},
+                )
+            else:
+                resp = await client.get(
+                    f"https://tile.openstreetmap.org/{z}/{x}/{y}.png",
+                    headers={"User-Agent": TILE_USER_AGENT},
+                )
         except httpx.HTTPError as exc:
             raise HTTPException(status_code=502, detail=f"Tile fetch failed: {exc}") from exc
     if resp.status_code != 200:
         raise HTTPException(status_code=resp.status_code, detail="Tile upstream error")
 
+    content_type = resp.headers.get("content-type", "image/png").split(";", 1)[0].strip() or "image/png"
     async with aiofiles.open(cache_path, "wb") as f:
         await f.write(resp.content)
-    return Response(content=resp.content, media_type="image/png")
+    async with aiofiles.open(content_type_path, "w") as f:
+        await f.write(content_type)
+    return Response(content=resp.content, media_type=content_type)
 
 
 @router.get("/status")
@@ -209,6 +237,7 @@ async def get_status(db: AsyncSession = Depends(get_db), _=Depends(_viewer)):
         "service_cert_ready": await _service_cert_ready(db),
         "tracking": _tracker.is_tracking(),
         "contact_count": len(_tracker.contacts()),
+        "mapbox_enabled": bool(MAPBOX_ACCESS_TOKEN),
     }
 
 
