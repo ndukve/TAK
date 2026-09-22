@@ -177,10 +177,16 @@ if [ -z "$DOCKER_FREE_MB" ] || ! [[ "$DOCKER_FREE_MB" =~ ^[0-9]+$ ]]; then
     fail "Could not determine free space for Docker storage at $DOCKER_ROOT"
 fi
 if (( DOCKER_FREE_MB < MIN_DOCKER_FREE_MB )); then
+    # Build cache is pure rebuild-time savings, never data — safe to reclaim
+    # automatically instead of failing every update once it piles up.
+    warn "Only ${DOCKER_FREE_MB} MiB free on Docker storage ($DOCKER_ROOT); ${MIN_DOCKER_FREE_MB} MiB required. Reclaiming unused build cache..."
+    docker builder prune -af >/dev/null 2>&1 || true
+    DOCKER_FREE_MB=$(df -Pm "$DOCKER_ROOT" | awk 'NR == 2 {print $4}')
+fi
+if (( DOCKER_FREE_MB < MIN_DOCKER_FREE_MB )); then
     docker system df 2>/dev/null || true
-    warn "Reclaim unused build cache: docker builder prune -af"
     warn "Reclaim images unused by containers: docker image prune -af"
-    fail "Only ${DOCKER_FREE_MB} MiB free on Docker storage ($DOCKER_ROOT); ${MIN_DOCKER_FREE_MB} MiB required. Free space deliberately, then retry. Set TAK_UPDATE_MIN_FREE_MB only to override this preflight intentionally."
+    fail "Only ${DOCKER_FREE_MB} MiB free on Docker storage ($DOCKER_ROOT) even after reclaiming build cache; ${MIN_DOCKER_FREE_MB} MiB required. Free space deliberately, then retry. Set TAK_UPDATE_MIN_FREE_MB only to override this preflight intentionally."
 fi
 ok "Docker storage preflight: ${DOCKER_FREE_MB} MiB free"
 section_done
