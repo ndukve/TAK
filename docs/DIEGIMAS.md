@@ -137,7 +137,7 @@ docker compose exec -T -e USER_CERT_NAME=Alpha1-iTAK takserver_config \
     bash /opt/scripts/enable_user.sh
 ```
 
-Kai paketas paruoštas, atsisiųskite jį iš administravimo skydelio adresu `https://<SERVERIO_IP>:8889` — skiltis **Packages**.
+Kai paketas paruoštas, atsisiųskite jį iš administravimo skydelio adresu `https://<SERVERIO_IP>:9444` — skiltis **Packages**.
 
 Jei diegimas buvo sukurtas prieš įjungiant bendrą maršrutizavimo grupę, atnaujinę ir iš naujo paleidę serverį vieną kartą vykdykite:
 
@@ -180,28 +180,28 @@ Serverio įrašas atsiras automatiškai. Paspauskite **Connect**.
 
 ## Žemėlapių šaltiniai
 
-40+ ATAK suderinami žemėlapių šaltiniai (Bing, Google, ESRI, USGS, OpenTopo, OpenSeaMap, Estijos Maa-amet, Ukrainos Visicom ir kt.) pasiekiami administravimo skydelio skiltyje **Maps**, adresu `https://<SERVERIO_IP>:8889/maps`.
+40+ ATAK suderinami žemėlapių šaltiniai (Bing, Google, ESRI, USGS, OpenTopo, OpenSeaMap, Estijos Maa-amet, Ukrainos Visicom ir kt.) pasiekiami administravimo skydelio skiltyje **Maps**, adresu `https://<SERVERIO_IP>:9444/maps`.
 
 **Atsisiųsti visus iš karto (rekomenduojama):**
-1. Atidarykite `https://<SERVERIO_IP>:8889/maps` → spustelėkite **[Download All as ZIP]**
+1. Atidarykite `https://<SERVERIO_IP>:9444/maps` → spustelėkite **[Download All as ZIP]**
 2. Išskleiskite `tak-maps.zip` į aplanką
 3. ATAK/WinTAK → hamburger → **Import Manager** → Import → pasirinkite išsklestą aplanką arba atskirus XML failus
 
 **Atsisiųsti atskirus šaltinius:**
-1. Įrenginyje atidarykite naršyklę → `https://<SERVERIO_IP>:8889/maps`
+1. Įrenginyje atidarykite naršyklę → `https://<SERVERIO_IP>:9444/maps`
 2. Paspauskite ant `.xml` failo, kad atsisiųstumėte
 3. ATAK/WinTAK → hamburger → **Import Manager** → pasirinkite failą
 
 Superadministratoriai papildomai turi skiltį **Basemaps**: joje galima rinktis ESRI orų kompozicijas, GOES palydovinius vaizdus, NASA IMERG, NOAA/RainViewer radarą, atskirus bazlapius, įkeltus ATAK XML šaltinius arba serveryje sugeneruotas neprisijungusio režimo MBTiles sritis ir siųsti jas pasirinktiems, šiuo metu prie TAK serverio prijungtiems klientams. Serveris tokiu atveju sukuria kvietimu pagrįstą misiją su pasirinktais žemėlapio sluoksniais — ją reikia priimti pačiame EUD įrenginyje.
 
-Įmontuoti beveik gyvo laiko šaltiniai gaunami per pasirašytą TAK sluoksnių (tile) šliuzą adresu `https://<SERVERIO_IP>:8889`, saugomi serverio talpykloje ir ATAK pateikiami kaip standartiniai `MapTile` sluoksniai. Todėl EUD reikia tik tinklo prieigos iki paties TAK serverio — tiesioginė interneto prieiga prie kiekvieno orų ar vaizdų tiekėjo nereikalinga. `TAK_SERVER_ADDRESS` reikšmė turi būti tas IP arba domenas, kurį realiai naudoja EUD; jei šliuzas per klaidą sukonfigūruotas kaip `localhost`, Basemaps puslapis apie tai įspėja.
+Įmontuoti beveik gyvo laiko šaltiniai gaunami per pasirašytą TAK sluoksnių (tile) šliuzą adresu `https://<SERVERIO_IP>:9444`, saugomi serverio talpykloje ir ATAK pateikiami kaip standartiniai `MapTile` sluoksniai. Todėl EUD reikia tik tinklo prieigos iki paties TAK serverio — tiesioginė interneto prieiga prie kiekvieno orų ar vaizdų tiekėjo nereikalinga. `TAK_SERVER_ADDRESS` reikšmė turi būti tas IP arba domenas, kurį realiai naudoja EUD; jei šliuzas per klaidą sukonfigūruotas kaip `localhost`, Basemaps puslapis apie tai įspėja.
 
 Basemaps puslapyje taip pat yra šaltinių prieinamumo patikros, sluoksnių permatomumo ir eiliškumo valdymas, prijungtų klientų grupių pasirinkimas, išsaugoma pristatymo istorija, priėmimo skaičiai, pakartotinio siuntimo/trynimo valdikliai, senų misijų valymas, pasirinktinių šaltinių šalinimas bei ribotas AOI srities pavertimas į MBTiles. Už tiekėjų prieinamumą ir licencijavimą atsako operatorius — jei tiekėjas reikalauja prisijungimo duomenų ar sutartinio atributavimo, naudokite tik organizacijos patvirtintus XML šaltinius.
 
 Įdiegę serverį arba pakeitę jo adresą, repozitorijos kataloge paleiskite TLS patvirtinimo testą:
 
 ```bash
-./scripts/basemap_smoke_test.sh https://<SERVERIO_IP>:8889 <SUPERADMIN_NAUDOTOJO_VARDAS>
+./scripts/basemap_smoke_test.sh https://<SERVERIO_IP>:9444 <SUPERADMIN_NAUDOTOJO_VARDAS>
 ```
 
 Jis paprašys slaptažodžio (jo nerodydamas ekrane), atliks serverio pusės diagnostiką, tada atsisiųs vieną pasirašytą proxy sluoksnio (tile) failą, patikrindamas admin proxy pagal TAK šakninį CA. Testui pavykus, nusiųskite nedidelį bazlapį vienam prijungtam EUD, priimkite misijos kvietimą DataSync/ATAK programėlėje ir naudokite **Refresh acceptance** paskirstymo istorijoje, kad patvirtintumėte to kliento prenumeratą.
@@ -214,7 +214,7 @@ ATAK plėtiniai — tai APK failai, diegiami Android įrenginiuose, o ne servery
 
 ### Papildinių įkėlimas į serverį platinimui
 
-Nukopijuokite APK failus į serverį, kad komandos įrenginiai galėtų juos atsisiųsti administravimo skydelio skiltyje **Plugins**, adresu `https://<SERVERIO_IP>:8889/plugins`:
+Nukopijuokite APK failus į serverį, kad komandos įrenginiai galėtų juos atsisiųsti administravimo skydelio skiltyje **Plugins**, adresu `https://<SERVERIO_IP>:9444/plugins`:
 
 ```bash
 cd ~/tak-server
@@ -228,7 +228,7 @@ make add-plugin APK=/kelias/iki/ATAK-Plugin-hammer-1.2-...-release.apk
 make list-plugins
 ```
 
-Android įrenginyje: atidarykite naršyklę → `https://<SERVERIO_IP>:8889/plugins` → paspauskite ant failo → ATAK → **Settings → Manage Plugins → Install from file**.
+Android įrenginyje: atidarykite naršyklę → `https://<SERVERIO_IP>:9444/plugins` → paspauskite ant failo → ATAK → **Settings → Manage Plugins → Install from file**.
 
 ---
 
@@ -239,7 +239,7 @@ Sinchronizuoja misijas, žemėlapių sluoksnius, duomenų paketus ir failus tarp
 > **Serverio reikalavimai:** Jokie. Mission API jau veikia TAK serveryje adresu `https://<serveris>:8443/Marti/api/missions`. Papildomos konfigūracijos nereikia.
 
 **Diegimas įrenginyje:**
-1. Atsisiųskite DataSync APK administravimo skydelio skiltyje **Plugins**, adresu `https://<SERVERIO_IP>:8889/plugins`
+1. Atsisiųskite DataSync APK administravimo skydelio skiltyje **Plugins**, adresu `https://<SERVERIO_IP>:9444/plugins`
 2. ATAK → **Settings → Manage Plugins → Install from file** → pasirinkite APK
 3. Iš naujo paleiskite ATAK, jei paprašoma
 4. DataSync atsiranda ATAK įrankių juostoje (sinchronizavimo piktograma)
@@ -305,12 +305,12 @@ cd ~/tak-server
 
 `update.sh` ir `health.sh` abu patikrina, ar diegti konteineriai iš tikrųjų atitinka atsisiųstą kodą — ne tik tai, kad `git pull` pavyko. Jei Docker kešas tyliai panaudoja pasenusį sluoksnį (taip gali nutikti), jie automatiškai priverstinai perstato be kešo ir patikrina dar kartą, užuot palikę sugadintą diegimą jums pačiam derinti.
 
-Jei administravimo skydelis kada nors taptų nepasiekiamas, du skriptai repozitorijos šaknyje suteikia atsarginį variantą — jiems reikia tik SSH/shell prieigos prie serverio, ne tinklo prieigos prie 8889 prievado. `./users.sh get [vardas]` be argumento parodo prieinamus paketus, o su vardu — atsisiunčia paketą į dabartinį aplanką. `./admin_fallback.sh` atidaro interaktyvų meniu tai pačiai skaitymo režimo paketų ir žemėlapių naršymo/atsisiuntimo funkcijai.
+Jei administravimo skydelis kada nors taptų nepasiekiamas, du skriptai repozitorijos šaknyje suteikia atsarginį variantą — jiems reikia tik SSH/shell prieigos prie serverio, ne tinklo prieigos prie 9444 prievado. `./users.sh get [vardas]` be argumento parodo prieinamus paketus, o su vardu — atsisiunčia paketą į dabartinį aplanką. `./admin_fallback.sh` atidaro interaktyvų meniu tai pačiai skaitymo režimo paketų ir žemėlapių naršymo/atsisiuntimo funkcijai.
 
 ## Dažnos problemos
 
 > **Nepavyksta atsisiųsti paketo įrenginyje**
-> Patikrinkite, ar įrenginys pasiekia serverio IP per prievadą 8889 (administravimo skydelis). A variantas: įsitikinkite, kad įrenginys yra tame pačiame Wi-Fi/LAN tinkle. B variantas: patikrinkite, ar NetBird programėlė rodo **Connected**.
+> Patikrinkite, ar įrenginys pasiekia serverio IP per prievadą 9444 (administravimo skydelis). A variantas: įsitikinkite, kad įrenginys yra tame pačiame Wi-Fi/LAN tinkle. B variantas: patikrinkite, ar NetBird programėlė rodo **Connected**.
 
 > **Serveris matomas, bet neprisijungia**
 > Paketas gali būti sugeneruotas su netinkamu serverio IP. Ištrinkite serverio įrašą, sugeneruokite paketą iš naujo su `./users.sh create JusuŠaukinys-iTAK` (arba `-ATAK`/`-WinTAK`) ir importuokite pakartotinai.

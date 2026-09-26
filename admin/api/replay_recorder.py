@@ -4,6 +4,12 @@ import os
 import ssl
 import time
 
+import aiofiles
+
+# The record loop flushes at most this often instead of after every single
+# incoming CoT read — see the comment on _record_loop.
+_FLUSH_INTERVAL_SECONDS = 1.0
+
 CERT_DIR = "/opt/tak/data/certs/files"
 DISK_PATH = "/opt/tak/data"
 CA_CERT_PATH = f"{CERT_DIR}/root-ca.pem"
@@ -73,8 +79,18 @@ class ReplayRecorder:
         return event_count, size_bytes
 
     async def _record_loop(self, chunk_id: str) -> None:
+        # Writes (and periodic flushes) go through aiofiles rather than a
+        # plain blocking file object: this loop is the sole consumer of the
+        # admin process's single event loop thread for however long it runs,
+        # so a synchronous write()+flush() on every incoming read would
+        # serialize every concurrent HTTP request against this admin API for
+        # the duration of each disk write. Under a quiet CoT stream that's
+        # unnoticeable; under real load (many EUDs/sensors reporting during
+        # an actual operation) it adds up to a steady drag on every other
+        # request while a recording is running.
         path = os.path.join(self.chunk_dir, f"{chunk_id}.ndjson")
-        with open(path, "a") as f:
+        last_flush = time.monotonic()
+        async with aiofiles.open(path, "a") as f:
             while not self._stop_event.is_set():
                 try:
                     data = await asyncio.wait_for(self._reader.read(65536), timeout=1.0)
@@ -83,8 +99,12 @@ class ReplayRecorder:
                 if not data:
                     break
                 line = json.dumps({"ts": int(time.time() * 1000), "raw_cot": data.decode("utf-8", errors="replace")})
-                f.write(line + "\n")
-                f.flush()
+                await f.write(line + "\n")
+                now = time.monotonic()
+                if now - last_flush >= _FLUSH_INTERVAL_SECONDS:
+                    await f.flush()
+                    last_flush = now
+            await f.flush()
 
 
 class ReplayPlayer:

@@ -9,7 +9,7 @@ Quick lookups for specific values. See the linked numbered docs for explanations
 | 8089 | TCP/TLS | CoT — primary client connection | [06](06-network-and-access.md) |
 | 8443 | HTTPS | Marti API | [06](06-network-and-access.md) |
 | 8087 | TCP | Internal CoT (service accounts, overlay network only) | [06](06-network-and-access.md) |
-| 8889 | HTTPS | Admin panel (WebUI + authenticated downloads) | [06](06-network-and-access.md) |
+| 9444 | HTTPS | Admin panel (WebUI + authenticated downloads) | [06](06-network-and-access.md) |
 | 9000–9002 | TCP/TLS | Federation | [05](05-certificates-and-security.md), [06](06-network-and-access.md) |
 
 ## `takserver.env` variables

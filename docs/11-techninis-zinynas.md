@@ -9,7 +9,7 @@ Greitos nuorodos konkrečioms reikšmėms. Aiškinimams žr. atitinkamus numeruo
 | 8089 | TCP/TLS | CoT — pagrindinė kliento jungtis | [06](06-tinklas-ir-prieiga.md) |
 | 8443 | HTTPS | Marti API | [06](06-tinklas-ir-prieiga.md) |
 | 8087 | TCP | Vidinis CoT (serviso paskyros, tik overlay tinkle) | [06](06-tinklas-ir-prieiga.md) |
-| 8889 | HTTPS | Admin panelė (WebUI + autentifikuoti atsisiuntimai) | [06](06-tinklas-ir-prieiga.md) |
+| 9444 | HTTPS | Admin panelė (WebUI + autentifikuoti atsisiuntimai) | [06](06-tinklas-ir-prieiga.md) |
 | 9000–9002 | TCP/TLS | Federacija | [05](05-sertifikatai-ir-saugumas.md), [06](06-tinklas-ir-prieiga.md) |
 
 ## `takserver.env` kintamieji

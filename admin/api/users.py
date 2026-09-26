@@ -1,3 +1,4 @@
+import asyncio
 import os
 import re
 import secrets
@@ -130,15 +131,14 @@ class RenewUserRequest(BaseModel):
     role: str | None = None
 
 
-@router.get("")
-async def list_users(db: AsyncSession = Depends(get_db), _=Depends(_admin)):
-    code, out = await run_in_container(["bash", "-c", f"ls {CLIENTPKGS}/*.zip 2>/dev/null || true"])
-    zips = [f.split("/")[-1].replace(".zip", "") for f in out.strip().splitlines() if f.endswith(".zip")]
-
-    result = await db.execute(select(AdminUser.owned_callsign, AdminUser.username).where(AdminUser.role == "field"))
-    field_logins = {row[0]: row[1] for row in result.all()}  # owned_callsign -> current (possibly renamed) username
-
-    return {"users": [
+def _build_user_entries(zips: list[str], field_logins: dict[str, str]) -> list[dict]:
+    """Per-package listing, including a cert file open + X.509 parse for
+    each entry (_cert_days_remaining). Run off the event loop: with a
+    deployment's worth of client packages this is a loop of blocking disk
+    reads plus certificate-parsing CPU work, same category of blocking call
+    this codebase already routes through a thread elsewhere (see
+    docker_exec.run_in_container, health._get_states/_get_system_stats)."""
+    return [
         {
             "username": z,
             "has_field_account": _base_callsign(z) in field_logins,
@@ -149,7 +149,18 @@ async def list_users(db: AsyncSession = Depends(get_db), _=Depends(_admin)):
             "always_enabled": _is_always_enabled(z),
         }
         for z in zips
-    ]}
+    ]
+
+
+@router.get("")
+async def list_users(db: AsyncSession = Depends(get_db), _=Depends(_admin)):
+    code, out = await run_in_container(["bash", "-c", f"ls {CLIENTPKGS}/*.zip 2>/dev/null || true"])
+    zips = [f.split("/")[-1].replace(".zip", "") for f in out.strip().splitlines() if f.endswith(".zip")]
+
+    result = await db.execute(select(AdminUser.owned_callsign, AdminUser.username).where(AdminUser.role == "field"))
+    field_logins = {row[0]: row[1] for row in result.all()}  # owned_callsign -> current (possibly renamed) username
+
+    return {"users": await asyncio.to_thread(_build_user_entries, zips, field_logins)}
 
 
 @router.post("/backfill-field-accounts", status_code=201)

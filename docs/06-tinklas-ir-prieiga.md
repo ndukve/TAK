@@ -19,10 +19,10 @@ Jei serveryje jau veikia ir NetBird, ir Tailscale, `install.sh` paklaus, kurį n
 | 8089 | TCP/TLS | CoT — pagrindinė TAK kliento jungtis (mTLS) |
 | 8443 | HTTPS | Marti API |
 | 8087 | TCP (plaintext) | Vidinis CoT įėjimas serviso paskyroms per overlay tinklą (žr. `TAK_USER_GROUP` faile `templates/CoreConfig.tpl`) — **neatverti į viešą internetą** |
-| 8889 | HTTPS | Admin panelė — WebUI, autentifikuotas paketų/papildinių/žemėlapių atsisiuntimas |
+| 9444 | HTTPS | Admin panelė — WebUI, autentifikuotas paketų/papildinių/žemėlapių atsisiuntimas |
 | 9000–9002 | TCP/TLS | Federacija (žr. [05-sertifikatai-ir-saugumas.md](05-sertifikatai-ir-saugumas.md)) |
 
-> **`Makefile` ir šaknies `README.md` mini portą 8888** kaip anoniminį paketų serverį — šis kelias pasenęs. Faktinis kelias per naujausią kodą: `GET /api/packages/{vardas}/download` per admin panelės portą **8889**, autentifikuotas (`admin`/`superadmin`/`field` rolė). Jei atsisiuntimas per `:8888` neveikia, naudoti admin panelę arba `./admin_fallback.sh`.
+> **`Makefile` ir šaknies `README.md` mini portą 8888** kaip anoniminį paketų serverį — šis kelias pasenęs. Faktinis kelias per naujausią kodą: `GET /api/packages/{vardas}/download` per admin panelės portą **9444**, autentifikuotas (`admin`/`superadmin`/`field` rolė). Jei atsisiuntimas per `:8888` neveikia, naudoti admin panelę arba `./admin_fallback.sh`.
 
 ## Klientų paketų atsisiuntimas
 

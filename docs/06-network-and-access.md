@@ -19,10 +19,10 @@ If both NetBird and Tailscale are already running on the server, `install.sh` as
 | 8089 | TCP/TLS | CoT — primary TAK client connection (mTLS) |
 | 8443 | HTTPS | Marti API |
 | 8087 | TCP (plaintext) | Internal CoT input for service accounts, overlay network only (see `TAK_USER_GROUP` in `templates/CoreConfig.tpl`) — **do not expose to the public internet** |
-| 8889 | HTTPS | Admin panel — WebUI, authenticated package/plugin/map downloads |
+| 9444 | HTTPS | Admin panel — WebUI, authenticated package/plugin/map downloads |
 | 9000–9002 | TCP/TLS | Federation (see [05-certificates-and-security.md](05-certificates-and-security.md)) |
 
-> **`Makefile` and the root `README.md` mention port 8888** as an anonymous package server — this is stale. The actual current path is `GET /api/packages/{name}/download` via the admin panel port **8889**, authenticated (`admin`/`superadmin`/`field` role). If a `:8888` download doesn't work, use the admin panel or `./admin_fallback.sh` instead.
+> **`Makefile` and the root `README.md` mention port 8888** as an anonymous package server — this is stale. The actual current path is `GET /api/packages/{name}/download` via the admin panel port **9444**, authenticated (`admin`/`superadmin`/`field` role). If a `:8888` download doesn't work, use the admin panel or `./admin_fallback.sh` instead.
 
 ## Downloading client packages
 

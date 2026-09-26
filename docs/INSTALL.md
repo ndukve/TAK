@@ -137,7 +137,7 @@ docker compose exec -T -e USER_CERT_NAME=Alpha1-iTAK takserver_config \
     bash /opt/scripts/enable_user.sh
 ```
 
-Once the package is ready, download it from the admin panel at `https://<SERVER_IP>:8889` — **Packages** tab.
+Once the package is ready, download it from the admin panel at `https://<SERVER_IP>:9444` — **Packages** tab.
 
 For an existing deployment created before shared routing-group assignment was enabled, run this once after updating and restarting the server:
 
@@ -180,28 +180,28 @@ The server entry will appear automatically. Tap **Connect**.
 
 ## Map Sources
 
-40+ ATAK-compatible map sources (Bing, Google, ESRI, USGS, OpenTopo, OpenSeaMap, Estonia Maa-amet, Ukraine Visicom, and more) are served from the admin panel's **Maps** tab at `https://<SERVER_IP>:8889/maps`.
+40+ ATAK-compatible map sources (Bing, Google, ESRI, USGS, OpenTopo, OpenSeaMap, Estonia Maa-amet, Ukraine Visicom, and more) are served from the admin panel's **Maps** tab at `https://<SERVER_IP>:9444/maps`.
 
 **Download all at once (recommended):**
-1. Navigate to `https://<SERVER_IP>:8889/maps` and click **[Download All as ZIP]**
+1. Navigate to `https://<SERVER_IP>:9444/maps` and click **[Download All as ZIP]**
 2. Extract `tak-maps.zip` to a folder
 3. ATAK/WinTAK → hamburger → **Import Manager** → Import → select the extracted folder or individual XML files
 
 **Download individual sources:**
-1. Open browser on device → `https://<SERVER_IP>:8889/maps`
+1. Open browser on device → `https://<SERVER_IP>:9444/maps`
 2. Tap any `.xml` to download
 3. ATAK/WinTAK → hamburger → **Import Manager** → select the file
 
 Superadmins can also open **Basemaps** to select ESRI weather composites, GOES imagery, NASA IMERG, NOAA/RainViewer radar, standalone basemaps, uploaded ATAK XML sources, or server-built offline MBTiles areas and push them to selected clients currently connected to TAK Server. The server sends an invite-only mission containing the selected map layers; accept the mission invitation on the EUD.
 
-Built-in near-live sources are fetched through the signed TAK tile gateway at `https://<SERVER_IP>:8889`, cached on the server, and presented to ATAK as standard `MapTile` layers. The EUD therefore needs network access to the TAK server, but does not need direct internet access to every upstream weather or imagery provider. `TAK_SERVER_ADDRESS` must be the IP or hostname that EUDs actually use; the Basemaps page warns if the proxy is accidentally configured as `localhost`.
+Built-in near-live sources are fetched through the signed TAK tile gateway at `https://<SERVER_IP>:9444`, cached on the server, and presented to ATAK as standard `MapTile` layers. The EUD therefore needs network access to the TAK server, but does not need direct internet access to every upstream weather or imagery provider. `TAK_SERVER_ADDRESS` must be the IP or hostname that EUDs actually use; the Basemaps page warns if the proxy is accidentally configured as `localhost`.
 
 The Basemaps page also provides upstream health checks, overlay opacity and ordering, connected-client group selection, persistent delivery history, acceptance counts, resend/delete controls, old-mission cleanup, custom-source removal, and bounded AOI-to-MBTiles generation. Provider availability and licensing remain the operator's responsibility; use organization-approved XML sources where a provider requires credentials or contractual attribution.
 
 After deploying or changing the server address, run the TLS-validated smoke test from the repository directory:
 
 ```bash
-./scripts/basemap_smoke_test.sh https://<SERVER_IP>:8889 <SUPERADMIN_USERNAME>
+./scripts/basemap_smoke_test.sh https://<SERVER_IP>:9444 <SUPERADMIN_USERNAME>
 ```
 
 It prompts for the password without echoing it, runs the server-side diagnostics, then downloads one signed proxy tile while validating the admin proxy against the TAK root CA. After it passes, push a small basemap to one connected EUD, accept the mission invitation in DataSync/ATAK, and use **Refresh acceptance** in distribution history to confirm that client subscription.
@@ -214,7 +214,7 @@ ATAK plugins are APK files installed on Android devices — they do not go on th
 
 ### Uploading Plugins for Distribution
 
-Copy APKs to the server so team devices can download them from the admin panel's **Plugins** tab at `https://<SERVER_IP>:8889/plugins`:
+Copy APKs to the server so team devices can download them from the admin panel's **Plugins** tab at `https://<SERVER_IP>:9444/plugins`:
 
 ```bash
 cd ~/tak-server
@@ -228,7 +228,7 @@ make add-plugin APK=/path/to/ATAK-Plugin-hammer-1.2-...-release.apk
 make list-plugins
 ```
 
-On the Android device: open a browser → navigate to `https://<SERVER_IP>:8889/plugins` → tap each file to sideload → ATAK → **Settings → Manage Plugins → Install from file**.
+On the Android device: open a browser → navigate to `https://<SERVER_IP>:9444/plugins` → tap each file to sideload → ATAK → **Settings → Manage Plugins → Install from file**.
 
 ---
 
@@ -239,7 +239,7 @@ Synchronises missions, map overlays, data packages, and files between all connec
 > **Server requirement:** None. The Mission API is built into TAK Server and runs automatically at `https://<server>:8443/Marti/api/missions`. No additional configuration required.
 
 **Install on device:**
-1. Download the DataSync APK from the admin panel's **Plugins** tab at `https://<SERVER_IP>:8889/plugins`
+1. Download the DataSync APK from the admin panel's **Plugins** tab at `https://<SERVER_IP>:9444/plugins`
 2. ATAK → **Settings → Manage Plugins → Install from file** → select the APK
 3. Restart ATAK if prompted
 4. DataSync appears in the ATAK toolbar (sync icon)
@@ -302,12 +302,12 @@ cd ~/tak-server
 
 `update.sh` and `health.sh` both verify the deployed containers actually match the code that was pulled — not just that `git pull` succeeded. If Docker's build cache silently serves a stale layer (this can happen), they automatically force a clean rebuild and re-verify before declaring success, rather than leaving a broken deployment for you to debug by hand.
 
-If the admin panel itself is ever unreachable, two scripts at the repo root give you a break-glass fallback — they only need SSH/shell access to the server, not network access to port 8889. `./users.sh get [name]` lists available packages with no argument, or downloads one to the current directory when given a name. `./admin_fallback.sh` opens an interactive menu covering the same read-only package and map browsing/downloading.
+If the admin panel itself is ever unreachable, two scripts at the repo root give you a break-glass fallback — they only need SSH/shell access to the server, not network access to port 9444. `./users.sh get [name]` lists available packages with no argument, or downloads one to the current directory when given a name. `./admin_fallback.sh` opens an interactive menu covering the same read-only package and map browsing/downloading.
 
 ## Troubleshooting
 
 > **Can't download the package on the device**
-> Confirm the device can reach the server IP on port 8889 (the admin panel). For Option A: check that the device is on the same Wi-Fi/LAN. For Option B: confirm the NetBird app shows **Connected**.
+> Confirm the device can reach the server IP on port 9444 (the admin panel). For Option A: check that the device is on the same Wi-Fi/LAN. For Option B: confirm the NetBird app shows **Connected**.
 
 > **Server appears but won't connect**
 > The package may have been generated with the wrong server IP. Delete the server entry, regenerate the package with `./users.sh create YourCallsign-iTAK` (or `-ATAK`/`-WinTAK`), and re-import.

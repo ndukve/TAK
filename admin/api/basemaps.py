@@ -48,7 +48,18 @@ MAX_OFFLINE_PUSH_BYTES = int(os.environ.get("TAK_BASEMAP_OFFLINE_PUSH_MAX_MB", "
 MAX_AOI_TILES = int(os.environ.get("TAK_BASEMAP_AOI_MAX_TILES", "5000"))
 CREATOR_UID = SERVICE_CERT_NAME
 WEATHER_SOURCE_IDS = {"rainviewer-radar", "noaa-radar", "nasa-imerg", "goes-west", "goes-east"}
+# Keyed by full cache_path (source/zoom/x/y), so a live deployment serving
+# many distinct tiles accumulates one entry per tile ever requested. Bounded
+# below so this doesn't grow without limit for the life of the process.
 _tile_locks: dict[str, asyncio.Lock] = {}
+_TILE_LOCK_LIMIT = 4096
+# Pruning walks and stats every file under TILE_CACHE_DIR — cheap when the
+# cache is small, but under sustained tile serving (many EUDs, cache near
+# its configured max) that walk touches every cached file on every single
+# cache-miss write. Throttled to run at most this often instead of on every
+# write.
+_PRUNE_INTERVAL_SECONDS = 60
+_last_prune_at = 0.0
 
 
 def _tile_source(
@@ -521,6 +532,27 @@ def _tile_cache_path(source_id: str, zoom: int, x: int, y: int) -> str:
     return os.path.join(TILE_CACHE_DIR, source_id, str(zoom), str(x), f"{y}.tile")
 
 
+def _get_tile_lock(cache_path: str) -> asyncio.Lock:
+    """Bounded lock-per-tile map. A live tile proxy accumulates one distinct
+    cache_path per tile ever requested (source x zoom x x x y), so without a
+    cap this dict grows without bound for the life of the process. When over
+    the cap, evict locks that aren't currently held before adding a new one;
+    a lock still in use is never evicted, so this can't drop an in-flight
+    request's lock out from under it."""
+    lock = _tile_locks.get(cache_path)
+    if lock is not None:
+        return lock
+    if len(_tile_locks) >= _TILE_LOCK_LIMIT:
+        for key, existing in list(_tile_locks.items()):
+            if not existing.locked():
+                del _tile_locks[key]
+            if len(_tile_locks) < _TILE_LOCK_LIMIT:
+                break
+    lock = asyncio.Lock()
+    _tile_locks[cache_path] = lock
+    return lock
+
+
 def _prune_tile_cache() -> None:
     files = []
     total = 0
@@ -545,6 +577,39 @@ def _prune_tile_cache() -> None:
             continue
 
 
+def _prune_tile_cache_if_due() -> None:
+    """Runs the full-directory prune walk at most once per
+    _PRUNE_INTERVAL_SECONDS instead of on every cache-miss write — see the
+    module-level comment on _PRUNE_INTERVAL_SECONDS."""
+    global _last_prune_at
+    now = time.time()
+    if now - _last_prune_at < _PRUNE_INTERVAL_SECONDS:
+        return
+    _last_prune_at = now
+    _prune_tile_cache()
+
+
+def _read_tile_cache_file(cache_path: str) -> tuple[bytes, float]:
+    age = time.time() - os.path.getmtime(cache_path)
+    with open(cache_path, "rb") as cached:
+        return cached.read(), age
+
+
+def _write_tile_cache_file(cache_path: str, content: bytes) -> None:
+    temp_path = f"{cache_path}.{uuid.uuid4().hex}.tmp"
+    try:
+        os.makedirs(os.path.dirname(cache_path), exist_ok=True)
+        with open(temp_path, "wb") as output:
+            output.write(content)
+        os.replace(temp_path, cache_path)
+    except OSError:
+        try:
+            os.remove(temp_path)
+        except OSError:
+            pass
+        raise
+
+
 async def _cached_tile(source_id: str, zoom: int, x: int, y: int) -> tuple[bytes, str, int]:
     if source_id not in BUILTIN_SOURCES:
         raise HTTPException(status_code=404, detail="Unknown tile source")
@@ -554,17 +619,19 @@ async def _cached_tile(source_id: str, zoom: int, x: int, y: int) -> tuple[bytes
     ttl = 300 if source_id in WEATHER_SOURCE_IDS else 7 * 24 * 3600
     configured_type = BUILTIN_SOURCES[source_id].get("tileType", "png").lower()
     cached_content_type = "image/jpeg" if configured_type in {"jpg", "jpeg"} else "image/png"
-    lock = _tile_locks.setdefault(cache_path, asyncio.Lock())
+    lock = _get_tile_lock(cache_path)
     async with lock:
+        # Cached tiles are read (and, below, written) off the event loop —
+        # under concurrent tile requests from many connected EUDs, blocking
+        # open()/read() calls here would serialize every other in-flight
+        # request on this worker for the duration of each disk read.
         stale_content = None
         try:
-            age = time.time() - os.path.getmtime(cache_path)
-            with open(cache_path, "rb") as cached:
-                stale_content = cached.read()
+            stale_content, age = await asyncio.to_thread(_read_tile_cache_file, cache_path)
             if age <= ttl:
                 return stale_content, cached_content_type, ttl
         except OSError:
-            pass
+            stale_content = None
 
         try:
             url, expected_type = await _upstream_tile_url(source_id, zoom, x, y)
@@ -582,18 +649,11 @@ async def _cached_tile(source_id: str, zoom: int, x: int, y: int) -> tuple[bytes
             if stale_content:
                 return stale_content, cached_content_type, 60
             raise HTTPException(status_code=502, detail="Upstream returned an invalid tile")
-        temp_path = f"{cache_path}.{uuid.uuid4().hex}.tmp"
         try:
-            os.makedirs(os.path.dirname(cache_path), exist_ok=True)
-            with open(temp_path, "wb") as output:
-                output.write(upstream.content)
-            os.replace(temp_path, cache_path)
-            await asyncio.to_thread(_prune_tile_cache)
+            await asyncio.to_thread(_write_tile_cache_file, cache_path, upstream.content)
+            await asyncio.to_thread(_prune_tile_cache_if_due)
         except OSError:
-            try:
-                os.remove(temp_path)
-            except OSError:
-                pass
+            pass
         return upstream.content, content_type, ttl
 
 

@@ -15,7 +15,7 @@
 | `docker_socket_proxy` | Restricted Docker socket proxy — grants the admin panel logs/exec only, never container create/delete |
 | `admin_permissions` | Short-lived — admin/nginx volume ownership migration |
 | `admin` | Admin panel backend (FastAPI) — reachable only via `admin_proxy` |
-| `admin_proxy` | TLS reverse proxy for the admin panel (8889) |
+| `admin_proxy` | TLS reverse proxy for the admin panel (9444) |
 
 ## Data flow
 
@@ -32,7 +32,7 @@ flowchart TB
   PLUG[takserver_pluginmanager] --> DB
 
   subgraph adminpanel [Admin panel]
-    AP[admin_proxy :8889] --> A[admin]
+    AP[admin_proxy :9444] --> A[admin]
     A -->|restricted socket| DSP[docker_socket_proxy]
     DSP -->|logs/exec only| MSG
     DSP -->|logs/exec only| API

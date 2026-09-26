@@ -17,7 +17,7 @@ flowchart LR
   end
   subgraph server [TAK serveris]
     TAK["TAK Server\n8089 CoT · 8443 Marti API"]
-    Admin["Admin panelė\n8889"]
+    Admin["Admin panelė\n9444"]
     DB[("PostgreSQL")]
   end
   clients -->|mTLS| TAK

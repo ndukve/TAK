@@ -15,3 +15,12 @@ known-first-party = ["api"]
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
 testpaths = ["tests"]
+
+[tool.mypy]
+# Advisory only (see .github/workflows/python-lint.yml's mypy step: it
+# reports but does not fail the build) — this codebase has zero prior
+# type-check history. Baseline at introduction: 22 errors across 5 files,
+# mostly "None has no attribute" on optional connection/task objects in
+# api/replay_recorder.py and api/live_map.py — those read like real bugs,
+# worth a look separately from this tooling addition.
+ignore_missing_imports = true

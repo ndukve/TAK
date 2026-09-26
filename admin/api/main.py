@@ -122,12 +122,29 @@ class SPAStaticFiles(StaticFiles):
     to parse as JS, which just turns a clear error into a confusing one."""
 
     async def get_response(self, path: str, scope: Scope):
+        is_index = path in ("", "index.html")
         try:
-            return await super().get_response(path, scope)
+            response = await super().get_response(path, scope)
         except HTTPException as exc:
             if exc.status_code == 404 and "." not in path.rsplit("/", 1)[-1]:
-                return await super().get_response("index.html", scope)
-            raise
+                is_index = True
+                response = await super().get_response("index.html", scope)
+            else:
+                raise
+        # index.html has to be revalidated on every load — it's the only thing
+        # naming which hashed asset/index-*.js is current. Without this,
+        # nothing here ever told the browser it COULDN'T just reuse its own
+        # heuristic cache of index.html indefinitely, so a redeploy could
+        # silently keep serving a stale page referencing old, still-present
+        # (but now-superseded) hashed assets — confirmed on the sibling EFDI
+        # repo: a shipped fix sat unreachable in exactly this way until a
+        # manual hard-refresh. Every other file here is content-hashed by
+        # Vite (a real code change always gets a new filename), so those are
+        # safe to cache forever.
+        response.headers["Cache-Control"] = (
+            "no-store" if is_index else "public, max-age=31536000, immutable"
+        )
+        return response
 
 
 STATIC_DIR = "/app/static"

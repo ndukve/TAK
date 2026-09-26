@@ -12,7 +12,7 @@ Patikrina, ar veikiantys atvaizdai atitinka dabartinį `git` commit (Docker sluo
 
 | Simptomas | Priežastis | Sprendimas |
 |---|---|---|
-| Kliento paketo atsisiuntimas `:8888` neveikia | Portas pasenęs dokumentacijoje, faktiškai neatvertas | Naudoti admin panelę (`:8889`, Packages → Download) arba `./admin_fallback.sh` — žr. [06-tinklas-ir-prieiga.md](06-tinklas-ir-prieiga.md) |
+| Kliento paketo atsisiuntimas `:8888` neveikia | Portas pasenęs dokumentacijoje, faktiškai neatvertas | Naudoti admin panelę (`:9444`, Packages → Download) arba `./admin_fallback.sh` — žr. [06-tinklas-ir-prieiga.md](06-tinklas-ir-prieiga.md) |
 | Po `TAKSERVER_CERT_PASS`/`CA_PASS` keitimo klientai/servisai nebesijungia | Senas JKS tome, naujas slaptažodis env faile — nesutampa | Reikia tomo išvalymo ir sertifikatų regeneravimo, žr. [05-sertifikatai-ir-saugumas.md](05-sertifikatai-ir-saugumas.md) — **prieš tai** padaryti atsarginę kopiją |
 | Konteinerio veiksmas (pvz. sertifikato generavimas per admin panelę) grąžina `No such container: <vardas>` | `docker_socket_proxy` neranda tikslinio konteinerio — arba jis neveikia, arba tai izoliuota dev aplinka be pilno TAK steko | `make status` patikrinti, ar servisas veikia; pilname diegime patikrinti `docker compose ps` |
 | Kodo pakeitimai diske, bet konteineryje senas elgesys | Docker sluoksnio talpyklos (layer cache) problema | `./health.sh` (self-heal aptinka ir taiso automatiškai) |

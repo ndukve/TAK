@@ -15,7 +15,7 @@
 | `docker_socket_proxy` | Ribotos prieigos Docker socket proxy — admin panelei leidžia tik logs/exec, ne konteinerių kūrimą/naikinimą |
 | `admin_permissions` | Trumpalaikis — admin/nginx tomo teisių migracija |
 | `admin` | Admin panelės backend (FastAPI) — pasiekiamas tik per `admin_proxy` |
-| `admin_proxy` | TLS reverse proxy admin panelei (8889) |
+| `admin_proxy` | TLS reverse proxy admin panelei (9444) |
 
 ## Duomenų srautas
 
@@ -32,7 +32,7 @@ flowchart TB
   PLUG[takserver_pluginmanager] --> DB
 
   subgraph adminpanel [Admin panelė]
-    AP[admin_proxy :8889] --> A[admin]
+    AP[admin_proxy :9444] --> A[admin]
     A -->|ribotas socket| DSP[docker_socket_proxy]
     DSP -->|logs/exec tik| MSG
     DSP -->|logs/exec tik| API

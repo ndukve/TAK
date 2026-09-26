@@ -32,7 +32,7 @@ flowchart LR
   end
   subgraph server [TAK server]
     TAK["TAK Server\n8089 CoT · 8443 Marti API"]
-    Admin["Admin panel\n8889"]
+    Admin["Admin panel\n9444"]
     DB[("PostgreSQL + PostGIS")]
   end
   clients -->|mTLS| TAK
@@ -79,7 +79,7 @@ Details: [docs/06-network-and-access.md](docs/06-network-and-access.md).
 | 8089 | TCP/TLS | CoT — primary TAK client input |
 | 8443 | HTTPS | Marti API |
 | 8087 | TCP | Internal CoT for service accounts, overlay network only — not for public exposure |
-| 8889 | HTTPS | Admin panel — WebUI and authenticated package/plugin/map downloads |
+| 9444 | HTTPS | Admin panel — WebUI and authenticated package/plugin/map downloads |
 | 9000–9002 | TCP/TLS | Federation (server-to-server) |
 
 Full breakdown: [docs/11-technical-reference.md](docs/11-technical-reference.md).

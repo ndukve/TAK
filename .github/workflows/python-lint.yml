@@ -25,3 +25,8 @@ jobs:
       - name: Ruff check
         run: ruff check .
         working-directory: admin
+      - name: Type-check (advisory — reports only, does not fail the build)
+        # See pyproject.toml's [tool.mypy] comment for why this isn't a gate
+        # yet: no prior type-check history, 22-error baseline at introduction.
+        run: pip install mypy && python -m mypy api || true
+        working-directory: admin

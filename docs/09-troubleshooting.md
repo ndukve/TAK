@@ -12,7 +12,7 @@ Checks whether running images match the current `git` commit (a symptom of Docke
 
 | Symptom | Cause | Fix |
 |---|---|---|
-| Client package download on `:8888` doesn't work | Port is stale in docs, not actually exposed | Use the admin panel (`:8889`, Packages → Download) or `./admin_fallback.sh` — see [06-network-and-access.md](06-network-and-access.md) |
+| Client package download on `:8888` doesn't work | Port is stale in docs, not actually exposed | Use the admin panel (`:9444`, Packages → Download) or `./admin_fallback.sh` — see [06-network-and-access.md](06-network-and-access.md) |
 | Clients/services stop connecting after changing `TAKSERVER_CERT_PASS`/`CA_PASS` | Old JKS in the volume, new password in the env — mismatch | Requires a volume wipe and cert regeneration, see [05-certificates-and-security.md](05-certificates-and-security.md) — back up **first** |
 | A container action (e.g. generating a cert via the admin panel) returns `No such container: <name>` | `docker_socket_proxy` can't find the target container — either it's not running, or this is an isolated dev environment without the full TAK stack | `make status` to check the service is up; in a full deployment check `docker compose ps` |
 | Code changed on disk, but the container still behaves like the old version | Docker layer-cache staleness | `./health.sh` (self-heal detects and fixes this automatically) |
