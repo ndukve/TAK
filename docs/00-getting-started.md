@@ -29,7 +29,7 @@ flowchart LR
 ## Don't
 
 - Change `TAKSERVER_CERT_PASS` or `CA_PASS` without wiping the cert volume first — see [05-certificates-and-security.md](05-certificates-and-security.md).
-- Run `docker compose up` by hand without `takserver.env` — use `./install.sh` or `make up`.
+- Run `docker compose up` by hand without `takserver.env` — use `./scripts/install.sh` or `make up`.
 - Use `git add -A` / `git commit` without a clear reason — see the repo root `CLAUDE.md`.
 - Run `update.sh` without a backup on a production deployment — see [08-backups.md](08-backups.md).
 

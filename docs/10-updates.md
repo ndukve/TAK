@@ -3,7 +3,7 @@
 ```bash
 make update
 # or directly:
-./update.sh
+./scripts/update.sh
 ```
 
 ## What happens

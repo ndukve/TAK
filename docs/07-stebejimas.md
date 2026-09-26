@@ -7,7 +7,7 @@ Realaus laiko servisų būsena (5s poll): CPU/RAM/diskas/uptime/load/tinklas, ki
 ## `health.sh`
 
 ```bash
-./health.sh
+./scripts/health.sh
 ```
 
 Savarankiškas (self-heal + self-test) patikrinimas veikiančiam diegimui prieš dabartinį `git` commit:

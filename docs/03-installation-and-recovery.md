@@ -30,7 +30,7 @@ When it's done, the script prints the CoT/API/admin panel addresses and the firs
 
 Full procedure: [08-backups.md](08-backups.md).
 
-Short version: `./restore.sh <backup-dir>` — **destructive**, overwrites the current admin DB, TAK CoT DB, certs/packages, plugins, and maps with the backup's data. Requires typing `restore` to confirm.
+Short version: `./scripts/restore.sh <backup-dir>` — **destructive**, overwrites the current admin DB, TAK CoT DB, certs/packages, plugins, and maps with the backup's data. Requires typing `restore` to confirm.
 
 ## Updating (not a fresh install)
 

@@ -30,7 +30,7 @@ Baigus, skriptas parodo CoT/API/admin panelės adresus ir pirmojo admin naudotoj
 
 Pilna procedūra: [08-atsargines-kopijos.md](08-atsargines-kopijos.md).
 
-Trumpai: `./restore.sh <backup-dir>` — **destruktyvu**, perrašo esamą admin DB, TAK CoT DB, sertifikatus/paketus, papildinius ir žemėlapius atsarginės kopijos duomenimis. Reikalauja patvirtinimo įvedant `restore`.
+Trumpai: `./scripts/restore.sh <backup-dir>` — **destruktyvu**, perrašo esamą admin DB, TAK CoT DB, sertifikatus/paketus, papildinius ir žemėlapius atsarginės kopijos duomenimis. Reikalauja patvirtinimo įvedant `restore`.
 
 ## Atnaujinimas (ne naujas diegimas)
 

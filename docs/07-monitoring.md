@@ -7,7 +7,7 @@ Real-time service status (5s poll): CPU/RAM/disk/uptime/load/network, each servi
 ## `health.sh`
 
 ```bash
-./health.sh
+./scripts/health.sh
 ```
 
 Self-heal + self-test for a running deployment against the currently checked-out commit:

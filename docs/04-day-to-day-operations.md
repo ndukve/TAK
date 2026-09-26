@@ -73,4 +73,4 @@ Admin panel: Dashboard (overall status), Logs (superadmin).
 
 ## If the WebUI is unreachable
 
-`./admin_fallback.sh` — an interactive terminal menu to browse and download packages/maps. Read-only (no create/delete), requires SSH access to the server. See [09-troubleshooting.md](09-troubleshooting.md).
+`./scripts/admin_fallback.sh` — an interactive terminal menu to browse and download packages/maps. Read-only (no create/delete), requires SSH access to the server. See [09-troubleshooting.md](09-troubleshooting.md).

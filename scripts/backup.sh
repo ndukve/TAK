@@ -5,7 +5,7 @@
 # Defaults to backups/<timestamp>/ if no output dir is given.
 set -euo pipefail
 
-SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+SCRIPT_DIR="$(cd "$(dirname "$0")/.." && pwd)"
 ENV_FILE="$SCRIPT_DIR/takserver.env"
 # shellcheck source=scripts/_spinner.sh
 . "$SCRIPT_DIR/scripts/_spinner.sh"

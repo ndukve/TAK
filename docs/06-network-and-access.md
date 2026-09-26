@@ -22,11 +22,11 @@ If both NetBird and Tailscale are already running on the server, `install.sh` as
 | 9444 | HTTPS | Admin panel — WebUI, authenticated package/plugin/map downloads |
 | 9000–9002 | TCP/TLS | Federation (see [05-certificates-and-security.md](05-certificates-and-security.md)) |
 
-> **`Makefile` and the root `README.md` mention port 8888** as an anonymous package server — this is stale. The actual current path is `GET /api/packages/{name}/download` via the admin panel port **9444**, authenticated (`admin`/`superadmin`/`field` role). If a `:8888` download doesn't work, use the admin panel or `./admin_fallback.sh` instead.
+> **`Makefile` and the root `README.md` mention port 8888** as an anonymous package server — this is stale. The actual current path is `GET /api/packages/{name}/download` via the admin panel port **9444**, authenticated (`admin`/`superadmin`/`field` role). If a `:8888` download doesn't work, use the admin panel or `./scripts/admin_fallback.sh` instead.
 
 ## Downloading client packages
 
-Through the admin panel (Packages → Download) or `./admin_fallback.sh` if the WebUI is unreachable. Requires authentication — there is no anonymous public package endpoint.
+Through the admin panel (Packages → Download) or `./scripts/admin_fallback.sh` if the WebUI is unreachable. Requires authentication — there is no anonymous public package endpoint.
 
 ## Federating with another TAK server
 

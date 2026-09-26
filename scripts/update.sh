@@ -3,7 +3,7 @@
 # Run from the repo directory: ./update.sh
 set -euo pipefail
 
-SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+SCRIPT_DIR="$(cd "$(dirname "$0")/.." && pwd)"
 ENV_FILE="$SCRIPT_DIR/takserver.env"
 # shellcheck source=scripts/_spinner.sh
 . "$SCRIPT_DIR/scripts/_spinner.sh"
@@ -128,7 +128,7 @@ if [ "$_OLD_HEAD" != "$(git rev-parse HEAD)" ]; then
     # update that changes update.sh itself). Re-exec fresh from the new
     # file instead of limping along on stale buffered content.
     info "update.sh changed — restarting from the updated version..."
-    exec bash "$SCRIPT_DIR/update.sh" "$@"
+    exec bash "$SCRIPT_DIR/scripts/update.sh" "$@"
 else
     dim "No changes — already up to date."
 fi
@@ -273,7 +273,7 @@ section "Self-test"
 if ! package_selftest; then
     warn "Self-test failed — escalating to health.sh for automatic recovery"
     printf "\n"
-    TAK_NONINTERACTIVE=1 bash "$SCRIPT_DIR/health.sh" || fail "Health check failed — see output above."
+    TAK_NONINTERACTIVE=1 bash "$SCRIPT_DIR/scripts/health.sh" || fail "Health check failed — see output above."
 fi
 section_done
 

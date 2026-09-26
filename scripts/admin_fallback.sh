@@ -6,7 +6,7 @@
 # Usage: ./admin_fallback.sh
 set -euo pipefail
 
-SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+SCRIPT_DIR="$(cd "$(dirname "$0")/.." && pwd)"
 ENV_FILE="$SCRIPT_DIR/takserver.env"
 MAPS_DIR="$SCRIPT_DIR/packages/tak-maps"
 # shellcheck source=scripts/_spinner.sh

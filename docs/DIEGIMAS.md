@@ -42,7 +42,7 @@ Jei įrenginiai jungiasi iš kito tinklo, naudokite NetBird šifruotam tuneliui 
 Debian kompiuteryje/virtualioje mašinoje atidarykite terminalą ir paleiskite:
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/ndukve/TAK/main/install.sh | bash
+curl -fsSL https://raw.githubusercontent.com/ndukve/TAK/main/scripts/install.sh | bash
 ```
 
 > **Diegimui reikalingos root teisės.** Jei nesate root, skriptas automatiškai paleis save su `sudo` ir paprašys slaptažodžio vieną kartą. Likęs diegimas vyksta automatiškai.
@@ -114,7 +114,7 @@ Kiekvienas klientas ir toliau gauna atskirą sertifikatą. Klientai mato vienas 
 
 ```bash
 cd ~/tak-server
-./users.sh create Alpha1-iTAK
+./scripts/users.sh create Alpha1-iTAK
 ```
 
 Paleidus be argumento, paklaus šaukinio interaktyviai.
@@ -142,7 +142,7 @@ Kai paketas paruoštas, atsisiųskite jį iš administravimo skydelio adresu `ht
 Jei diegimas buvo sukurtas prieš įjungiant bendrą maršrutizavimo grupę, atnaujinę ir iš naujo paleidę serverį vieną kartą vykdykite:
 
 ```bash
-./users.sh repair-groups
+./scripts/users.sh repair-groups
 ```
 
 Komanda visiems paketą turintiems ATAK, iTAK ir WinTAK sertifikatams iš naujo pritaiko autorizaciją su `TAK-USERS` IN ir OUT naryste. Ji nekeičia sertifikatų ir neverčia klientų dalytis privačiais raktais.
@@ -285,27 +285,27 @@ cd ~/tak-server
 
 # Atsisiųsti naujausią kodą, perstatyti, paleisti iš naujo — automatiškai
 # save patikrina ir atsistato pats, jei kas nepavyko
-./update.sh
+./scripts/update.sh
 
 # Patikrinti, ar diegimas šiuo metu veikia tinkamai, neatsisiunčiant kodo —
 # saugu leisti bet kada (pvz., per cron), taip pat automatiškai atsistato
-./health.sh
+./scripts/health.sh
 
 # Paleiskite diegimo skriptą pakartotinai bet kada — jis aptinka esamą
 # takserver.env ir pasiūlys arba įdiegti iš naujo (pašalinti konteinerius/
 # atvaizdus, perstatyti, išsaugoti duomenų bazę/sertifikatus/paketus),
 # arba pilnai perkonfigūruoti nuo nulio
-./install.sh
+./scripts/install.sh
 
 # Priverstinai pašalinti visus vartotojo sertifikato/paketo failus, nesvarbu
 # kokia dabartinė būsena — naudokite, jei vartotojas "įstrigo" (pvz.
 # rodo „jau egzistuoja" po ištrynimo)
-./users.sh purge <vardas>
+./scripts/users.sh purge <vardas>
 ```
 
 `update.sh` ir `health.sh` abu patikrina, ar diegti konteineriai iš tikrųjų atitinka atsisiųstą kodą — ne tik tai, kad `git pull` pavyko. Jei Docker kešas tyliai panaudoja pasenusį sluoksnį (taip gali nutikti), jie automatiškai priverstinai perstato be kešo ir patikrina dar kartą, užuot palikę sugadintą diegimą jums pačiam derinti.
 
-Jei administravimo skydelis kada nors taptų nepasiekiamas, du skriptai repozitorijos šaknyje suteikia atsarginį variantą — jiems reikia tik SSH/shell prieigos prie serverio, ne tinklo prieigos prie 9444 prievado. `./users.sh get [vardas]` be argumento parodo prieinamus paketus, o su vardu — atsisiunčia paketą į dabartinį aplanką. `./admin_fallback.sh` atidaro interaktyvų meniu tai pačiai skaitymo režimo paketų ir žemėlapių naršymo/atsisiuntimo funkcijai.
+Jei administravimo skydelis kada nors taptų nepasiekiamas, du skriptai repozitorijos šaknyje suteikia atsarginį variantą — jiems reikia tik SSH/shell prieigos prie serverio, ne tinklo prieigos prie 9444 prievado. `./scripts/users.sh get [vardas]` be argumento parodo prieinamus paketus, o su vardu — atsisiunčia paketą į dabartinį aplanką. `./scripts/admin_fallback.sh` atidaro interaktyvų meniu tai pačiai skaitymo režimo paketų ir žemėlapių naršymo/atsisiuntimo funkcijai.
 
 ## Dažnos problemos
 
@@ -313,13 +313,13 @@ Jei administravimo skydelis kada nors taptų nepasiekiamas, du skriptai repozito
 > Patikrinkite, ar įrenginys pasiekia serverio IP per prievadą 9444 (administravimo skydelis). A variantas: įsitikinkite, kad įrenginys yra tame pačiame Wi-Fi/LAN tinkle. B variantas: patikrinkite, ar NetBird programėlė rodo **Connected**.
 
 > **Serveris matomas, bet neprisijungia**
-> Paketas gali būti sugeneruotas su netinkamu serverio IP. Ištrinkite serverio įrašą, sugeneruokite paketą iš naujo su `./users.sh create JusuŠaukinys-iTAK` (arba `-ATAK`/`-WinTAK`) ir importuokite pakartotinai.
+> Paketas gali būti sugeneruotas su netinkamu serverio IP. Ištrinkite serverio įrašą, sugeneruokite paketą iš naujo su `./scripts/users.sh create JusuŠaukinys-iTAK` (arba `-ATAK`/`-WinTAK`) ir importuokite pakartotinai.
 
 > **iTAK neparodo serverio importavus paketą**
-> Įsitikinkite, kad šaukinys baigiasi `-iTAK`, o ne `-ATAK`/`-WinTAK` — iTAK reikia savo paketo struktūros (žr. 4 žingsnį). Paleiskite `./health.sh`, kad patikrintumėte, ar paketų generatorius veikia tinkamai.
+> Įsitikinkite, kad šaukinys baigiasi `-iTAK`, o ne `-ATAK`/`-WinTAK` — iTAK reikia savo paketo struktūros (žr. 4 žingsnį). Paleiskite `./scripts/health.sh`, kad patikrintumėte, ar paketų generatorius veikia tinkamai.
 
 > **„Šaukinys jau egzistuoja" kuriant vartotoją, kurį maniniate ištrynę**
-> Paleiskite `./users.sh purge <vardas>`, kad priverstinai pašalintumėte likusius sertifikato/paketo failus, tada sukurkite iš naujo.
+> Paleiskite `./scripts/users.sh purge <vardas>`, kad priverstinai pašalintumėte likusius sertifikato/paketo failus, tada sukurkite iš naujo.
 
 > **Ryšys nutrūksta užgęsus ekranui**
 > Išjunkite energijos taupymo optimizaciją TAK programėlei.

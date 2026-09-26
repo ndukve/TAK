@@ -15,7 +15,7 @@
 #       bundled binaries if missing, loads the images, brings it up.
 set -euo pipefail
 
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]:-$0}")" 2>/dev/null && pwd || echo "$PWD")"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]:-$0}")/.." 2>/dev/null && pwd || echo "$PWD")"
 
 # ── Bundle mode: build the offline package on a connected machine ───────────
 if [ "${1:-}" = "bundle" ]; then
@@ -80,7 +80,7 @@ fi
 
 ENV_FILE="$SCRIPT_DIR/takserver.env"
 [ -t 0 ] || exec < /dev/tty 2>/dev/null || true
-[[ $EUID -ne 0 ]] && { echo "  Re-running with sudo..."; exec sudo bash "$SCRIPT_DIR/install-offline.sh"; }
+[[ $EUID -ne 0 ]] && { echo "  Re-running with sudo..."; exec sudo bash "$SCRIPT_DIR/scripts/install-offline.sh"; }
 
 if ! command -v docker &>/dev/null; then
     echo "Docker not found — installing from bundled static binaries (no network used)..."

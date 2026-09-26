@@ -3,7 +3,7 @@
 ```bash
 make update
 # arba tiesiogiai:
-./update.sh
+./scripts/update.sh
 ```
 
 ## Kas vyksta

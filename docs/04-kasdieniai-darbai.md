@@ -73,4 +73,4 @@ Admin panelėje: Dashboard (bendra būsena), Logs (superadmin).
 
 ## Ką daryti, jei WebUI nepasiekiama
 
-`./admin_fallback.sh` — terminalo interaktyvus meniu paketų/žemėlapių peržiūrai ir atsisiuntimui. Tik skaitymui (be kūrimo/naikinimo), reikalauja SSH prieigos prie serverio. Žr. [09-problemu-sprendimas.md](09-problemu-sprendimas.md).
+`./scripts/admin_fallback.sh` — terminalo interaktyvus meniu paketų/žemėlapių peržiūrai ir atsisiuntimui. Tik skaitymui (be kūrimo/naikinimo), reikalauja SSH prieigos prie serverio. Žr. [09-problemu-sprendimas.md](09-problemu-sprendimas.md).

@@ -3,7 +3,7 @@
 ## What gets backed up
 
 ```bash
-./backup.sh [output-dir]   # defaults to backups/<timestamp>/
+./scripts/backup.sh [output-dir]   # defaults to backups/<timestamp>/
 ```
 
 - `admin_db.sql` — admin panel PostgreSQL dump (`pg_dump`)
@@ -18,7 +18,7 @@ All output files get `chmod 600` — they contain passwords and certificate keys
 ## Restoring
 
 ```bash
-./restore.sh <backup-dir>
+./scripts/restore.sh <backup-dir>
 ```
 
 **Destructive.** Overwrites the current admin DB, TAK CoT DB, certs/packages, plugins, and maps with the backup's data. Requires typing `restore` to confirm.
@@ -27,6 +27,6 @@ All output files get `chmod 600` — they contain passwords and certificate keys
 
 ## When to back up
 
-- Before `./update.sh` on a production deployment.
+- Before `./scripts/update.sh` on a production deployment.
 - Before changing `TAKSERVER_CERT_PASS`/`CA_PASS` (see [05-certificates-and-security.md](05-certificates-and-security.md)) — after a volume wipe there's nothing to restore from if you didn't back up first.
 - On a regular schedule if this deployment is production — this repo doesn't ship a scheduled (`cron`) backup; you'd set that up yourself.

@@ -29,7 +29,7 @@ flowchart LR
 ## Ko nedaryti
 
 - Nekeisti `TAKSERVER_CERT_PASS` ar `CA_PASS` be sertifikatų tomo (volume) išvalymo — žr. [05-sertifikatai-ir-saugumas.md](05-sertifikatai-ir-saugumas.md).
-- Nedaryti rankinio `docker compose up` be `takserver.env` — naudoti `./install.sh` arba `make up`.
+- Nedaryti rankinio `docker compose up` be `takserver.env` — naudoti `./scripts/install.sh` arba `make up`.
 - Nenaudoti `git add -A` / `git commit` be aiškaus poreikio — žr. repo šaknies `CLAUDE.md`.
 - Neatsisiųsti `update.sh` be atsarginės kopijos, jei diegimas produkcinis — žr. [08-atsargines-kopijos.md](08-atsargines-kopijos.md).
 

@@ -22,11 +22,11 @@ Jei serveryje jau veikia ir NetBird, ir Tailscale, `install.sh` paklaus, kurį n
 | 9444 | HTTPS | Admin panelė — WebUI, autentifikuotas paketų/papildinių/žemėlapių atsisiuntimas |
 | 9000–9002 | TCP/TLS | Federacija (žr. [05-sertifikatai-ir-saugumas.md](05-sertifikatai-ir-saugumas.md)) |
 
-> **`Makefile` ir šaknies `README.md` mini portą 8888** kaip anoniminį paketų serverį — šis kelias pasenęs. Faktinis kelias per naujausią kodą: `GET /api/packages/{vardas}/download` per admin panelės portą **9444**, autentifikuotas (`admin`/`superadmin`/`field` rolė). Jei atsisiuntimas per `:8888` neveikia, naudoti admin panelę arba `./admin_fallback.sh`.
+> **`Makefile` ir šaknies `README.md` mini portą 8888** kaip anoniminį paketų serverį — šis kelias pasenęs. Faktinis kelias per naujausią kodą: `GET /api/packages/{vardas}/download` per admin panelės portą **9444**, autentifikuotas (`admin`/`superadmin`/`field` rolė). Jei atsisiuntimas per `:8888` neveikia, naudoti admin panelę arba `./scripts/admin_fallback.sh`.
 
 ## Klientų paketų atsisiuntimas
 
-Per admin panelę (Packages → Download) arba `./admin_fallback.sh`, jei WebUI nepasiekiama. Reikalauja prisijungimo — anoniminės viešos prieigos prie paketų nėra.
+Per admin panelę (Packages → Download) arba `./scripts/admin_fallback.sh`, jei WebUI nepasiekiama. Reikalauja prisijungimo — anoniminės viešos prieigos prie paketų nėra.
 
 ## Federacija su kitu TAK serveriu
 

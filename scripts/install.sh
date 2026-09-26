@@ -6,7 +6,7 @@ REPO_URL="https://github.com/ndukve/TAK.git"
 INSTALL_DIR="${INSTALL_DIR:-$HOME/tak-server}"
 
 # ── Bootstrap: clone repo if running via curl | bash ─────────────────────────
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]:-$0}")" 2>/dev/null && pwd || echo "$PWD")"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]:-$0}")/.." 2>/dev/null && pwd || echo "$PWD")"
 if [ ! -f "$SCRIPT_DIR/docker-compose.yml" ]; then
     echo "Bootstrapping — cloning repo to $INSTALL_DIR ..."
     if ! command -v git &>/dev/null; then
@@ -25,12 +25,12 @@ if [ ! -f "$SCRIPT_DIR/docker-compose.yml" ]; then
         git clone "$REPO_URL" "$INSTALL_DIR"
     fi
     git -C "$INSTALL_DIR" submodule update --init --recursive
-    exec bash "$INSTALL_DIR/install.sh" < /dev/tty
+    exec bash "$INSTALL_DIR/scripts/install.sh" < /dev/tty
 fi
 
 ENV_FILE="$SCRIPT_DIR/takserver.env"
 [ -t 0 ] || exec < /dev/tty 2>/dev/null || true
-[[ $EUID -ne 0 ]] && { echo "  Re-running with sudo..."; exec sudo bash "$SCRIPT_DIR/install.sh"; }
+[[ $EUID -ne 0 ]] && { echo "  Re-running with sudo..."; exec sudo bash "$SCRIPT_DIR/scripts/install.sh"; }
 
 WT_BACKTITLE="TAK Server Installer"
 # shellcheck source=scripts/_tui.sh

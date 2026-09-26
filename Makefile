@@ -15,7 +15,7 @@ build:
 	@$(MAKE) up
 
 up:
-	@[ -f $(ENV_FILE) ] || { echo "Run './install.sh' first"; exit 1; }
+	@[ -f $(ENV_FILE) ] || { echo "Run './scripts/install.sh' first"; exit 1; }
 	@bash -c '. ./scripts/sync_server_address.sh && sync_server_address $(ENV_FILE)'
 	docker compose --env-file $(ENV_FILE) up -d
 
@@ -26,7 +26,7 @@ restart:
 	docker compose --env-file $(ENV_FILE) restart
 
 update:
-	@chmod +x ./update.sh && ./update.sh
+	@chmod +x ./scripts/update.sh && ./scripts/update.sh
 
 # ── User management ───────────────────────────────────────────────────────────
 
@@ -34,16 +34,16 @@ update:
 ## Usage: make add-user USERNAME=alice-iTAK  (must end in -ATAK/-WinTAK/-iTAK)
 add-user:
 	@[ -n "$(USERNAME)" ] || { echo "Usage: make add-user USERNAME=alice"; exit 1; }
-	@[ -f $(ENV_FILE) ] || { echo "Run './install.sh' first"; exit 1; }
-	@chmod +x ./users.sh
-	./users.sh create $(USERNAME)
+	@[ -f $(ENV_FILE) ] || { echo "Run './scripts/install.sh' first"; exit 1; }
+	@chmod +x ./scripts/users.sh
+	./scripts/users.sh create $(USERNAME)
 
 ## Generate device cert (.p12) only — no package, not authorized yet.
 ## Usage: make gen-device-cert USERNAME=alice-iTAK  (must end in -ATAK/-WinTAK/-iTAK)
 gen-device-cert:
 	@[ -n "$(USERNAME)" ] || { echo "Usage: make gen-device-cert USERNAME=alice-iTAK"; exit 1; }
 	@echo "$(USERNAME)" | grep -qE -- '-(ATAK|WinTAK|iTAK)$$' || { echo "USERNAME must end in -ATAK, -WinTAK, or -iTAK (e.g. alice-iTAK)"; exit 1; }
-	@[ -f $(ENV_FILE) ] || { echo "Run './install.sh' first"; exit 1; }
+	@[ -f $(ENV_FILE) ] || { echo "Run './scripts/install.sh' first"; exit 1; }
 	$(eval DC := $(shell docker info >/dev/null 2>&1 && echo "docker compose" || echo "sudo docker compose"))
 	$(DC) --env-file $(ENV_FILE) exec \
 		-e CLIENT_CERT_NAME="$(USERNAME)" \
@@ -55,7 +55,7 @@ gen-device-cert:
 make-package:
 	@[ -n "$(USERNAME)" ] || { echo "Usage: make make-package USERNAME=alice-iTAK"; exit 1; }
 	@echo "$(USERNAME)" | grep -qE -- '-(ATAK|WinTAK|iTAK)$$' || { echo "USERNAME must end in -ATAK, -WinTAK, or -iTAK (e.g. alice-iTAK)"; exit 1; }
-	@[ -f $(ENV_FILE) ] || { echo "Run './install.sh' first"; exit 1; }
+	@[ -f $(ENV_FILE) ] || { echo "Run './scripts/install.sh' first"; exit 1; }
 	$(eval DC := $(shell docker info >/dev/null 2>&1 && echo "docker compose" || echo "sudo docker compose"))
 	$(eval ADDR := $(shell grep '^TAK_SERVER_ADDRESS=' $(ENV_FILE) | cut -d= -f2))
 	$(DC) --env-file $(ENV_FILE) exec \
@@ -73,7 +73,7 @@ gen-cert: gen-device-cert make-package
 ## Usage: make enable-user USERNAME=alice
 enable-user:
 	@[ -n "$(USERNAME)" ] || { echo "Usage: make enable-user USERNAME=alice"; exit 1; }
-	@[ -f $(ENV_FILE) ] || { echo "Run './install.sh' first"; exit 1; }
+	@[ -f $(ENV_FILE) ] || { echo "Run './scripts/install.sh' first"; exit 1; }
 	$(eval DC := $(shell docker info >/dev/null 2>&1 && echo "docker compose" || echo "sudo docker compose"))
 	$(DC) --env-file $(ENV_FILE) exec \
 		-e USER_CERT_NAME="$(USERNAME)" \
@@ -98,7 +98,7 @@ serve-packages:
 ## Usage: make add-plugin APK=/path/to/plugin.apk
 add-plugin:
 	@[ -n "$(APK)" ] || { echo "Usage: make add-plugin APK=/path/to/plugin.apk"; exit 1; }
-	@[ -f $(ENV_FILE) ] || { echo "Run './install.sh' first"; exit 1; }
+	@[ -f $(ENV_FILE) ] || { echo "Run './scripts/install.sh' first"; exit 1; }
 	@docker compose --env-file $(ENV_FILE) exec takserver_config mkdir -p /opt/tak/data/plugins
 	docker compose --env-file $(ENV_FILE) cp $(APK) takserver_config:/opt/tak/data/plugins/
 	@TAK_ADDR=$$(grep '^TAK_SERVER_ADDRESS=' $(ENV_FILE) | cut -d= -f2); \

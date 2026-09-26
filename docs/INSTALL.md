@@ -42,7 +42,7 @@ If devices will connect from outside the local network, use NetBird to create an
 On your Debian machine, open a terminal and run:
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/ndukve/TAK/main/install.sh | bash
+curl -fsSL https://raw.githubusercontent.com/ndukve/TAK/main/scripts/install.sh | bash
 ```
 
 > **The installer requires root.** If you are not already root, it will automatically re-run itself with `sudo` and prompt for your password once. The rest of the install runs unattended.
@@ -114,7 +114,7 @@ Every client still receives its own certificate. Clients can see one another bec
 
 ```bash
 cd ~/tak-server
-./users.sh create Alpha1-iTAK
+./scripts/users.sh create Alpha1-iTAK
 ```
 
 Run it with no argument and it will prompt you interactively for the callsign.
@@ -142,7 +142,7 @@ Once the package is ready, download it from the admin panel at `https://<SERVER_
 For an existing deployment created before shared routing-group assignment was enabled, run this once after updating and restarting the server:
 
 ```bash
-./users.sh repair-groups
+./scripts/users.sh repair-groups
 ```
 
 It re-applies authorization to every packaged ATAK, iTAK, and WinTAK certificate with both IN and OUT membership in `TAK-USERS`. It does not replace certificates or make clients share private keys.
@@ -284,25 +284,25 @@ Structured tactical reporting — 9-line MEDEVAC, CAS (close air support), SALUT
 cd ~/tak-server
 
 # Pull latest code, rebuild, restart — self-tests and auto-recovers after
-./update.sh
+./scripts/update.sh
 
 # Check the deployment is healthy right now, without pulling/rebuilding —
 # safe to run anytime (e.g. from cron), and auto-recovers if something's wrong
-./health.sh
+./scripts/health.sh
 
 # Re-run the installer any time — it detects an existing takserver.env and
 # offers to reinstall (wipe containers/images, rebuild, keep the database/
 # certs/packages) or fully reconfigure from scratch
-./install.sh
+./scripts/install.sh
 
 # Force-remove all cert/package files for a user, regardless of current
 # state — use this if a user is stuck (e.g. "already exists" after deleting)
-./users.sh purge <name>
+./scripts/users.sh purge <name>
 ```
 
 `update.sh` and `health.sh` both verify the deployed containers actually match the code that was pulled — not just that `git pull` succeeded. If Docker's build cache silently serves a stale layer (this can happen), they automatically force a clean rebuild and re-verify before declaring success, rather than leaving a broken deployment for you to debug by hand.
 
-If the admin panel itself is ever unreachable, two scripts at the repo root give you a break-glass fallback — they only need SSH/shell access to the server, not network access to port 9444. `./users.sh get [name]` lists available packages with no argument, or downloads one to the current directory when given a name. `./admin_fallback.sh` opens an interactive menu covering the same read-only package and map browsing/downloading.
+If the admin panel itself is ever unreachable, two scripts at the repo root give you a break-glass fallback — they only need SSH/shell access to the server, not network access to port 9444. `./scripts/users.sh get [name]` lists available packages with no argument, or downloads one to the current directory when given a name. `./scripts/admin_fallback.sh` opens an interactive menu covering the same read-only package and map browsing/downloading.
 
 ## Troubleshooting
 
@@ -310,13 +310,13 @@ If the admin panel itself is ever unreachable, two scripts at the repo root give
 > Confirm the device can reach the server IP on port 9444 (the admin panel). For Option A: check that the device is on the same Wi-Fi/LAN. For Option B: confirm the NetBird app shows **Connected**.
 
 > **Server appears but won't connect**
-> The package may have been generated with the wrong server IP. Delete the server entry, regenerate the package with `./users.sh create YourCallsign-iTAK` (or `-ATAK`/`-WinTAK`), and re-import.
+> The package may have been generated with the wrong server IP. Delete the server entry, regenerate the package with `./scripts/users.sh create YourCallsign-iTAK` (or `-ATAK`/`-WinTAK`), and re-import.
 
 > **iTAK doesn't show the server after importing the package**
-> Make sure the callsign ends in `-iTAK`, not `-ATAK`/`-WinTAK` — iTAK needs its own package layout (see Step 4). Run `./health.sh` to confirm the package builder itself is working correctly.
+> Make sure the callsign ends in `-iTAK`, not `-ATAK`/`-WinTAK` — iTAK needs its own package layout (see Step 4). Run `./scripts/health.sh` to confirm the package builder itself is working correctly.
 
 > **"Callsign already exists" when creating a user that you thought you deleted**
-> Run `./users.sh purge <name>` to force-remove any leftover cert/package files, then create it again.
+> Run `./scripts/users.sh purge <name>` to force-remove any leftover cert/package files, then create it again.
 
 > **Connection drops when the screen turns off**
 > Disable battery optimisation for the TAK app.
