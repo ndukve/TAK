@@ -64,6 +64,28 @@ case "${1}" in
         ;;
     retention)
         info "Starting TAK Retention"
+        # The jar's logback.xml reads ${AUDIT_ENABLED} and ${JSON_FORMAT_ENABLED} through
+        # <springProperty>, which logback ignores outside a Spring context, so the <if> on
+        # them fails to parse ("AUDIT_ENABLED_IS_UNDEFINED is not an rvalue") and the service
+        # dies in its static logger initialiser. Plain environment variables define them.
+        export AUDIT_ENABLED="${AUDIT_ENABLED:-false}" JSON_FORMAT_ENABLED="${JSON_FORMAT_ENABLED:-false}"
+        # Retention policy. TAK_RETENTION_COT_DAYS is how many days of CoT to keep ("null" = forever).
+        # TAK_RETENTION_CRON is a Spring cron for the purge run; "-" (the default) keeps the
+        # service idle, so setting the policy never deletes anything until a schedule is set on purpose.
+        cat > /opt/tak/conf/retention/retention-policy.yml <<POLICY
+---
+dataRetentionMap:
+  cot: ${TAK_RETENTION_COT_DAYS:-7}
+  files: null
+  missionpackages: null
+  missions: null
+  geochat: null
+
+retentionSettings:
+  files:
+    exemptKeywords: []
+POLICY
+        printf -- '---\ncronExpression: "%s"\n' "${TAK_RETENTION_CRON:--}" > /opt/tak/conf/retention/retention-service.yml
         exec java -jar -Xmx${RETENTION_MAX_HEAP}m takserver-retention.jar
         ;;
     pm)

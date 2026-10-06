@@ -161,14 +161,29 @@ else
 fi
 section_done
 
-# Building TAK temporarily needs room for its distribution, expanded WAR, base
-# layers, and the previous image (which must remain available until replacement
-# containers start). Fail before a long BuildKit run instead of dying halfway
-# through extraction with an opaque unzip write error.
+# How much room the build needs depends on how much of it is cached. When the TAK image
+# already exists locally, BuildKit rewrites only the layers that changed, so the old image
+# plus a working allowance is enough: its own size + 1 GiB (at least 2 GiB). Only a first
+# build, with no local image to size it by, needs the full 8 GiB for the distribution, the
+# expanded WAR and the base layers. The build cache is never pruned here: it is what keeps
+# updates small, and deleting it only makes the next update bigger.
 section "Docker storage preflight"
-MIN_DOCKER_FREE_MB=${TAK_UPDATE_MIN_FREE_MB:-8192}
-[[ "$MIN_DOCKER_FREE_MB" =~ ^[0-9]+$ ]] \
-    || fail "TAK_UPDATE_MIN_FREE_MB must be a non-negative integer"
+largest_image_mb=0
+while IFS= read -r image; do
+    [ -n "$image" ] || continue
+    bytes=$(docker image inspect -f '{{.Size}}' "$image" 2>/dev/null || true)
+    [[ "$bytes" =~ ^[0-9]+$ ]] && (( bytes / 1048576 > largest_image_mb )) && largest_image_mb=$(( bytes / 1048576 ))
+done < <(docker compose --env-file "$ENV_FILE" config --images 2>/dev/null)
+if [ -n "${TAK_UPDATE_MIN_FREE_MB:-}" ]; then
+    MIN_DOCKER_FREE_MB=$TAK_UPDATE_MIN_FREE_MB
+    [[ "$MIN_DOCKER_FREE_MB" =~ ^[0-9]+$ ]] \
+        || fail "TAK_UPDATE_MIN_FREE_MB must be a non-negative integer"
+elif (( largest_image_mb > 0 )); then
+    MIN_DOCKER_FREE_MB=$(( largest_image_mb + 1024 ))
+    (( MIN_DOCKER_FREE_MB < 2048 )) && MIN_DOCKER_FREE_MB=2048
+else
+    MIN_DOCKER_FREE_MB=8192
+fi
 DOCKER_ROOT=$(docker info --format '{{.DockerRootDir}}' 2>/dev/null || true)
 DOCKER_ROOT=${DOCKER_ROOT:-/var/lib/docker}
 [ -d "$DOCKER_ROOT" ] || DOCKER_ROOT=/
@@ -177,18 +192,11 @@ if [ -z "$DOCKER_FREE_MB" ] || ! [[ "$DOCKER_FREE_MB" =~ ^[0-9]+$ ]]; then
     fail "Could not determine free space for Docker storage at $DOCKER_ROOT"
 fi
 if (( DOCKER_FREE_MB < MIN_DOCKER_FREE_MB )); then
-    # Build cache is pure rebuild-time savings, never data — safe to reclaim
-    # automatically instead of failing every update once it piles up.
-    warn "Only ${DOCKER_FREE_MB} MiB free on Docker storage ($DOCKER_ROOT); ${MIN_DOCKER_FREE_MB} MiB required. Reclaiming unused build cache..."
-    docker builder prune -af >/dev/null 2>&1 || true
-    DOCKER_FREE_MB=$(df -Pm "$DOCKER_ROOT" | awk 'NR == 2 {print $4}')
-fi
-if (( DOCKER_FREE_MB < MIN_DOCKER_FREE_MB )); then
     docker system df 2>/dev/null || true
-    warn "Reclaim images unused by containers: docker image prune -af"
-    fail "Only ${DOCKER_FREE_MB} MiB free on Docker storage ($DOCKER_ROOT) even after reclaiming build cache; ${MIN_DOCKER_FREE_MB} MiB required. Free space deliberately, then retry. Set TAK_UPDATE_MIN_FREE_MB only to override this preflight intentionally."
+    warn "Free space deliberately, then retry: docker image prune -af removes images no container uses; docker builder prune -af also removes the build cache, which makes the next update larger."
+    fail "Only ${DOCKER_FREE_MB} MiB free on Docker storage ($DOCKER_ROOT); ${MIN_DOCKER_FREE_MB} MiB needed (largest local image: ${largest_image_mb} MiB). Set TAK_UPDATE_MIN_FREE_MB only to override this check on purpose."
 fi
-ok "Docker storage preflight: ${DOCKER_FREE_MB} MiB free"
+ok "Docker storage preflight: ${DOCKER_FREE_MB} MiB free, ${MIN_DOCKER_FREE_MB} MiB needed"
 section_done
 
 # ── Admin DB ──────────────────────────────────────────────────────────────────
