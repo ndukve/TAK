@@ -36,7 +36,7 @@ banner "Update"
 # Numbered, framed step banners (ported from the INTCORE installer's
 # "====\n[N/TOTAL] Title...\n====" style), overriding _spinner.sh's plain
 # underlined section() for this script only.
-TOTAL_STEPS=8
+TOTAL_STEPS=9
 STEP=0
 SECTION_TITLE=""
 _SECTION_RULE="$(printf '=%.0s' $(seq 1 70))"
@@ -210,6 +210,22 @@ docker compose exec -T takdb psql -U "$PGUSER" \
     || ok "admin database already exists"
 section_done
 
+# ── Shutdown ──────────────────────────────────────────────────────────────────
+section "Shutdown"
+# Stop everything before anything is replaced, remembering what was running, so the update never swaps
+# an image under a running container and the same set comes back afterwards. Volumes are kept.
+RUNNING_SERVICES="$(docker compose --env-file "$ENV_FILE" --profile '*' ps --services --status running 2>/dev/null | tr '\n' ' ')"
+info "Running before the update: ${RUNNING_SERVICES:-none}"
+docker compose --env-file "$ENV_FILE" --profile '*' stop >/dev/null 2>&1 || true
+ok "Everything stopped"
+# A failed build must not leave the server down: start what was running again (old images).
+restore_previous() {
+    warn "Update step failed — starting the previous containers again"
+    # shellcheck disable=SC2086  # RUNNING_SERVICES is a space-separated list of service names
+    [ -z "$RUNNING_SERVICES" ] || docker compose --env-file "$ENV_FILE" --profile '*' up -d $RUNNING_SERVICES >/dev/null 2>&1 || true
+}
+section_done
+
 # ── Rebuild ───────────────────────────────────────────────────────────────────
 section "Rebuild and restart"
 GIT_COMMIT="$(git rev-parse HEAD)"
@@ -221,17 +237,19 @@ ok "Vendored images loaded"
 
 info "Building updated image..."
 docker compose --env-file "$ENV_FILE" build \
-    || fail "Build failed (see output above)."
+    || { restore_previous; fail "Build failed (see output above)."; }
 ok "Image built"
 
 sync_server_address "$ENV_FILE"
 
-info "Restarting containers..."
-# up -d (no preceding down) only recreates containers whose image/config
-# actually changed — a plain admin-panel update leaves takserver_config's
-# messaging/CoT service running undisturbed instead of bouncing everything.
+info "Starting containers (changed ones are recreated, the rest start as they were)..."
 docker compose --env-file "$ENV_FILE" up -d --remove-orphans \
     || { dump_service_logs "$ENV_FILE"; fail "Container restart failed (see output above)."; }
+if [ -n "$RUNNING_SERVICES" ]; then
+    # shellcheck disable=SC2086  # RUNNING_SERVICES is a space-separated list of service names
+    docker compose --env-file "$ENV_FILE" --profile '*' up -d $RUNNING_SERVICES \
+        || { dump_service_logs "$ENV_FILE"; fail "Restarting the previously running containers failed."; }
+fi
 ok "Containers restarted"
 
 # Rebuilding retags the image, which leaves the previous build behind as an untagged ("dangling")
