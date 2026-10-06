@@ -9,8 +9,8 @@ allowBuilds:
 # is scoped per major line (two independent copies get pulled in); the rest
 # pin to their latest same-major patch to avoid a breaking major bump.
 overrides:
-  brace-expansion@1: ^1.1.18   # GHSA-mh99-v99m-4gvg, GHSA-rgw5-rvv9-x895
-  brace-expansion@5: ^5.0.9    # GHSA-mh99-v99m-4gvg, GHSA-rgw5-rvv9-x895
+  brace-expansion@1: ^1.1.20   # GHSA-mh99-v99m-4gvg, GHSA-rgw5-rvv9-x895 and later 1.x patches
+  brace-expansion@5: ^5.0.11   # GHSA-mh99-v99m-4gvg, GHSA-rgw5-rvv9-x895 and later 5.x patches
   postcss: ^8.5.18             # GHSA-r28c-9q8g-f849
   js-yaml: ^4.3.2              # GHSA-5p4m-2wfm-xmqj, GHSA-2883-xcg3-v3hh
   nanoid: ^3.3.17              # GHSA-28wg-ghj8-5hjv, GHSA-2v37-7h3g-55p8
@@ -21,3 +21,16 @@ overrides:
   # code the built app ships, but it's listed under "dependencies" so pin anyway.
   hono: ^4.13.8                # toSSG path escape, parseBody nesting DoS, query-parser cache-key differential
   qs: ^6.16.0                  # array-limit bracket-key bypass, isBuffer DoS
+  # Later advisories, again only reached through dev tooling (shadcn CLI, eslint, vite, the router's
+  # build-time core): each pins to the first patched release of the same major.
+  proxy-addr: ^2.0.8           # IPv4-mapped IP spoofing (via shadcn > @modelcontextprotocol/sdk > express)
+  seroval: ^1.6.3              # fromJSON thenable assimilation, TypedArray memory exhaustion
+  source-map-js: ^1.2.2        # event-loop DoS through source-map section offsets
+  undici: ^7.29.1              # unrequested-redirect DoS, TLS certificate validation bypass
+
+# braces <= 3.0.3 (stack exhaustion on deeply nested patterns, reached only through the shadcn CLI's
+# fast-glob) is advised as fixed in 3.0.4, but no release above 3.0.3 exists on the registry, so there is
+# nothing to upgrade to. Revisit once braces publishes a patched version, then delete this entry.
+auditConfig:
+  ignoreGhsas:
+    - GHSA-vfj7-8cjw-p6xm
