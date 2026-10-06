@@ -127,6 +127,7 @@ gen_hex() { openssl rand -hex "${1:-16}"; }
 
 # ── Welcome ───────────────────────────────────────────────────────────────────
 wt_msg "Welcome" "TAK Server Offline Installer\n\nThis deploys the official Java TAK Server in Docker, along with an admin panel and package server, entirely from files already in this folder — no network access is used.\n\nUse Tab / arrow keys to move between fields, Enter to confirm." 14 72
+check_install_disk
 
 # ── [1/6] Networking ──────────────────────────────────────────────────────────
 # No VPN auto-install here (NetBird/Tailscale setup needs internet) — if one
@@ -166,6 +167,8 @@ while true; do
     wt_msg "Password too short" "Minimum 12 characters required." 8 50
 done
 
+ask_cot_retention "CoT Retention [3/6]"
+
 # ── [4/6] Review ──────────────────────────────────────────────────────────────
 _SUMMARY="Server address    : ${TAK_SERVER_ADDRESS}
 Server name       : ${TAK_SERVER_NAME}
@@ -175,6 +178,7 @@ City              : ${CITY}
 Organization      : ${ORGANIZATION}
 Org unit          : ${ORGANIZATIONAL_UNIT}
 Admin user        : ${ADMIN_FIRST_USER}
+CoT retention     : $([ "$TAK_RETENTION_COT_DAYS" = null ] && echo forever || echo "${TAK_RETENTION_COT_DAYS} day(s)")
 Admin password    : (set)
 DB/cert passwords : (auto-generated)
 
@@ -227,6 +231,10 @@ DOCKER_SOCKET_GID=${DOCKER_SOCKET_GID}
 ADMIN_SECRET_KEY=${ADMIN_SECRET_KEY}
 ADMIN_FIRST_USER=${ADMIN_FIRST_USER}
 ADMIN_FIRST_PASS=${ADMIN_FIRST_PASS}
+
+# CoT retention: days of history kept, and the purge schedule ("-" = never purge).
+TAK_RETENTION_COT_DAYS=${TAK_RETENTION_COT_DAYS}
+TAK_RETENTION_CRON=${TAK_RETENTION_CRON}
 ENVEOF
 chmod 600 "$ENV_FILE"
 

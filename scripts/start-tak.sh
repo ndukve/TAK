@@ -75,7 +75,7 @@ case "${1}" in
         cat > /opt/tak/conf/retention/retention-policy.yml <<POLICY
 ---
 dataRetentionMap:
-  cot: ${TAK_RETENTION_COT_DAYS:-7}
+  cot: ${TAK_RETENTION_COT_DAYS:-1}
   files: null
   missionpackages: null
   missions: null

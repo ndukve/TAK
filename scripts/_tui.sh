@@ -94,6 +94,36 @@ wt_menu() {
     printf -v "$_var" '%s' "$_result"
 }
 
+# Ask how long the server keeps CoT history. TAK stores every CoT in the database (track history,
+# replay, data sync); a busy server writes gigabytes a day, so the retention window sets the disk it needs.
+# Sets TAK_RETENTION_COT_DAYS (days, or "null" for forever) and TAK_RETENTION_CRON (purge schedule).
+# Both can be preset in the environment to skip the question.
+ask_cot_retention() {
+    local _title="$1"
+    if [ -z "${TAK_RETENTION_COT_DAYS:-}" ]; then
+        wt_menu TAK_RETENTION_COT_DAYS "$_title" \
+"How long should the server keep CoT history?\nOlder data is deleted nightly at 03:00." \
+            1 "24 hours (recommended)" 3 "3 days" 7 "7 days" 30 "30 days" null "Keep everything (disk grows without limit)"
+    fi
+    [[ "$TAK_RETENTION_COT_DAYS" =~ ^([1-9][0-9]*|null)$ ]] \
+        || fail "TAK_RETENTION_COT_DAYS must be a number of days or 'null' (got '$TAK_RETENTION_COT_DAYS')."
+    if [ "$TAK_RETENTION_COT_DAYS" = "null" ]; then
+        TAK_RETENTION_CRON="-"
+    else
+        TAK_RETENTION_CRON="${TAK_RETENTION_CRON:-0 0 3 * * *}"
+    fi
+}
+
+# The server needs about 128 GB: the database, the container images and their build cache.
+# Warn, and let the admin continue, when the root filesystem is clearly smaller.
+check_install_disk() {
+    local total_gb
+    total_gb=$(df -BG --output=size / 2>/dev/null | tail -1 | tr -dc '0-9')
+    [ -n "$total_gb" ] && [ "$total_gb" -lt 120 ] || return 0
+    wt_yesno "Disk space" "This server has about ${total_gb} GB of disk. TAK Server needs 128 GB: the CoT database, the container images and their build cache.\n\nContinue anyway?" 12 72 \
+        || { clear; echo "Aborted."; exit 0; }
+}
+
 # Run a command with a live gauge; on failure, show the full log in a
 # scrollable box AND dump it to the terminal so nothing is ever hidden.
 run_with_gauge() {

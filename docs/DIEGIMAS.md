@@ -5,7 +5,7 @@ Jums reikės:
 - Kompiuterio arba virtualios mašinos su **Debian 13** (serverio leidimas, minimalus diegimas) ir interneto ryšiu
 - TAK kliento programėlės: **ATAK** (Android), **iTAK** (iOS) arba **WinTAK** (Windows)
 
-**Minimalūs serverio reikalavimai:** 4 CPU branduoliai · 8 GB RAM · 64 GB disko vietos
+**Minimalūs serverio reikalavimai:** 4 CPU branduoliai · 8 GB RAM · 128 GB disko vietos
 
 **Pasirinkite, kaip įrenginiai pasiekia serverį:**
 

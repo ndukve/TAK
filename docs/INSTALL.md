@@ -5,7 +5,7 @@ You will need:
 - A machine running **Debian 13** (server edition, minimal install) with internet access
 - A TAK client: **iTAK** (iOS), **ATAK** (Android), or **WinTAK** (Windows)
 
-**Minimum server specs:** 4 CPU cores · 8 GB RAM · 64 GB disk
+**Minimum server specs:** 4 CPU cores · 8 GB RAM · 128 GB disk
 
 **Choose how devices will reach the server:**
 

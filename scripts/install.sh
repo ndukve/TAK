@@ -171,6 +171,7 @@ fi
 
 # ── Welcome ───────────────────────────────────────────────────────────────────
 wt_msg "Welcome" "TAK Server Installer\n\nThis deploys the official Java TAK Server in Docker, along with an admin panel and package server.\n\nUse Tab / arrow keys to move between fields, Enter to confirm." 14 72
+check_install_disk
 
 # ── [1/7] Networking ──────────────────────────────────────────────────────────
 TAK_SERVER_ADDRESS=""
@@ -266,6 +267,8 @@ while true; do
     wt_msg "Password too short" "Minimum 12 characters required." 8 50
 done
 
+ask_cot_retention "CoT Retention [3/7]"
+
 # ── [4/7] Review ──────────────────────────────────────────────────────────────
 _SUMMARY="Server address    : ${TAK_SERVER_ADDRESS}
 ${NETBIRD_MGMT_URL:+NetBird mgmt URL  : $NETBIRD_MGMT_URL
@@ -276,6 +279,7 @@ City              : ${CITY}
 Organization      : ${ORGANIZATION}
 Org unit          : ${ORGANIZATIONAL_UNIT}
 Admin user        : ${ADMIN_FIRST_USER}
+CoT retention     : $([ "$TAK_RETENTION_COT_DAYS" = null ] && echo forever || echo "${TAK_RETENTION_COT_DAYS} day(s)")
 Admin password    : (set)
 DB/cert passwords : (auto-generated)
 
@@ -354,6 +358,10 @@ DOCKER_SOCKET_GID=${DOCKER_SOCKET_GID}
 ADMIN_SECRET_KEY=${ADMIN_SECRET_KEY}
 ADMIN_FIRST_USER=${ADMIN_FIRST_USER}
 ADMIN_FIRST_PASS=${ADMIN_FIRST_PASS}
+
+# CoT retention: days of history kept, and the purge schedule ("-" = never purge).
+TAK_RETENTION_COT_DAYS=${TAK_RETENTION_COT_DAYS}
+TAK_RETENTION_CRON=${TAK_RETENTION_CRON}
 ENVEOF
 chmod 600 "$ENV_FILE"
 
