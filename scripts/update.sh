@@ -234,6 +234,14 @@ docker compose --env-file "$ENV_FILE" up -d --remove-orphans \
     || { dump_service_logs "$ENV_FILE"; fail "Container restart failed (see output above)."; }
 ok "Containers restarted"
 
+# Rebuilding retags the image, which leaves the previous build behind as an untagged ("dangling")
+# image, and BuildKit keeps growing its layer cache. Remove the dangling images (never one a
+# container uses, never a volume) and cap the cache so repeated updates cannot fill the disk.
+# The cache is kept up to TAK_BUILD_CACHE_KEEP (default 3gb) so the next update stays incremental.
+docker image prune -f >/dev/null 2>&1 || true
+docker builder prune -f --keep-storage "${TAK_BUILD_CACHE_KEEP:-3gb}" >/dev/null 2>&1 || true
+ok "Old images removed, build cache capped at ${TAK_BUILD_CACHE_KEEP:-3gb}"
+
 # The EFDI bridge is an always-on TAK integration. Reapply its shared routing
 # group after every upgrade so older packages and restored certificates retain
 # IN + OUT access even if their server-side assignment was lost.

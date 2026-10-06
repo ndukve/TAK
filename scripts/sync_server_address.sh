@@ -88,7 +88,7 @@ sync_server_address() {
     [ -f "$env_file" ] || return 0
 
     local current detected
-    current=$(grep '^TAK_SERVER_ADDRESS=' "$env_file" | cut -d= -f2-)
+    current=$(grep '^TAK_SERVER_ADDRESS=' "$env_file" | cut -d= -f2- || true)
     detected="$(detect_server_address)"
     if [ -n "$detected" ] && [ "$detected" != "$current" ]; then
         if [ -z "$current" ] || _is_ipv4 "$current"; then
@@ -105,7 +105,7 @@ sync_server_address() {
     fi
 
     local current_lan lan_detected
-    current_lan=$(grep '^TAK_SERVER_ADDRESS_LAN=' "$env_file" | cut -d= -f2-)
+    current_lan=$(grep '^TAK_SERVER_ADDRESS_LAN=' "$env_file" | cut -d= -f2- || true)
     if _vpn_active; then
         lan_detected="$(detect_lan_ip)"
         if [ -n "$lan_detected" ] && [ "$lan_detected" != "$current_lan" ] \
