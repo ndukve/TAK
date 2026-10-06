@@ -163,7 +163,7 @@ section_done
 
 # How much room the build needs depends on how much of it is cached. When the TAK image
 # already exists locally, BuildKit rewrites only the layers that changed, so the old image
-# plus a working allowance is enough: its own size + 1 GiB (at least 2 GiB). Only a first
+# plus a working allowance is enough: half its size + 1 GiB (at least 1.5 GiB). Only a first
 # build, with no local image to size it by, needs the full 8 GiB for the distribution, the
 # expanded WAR and the base layers. The build cache is never pruned here: it is what keeps
 # updates small, and deleting it only makes the next update bigger.
@@ -179,8 +179,8 @@ if [ -n "${TAK_UPDATE_MIN_FREE_MB:-}" ]; then
     [[ "$MIN_DOCKER_FREE_MB" =~ ^[0-9]+$ ]] \
         || fail "TAK_UPDATE_MIN_FREE_MB must be a non-negative integer"
 elif (( largest_image_mb > 0 )); then
-    MIN_DOCKER_FREE_MB=$(( largest_image_mb + 1024 ))
-    (( MIN_DOCKER_FREE_MB < 2048 )) && MIN_DOCKER_FREE_MB=2048
+    MIN_DOCKER_FREE_MB=$(( largest_image_mb / 2 + 1024 ))
+    (( MIN_DOCKER_FREE_MB < 1536 )) && MIN_DOCKER_FREE_MB=1536
 else
     MIN_DOCKER_FREE_MB=8192
 fi
