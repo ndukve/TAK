@@ -107,7 +107,9 @@ services:
     ports:
       - "8089:8089"
       - "8443:8443"
-      - "8087:8087"
+      # 8087 is the anonymous stdtcp input (templates/CoreConfig.tpl): no TLS, no client certificate, anyone who
+      # can reach it can inject or delete CoT in the TAK-USERS group. Publish it on loopback only; clients use 8089.
+      - "127.0.0.1:8087:8087"
       # Federation (templates/CoreConfig.tpl <federation-server>) — TLS
       # handshake, v2 protocol negotiation, token auth.
       - "9000:9000"

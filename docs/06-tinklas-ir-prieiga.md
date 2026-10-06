@@ -18,7 +18,7 @@ Jei serveryje jau veikia ir NetBird, ir Tailscale, `install.sh` paklaus, kurį n
 |---|---|---|
 | 8089 | TCP/TLS | CoT — pagrindinė TAK kliento jungtis (mTLS) |
 | 8443 | HTTPS | Marti API |
-| 8087 | TCP (plaintext) | Vidinis CoT įėjimas serviso paskyroms per overlay tinklą (žr. `TAK_USER_GROUP` faile `templates/CoreConfig.tpl`) — **neatverti į viešą internetą** |
+| 8087 | TCP (plaintext) | Anoniminis CoT įėjimas (be TLS ir be kliento sertifikato; žr. `TAK_USER_GROUP` faile `templates/CoreConfig.tpl`), paskelbtas tik serverio loopback sąsajoje — **niekada neskelbti tinklo sąsajoje; klientai naudoja 8089** |
 | 9444 | HTTPS | Admin panelė — WebUI, autentifikuotas paketų/papildinių/žemėlapių atsisiuntimas |
 | 9000–9002 | TCP/TLS | Federacija (žr. [05-sertifikatai-ir-saugumas.md](05-sertifikatai-ir-saugumas.md)) |
 

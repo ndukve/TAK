@@ -18,7 +18,7 @@ If both NetBird and Tailscale are already running on the server, `install.sh` as
 |---|---|---|
 | 8089 | TCP/TLS | CoT — primary TAK client connection (mTLS) |
 | 8443 | HTTPS | Marti API |
-| 8087 | TCP (plaintext) | Internal CoT input for service accounts, overlay network only (see `TAK_USER_GROUP` in `templates/CoreConfig.tpl`) — **do not expose to the public internet** |
+| 8087 | TCP (plaintext) | Anonymous CoT input (no TLS, no client certificate; see `TAK_USER_GROUP` in `templates/CoreConfig.tpl`), published on the host's loopback only — **never publish it on a network interface; clients use 8089** |
 | 9444 | HTTPS | Admin panel — WebUI, authenticated package/plugin/map downloads |
 | 9000–9002 | TCP/TLS | Federation (see [05-certificates-and-security.md](05-certificates-and-security.md)) |
 

@@ -78,7 +78,7 @@ Details: [docs/06-network-and-access.md](docs/06-network-and-access.md).
 |------|----------|---------|
 | 8089 | TCP/TLS | CoT — primary TAK client input |
 | 8443 | HTTPS | Marti API |
-| 8087 | TCP | Internal CoT for service accounts, overlay network only — not for public exposure |
+| 8087 | TCP | Anonymous plaintext CoT (no TLS, no client certificate); published on the host's loopback only — clients use 8089 |
 | 9444 | HTTPS | Admin panel — WebUI and authenticated package/plugin/map downloads |
 | 9000–9002 | TCP/TLS | Federation (server-to-server) |
 
