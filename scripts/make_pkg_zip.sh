@@ -44,6 +44,23 @@ export CLIENT_CERT_PASSWORD
 
 info "Building data package for ${CLIENT_CERT_NAME} (${TEMPLATE_DIR:-PEM bundle})"
 
+# makeCert.sh exports PKCS#12 with -legacy (RC2-40 + SHA-1) because TAK Server's
+# Java needs it, but ATAK on Android 16 rejects that format with "Please
+# re-import your trust store certificate" before it ever connects. The copies
+# shipped to ATAK/WinTAK are re-encrypted with OpenSSL 3's default AES-256 +
+# SHA-256 (same keys and passwords, server-side files untouched).
+modernize_p12() {
+    local src=$1 dest=$2 pw=$3 mode=$4 pem
+    pem=$(mktemp "${tmp_dir}/p12.XXXXXX")
+    PW="$pw" openssl pkcs12 -legacy -in "$src" -passin env:PW "$mode" -out "$pem"
+    if [ "$mode" = "-nokeys" ]; then
+        PW="$pw" openssl pkcs12 -export -nokeys -in "$pem" -out "$dest" -passout env:PW
+    else
+        PW="$pw" openssl pkcs12 -export -in "$pem" -out "$dest" -name "${CLIENT_CERT_NAME}" -passout env:PW
+    fi
+    rm -f "$pem"
+}
+
 tmp_dir=$(mktemp -d "/tmp/newclient.XXXXXXXX")
 WORK_DIR="${tmp_dir}/${CLIENT_CERT_NAME}"
 mkdir -p ${WORK_DIR}
@@ -80,8 +97,8 @@ case "$CLIENT_CERT_NAME" in
         cat ${WORK_DIR}/TAK_defaults.pref.tpl     | gomplate > ${WORK_DIR}/TAK_defaults.pref
         cat ${WORK_DIR}/MANIFEST/manifest.xml.tpl  | gomplate > ${WORK_DIR}/MANIFEST/manifest.xml
         rm ${WORK_DIR}/certs/blueteam.pref.tpl ${WORK_DIR}/TAK_defaults.pref.tpl ${WORK_DIR}/MANIFEST/manifest.xml.tpl
-        cp ${CR}/files/${CLIENT_CERT_NAME}.p12 ${WORK_DIR}/certs/
-        cp ${CR}/files/truststore-root.p12     ${WORK_DIR}/certs/
+        modernize_p12 "${CR}/files/${CLIENT_CERT_NAME}.p12" "${WORK_DIR}/certs/${CLIENT_CERT_NAME}.p12" "$CLIENT_CERT_PASSWORD" -nodes
+        modernize_p12 "${CR}/files/truststore-root.p12" "${WORK_DIR}/certs/truststore-root.p12" "$CA_PASS" -nokeys
         ;;
 esac
 
