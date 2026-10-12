@@ -70,8 +70,8 @@ package_selftest() {
         rm -f "$_st_log"
 
         local listing has_content
-        listing="$($dc exec -T takserver_config unzip -l "/opt/tak/data/certs/files/clientpkgs/${name}.zip" 2>/dev/null)"
-        if echo "$listing" | grep -q "certs/"; then has_content="yes"; else has_content="no"; fi
+        listing="$($dc exec -T takserver_config unzip -Z1 "/opt/tak/data/certs/files/clientpkgs/${name}.zip" 2>/dev/null)"
+        if echo "$listing" | grep -q "^certs/"; then has_content="yes"; else has_content="no"; fi
 
         $dc exec -T -u root takserver_config rm -f \
             "/opt/tak/data/certs/files/${name}.key" "/opt/tak/data/certs/files/${name}.pem" \
