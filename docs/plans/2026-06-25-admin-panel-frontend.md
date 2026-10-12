@@ -1656,7 +1656,7 @@ Expected: `dist/index.html`, `dist/assets/` directory with JS/CSS chunks.
 - [ ] **Step 2: Build full Docker image**
 
 ```bash
-cd /home/ndukve/IdeaProjects/TAK
+cd /home/ndukve/Projects/TAK
 docker compose build admin
 ```
 

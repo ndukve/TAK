@@ -27,6 +27,7 @@ overrides:
   seroval: ^1.6.3              # fromJSON thenable assimilation, TypedArray memory exhaustion
   source-map-js: ^1.2.2        # event-loop DoS through source-map section offsets
   undici: ^7.29.1              # unrequested-redirect DoS, TLS certificate validation bypass
+  "@modelcontextprotocol/sdk": ^1.31.0   # OAuth client advisory; via the shadcn CLI only
 
 # braces <= 3.0.3 (stack exhaustion on deeply nested patterns, reached only through the shadcn CLI's
 # fast-glob) is advised as fixed in 3.0.4, but no release above 3.0.3 exists on the registry, so there is

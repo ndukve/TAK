@@ -57,3 +57,12 @@ offline-bundle/
 # docs/ is tracked (public guides + design notes). Only local/scratch stays out.
 docs/superpowers/
 COMMIT_MSG.txt
+
+# secrets and local backups (added 2026-10-08)
+.env.*
+!.env.example
+*.key
+*.pem
+*.bak
+*.bak-*
+*.orig
