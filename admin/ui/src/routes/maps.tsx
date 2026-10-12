@@ -61,6 +61,101 @@ function formatBytes(bytes: number): string {
   return `${(bytes / 1024 ** 3).toFixed(2)} GB`
 }
 
+function UploadDialog({ progress, onPause, onResume, onClose }: {
+  progress: UploadProgress
+  onPause: () => void
+  onResume: () => void
+  onClose: () => void
+}) {
+  return (
+    <div className="fixed inset-0 z-[1000] flex items-center justify-center bg-black/65 px-4" role="dialog" aria-modal="true" aria-labelledby="map-upload-title">
+      <div className="w-full max-w-md rounded-lg border border-zinc-300 dark:border-white/15 hud-glass p-5 shadow-2xl">
+        <div className="flex items-start justify-between gap-4">
+          <div className="min-w-0">
+            <h2 id="map-upload-title" className="text-base font-semibold text-zinc-900 dark:text-white">Map upload</h2>
+            <p className="mt-1 truncate font-mono text-xs text-zinc-500">{progress.provider}/{progress.filename}</p>
+          </div>
+          <button onClick={onClose} className="rounded-lg p-1 text-zinc-500 hover:bg-zinc-100 dark:hover:bg-white/10" aria-label="Close upload dialog">
+            <Icon name="close-line" size={16} />
+          </button>
+        </div>
+
+        <div className="mt-5 h-2 overflow-hidden rounded-full bg-zinc-200 dark:bg-white/10">
+          <div
+            className={`h-full transition-[width] duration-200 ${progress.phase === 'failed' ? 'bg-red-500' : 'bg-accent-fill'}`}
+            style={{ width: `${progress.total ? Math.min(100, (progress.uploaded / progress.total) * 100) : 0}%` }}
+          />
+        </div>
+        <div className="mt-2 flex justify-between text-xs text-zinc-500">
+          <span>{formatBytes(progress.uploaded)} of {formatBytes(progress.total)}</span>
+          <span>{progress.total ? Math.floor((progress.uploaded / progress.total) * 100) : 0}%</span>
+        </div>
+
+        <p className={`mt-4 text-sm ${progress.phase === 'failed' ? 'text-red-600 dark:text-red-400' : 'text-zinc-600 dark:text-zinc-300'}`}>
+          {progress.phase === 'uploading' && 'Uploading in resumable chunks…'}
+          {progress.phase === 'paused' && 'Upload paused. Resume continues from the last stored chunk.'}
+          {progress.phase === 'failed' && (progress.error ?? 'Upload interrupted. You can resume it.')}
+          {progress.phase === 'complete' && 'Upload complete.'}
+        </p>
+
+        <div className="mt-5 flex justify-end gap-2">
+          {progress.phase === 'uploading' && (
+            <button onClick={onPause} className="flex items-center gap-2 rounded-lg border border-zinc-300 dark:border-white/15 px-3 py-2 text-sm hover:bg-zinc-100 dark:hover:bg-white/10">
+              <Icon name="pause-line" size={14} /> Pause
+            </button>
+          )}
+          {(progress.phase === 'paused' || progress.phase === 'failed') && (
+            <button onClick={onResume} className="flex items-center gap-2 rounded-lg bg-accent-fill px-3 py-2 text-sm text-accent-text hover:bg-accent-fill-hover">
+              <Icon name="arrow-go-back-line" size={14} /> Resume upload
+            </button>
+          )}
+          {progress.phase === 'complete' && (
+            <button onClick={onClose} className="rounded-lg bg-accent-fill px-3 py-2 text-sm text-accent-text hover:bg-accent-fill-hover">Close</button>
+          )}
+        </div>
+      </div>
+    </div>
+  )
+}
+
+function MapRow({ map: m, onDownload, onDelete }: {
+  map: MapSource
+  onDownload: (m: MapSource) => void
+  onDelete: (m: MapSource) => void
+}) {
+  return (
+      <tr className="bg-zinc-50 dark:bg-zinc-950 hover:bg-zinc-100/50 dark:hover:bg-white/[0.03]">
+        <td className="px-4 py-3 text-zinc-600 dark:text-zinc-400">{m.provider}</td>
+        <td className="px-4 py-3 font-mono">{m.filename}</td>
+        <td className="px-4 py-3">
+          <span className={`px-1.5 py-0.5 rounded-lg text-xs font-mono ${m.kind === 'mbtiles' ? 'bg-accent-fill/20 text-accent-ring' : 'bg-zinc-200 dark:bg-white/10 text-zinc-600 dark:text-zinc-400'}`}>
+            {m.kind === 'mbtiles' ? 'offline' : 'xml'}
+          </span>
+        </td>
+        <td className="px-4 py-3 text-zinc-600 dark:text-zinc-400">{m.size}</td>
+        <td className="px-4 py-3">{m.sha256 ? <CopyHash hash={m.sha256} /> : <span className="text-zinc-400 dark:text-zinc-600 text-xs">—</span>}</td>
+        <td className="px-4 py-3">
+          <div className="flex justify-end gap-1">
+            <button
+              onClick={() => onDownload(m)}
+              className="p-1.5 rounded-lg hover:bg-zinc-200 dark:hover:bg-zinc-950 text-accent-ring"
+              title="Download"
+            >
+              <Icon name="download-line" size={14} />
+            </button>
+            <button
+              onClick={() => onDelete(m)}
+              className="p-1.5 rounded-lg hover:bg-zinc-200 dark:hover:bg-zinc-950 text-red-600 dark:text-red-400"
+              title="Delete"
+            >
+              <Icon name="delete-bin-2-line" size={14} />
+            </button>
+          </div>
+        </td>
+      </tr>
+  )
+}
+
 function MapsPage() {
   const [maps, setMaps] = useState<MapSource[]>([])
   const [loading, setLoading] = useState(true)
@@ -266,35 +361,7 @@ function MapsPage() {
                 </tr>
               ) : (
                 maps.map(m => (
-                  <tr key={`${m.provider}/${m.filename}`} className="bg-zinc-50 dark:bg-zinc-950 hover:bg-zinc-100/50 dark:hover:bg-white/[0.03]">
-                    <td className="px-4 py-3 text-zinc-600 dark:text-zinc-400">{m.provider}</td>
-                    <td className="px-4 py-3 font-mono">{m.filename}</td>
-                    <td className="px-4 py-3">
-                      <span className={`px-1.5 py-0.5 rounded-lg text-xs font-mono ${m.kind === 'mbtiles' ? 'bg-accent-fill/20 text-accent-ring' : 'bg-zinc-200 dark:bg-white/10 text-zinc-600 dark:text-zinc-400'}`}>
-                        {m.kind === 'mbtiles' ? 'offline' : 'xml'}
-                      </span>
-                    </td>
-                    <td className="px-4 py-3 text-zinc-600 dark:text-zinc-400">{m.size}</td>
-                    <td className="px-4 py-3">{m.sha256 ? <CopyHash hash={m.sha256} /> : <span className="text-zinc-400 dark:text-zinc-600 text-xs">—</span>}</td>
-                    <td className="px-4 py-3">
-                      <div className="flex justify-end gap-1">
-                        <button
-                          onClick={() => handleDownload(m)}
-                          className="p-1.5 rounded-lg hover:bg-zinc-200 dark:hover:bg-zinc-950 text-accent-ring"
-                          title="Download"
-                        >
-                          <Icon name="download-line" size={14} />
-                        </button>
-                        <button
-                          onClick={() => handleDelete(m)}
-                          className="p-1.5 rounded-lg hover:bg-zinc-200 dark:hover:bg-zinc-950 text-red-600 dark:text-red-400"
-                          title="Delete"
-                        >
-                          <Icon name="delete-bin-2-line" size={14} />
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
+                  <MapRow key={`${m.provider}/${m.filename}`} map={m} onDownload={handleDownload} onDelete={handleDelete} />
                 ))
               )}
             </tbody>
@@ -303,53 +370,7 @@ function MapsPage() {
         </div>
 
         {uploadProgress && (
-          <div className="fixed inset-0 z-[1000] flex items-center justify-center bg-black/65 px-4" role="dialog" aria-modal="true" aria-labelledby="map-upload-title">
-            <div className="w-full max-w-md rounded-lg border border-zinc-300 dark:border-white/15 hud-glass p-5 shadow-2xl">
-              <div className="flex items-start justify-between gap-4">
-                <div className="min-w-0">
-                  <h2 id="map-upload-title" className="text-base font-semibold text-zinc-900 dark:text-white">Map upload</h2>
-                  <p className="mt-1 truncate font-mono text-xs text-zinc-500">{uploadProgress.provider}/{uploadProgress.filename}</p>
-                </div>
-                <button onClick={closeUploadPrompt} className="rounded-lg p-1 text-zinc-500 hover:bg-zinc-100 dark:hover:bg-white/10" aria-label="Close upload dialog">
-                  <Icon name="close-line" size={16} />
-                </button>
-              </div>
-
-              <div className="mt-5 h-2 overflow-hidden rounded-full bg-zinc-200 dark:bg-white/10">
-                <div
-                  className={`h-full transition-[width] duration-200 ${uploadProgress.phase === 'failed' ? 'bg-red-500' : 'bg-accent-fill'}`}
-                  style={{ width: `${uploadProgress.total ? Math.min(100, (uploadProgress.uploaded / uploadProgress.total) * 100) : 0}%` }}
-                />
-              </div>
-              <div className="mt-2 flex justify-between text-xs text-zinc-500">
-                <span>{formatBytes(uploadProgress.uploaded)} of {formatBytes(uploadProgress.total)}</span>
-                <span>{uploadProgress.total ? Math.floor((uploadProgress.uploaded / uploadProgress.total) * 100) : 0}%</span>
-              </div>
-
-              <p className={`mt-4 text-sm ${uploadProgress.phase === 'failed' ? 'text-red-600 dark:text-red-400' : 'text-zinc-600 dark:text-zinc-300'}`}>
-                {uploadProgress.phase === 'uploading' && 'Uploading in resumable chunks…'}
-                {uploadProgress.phase === 'paused' && 'Upload paused. Resume continues from the last stored chunk.'}
-                {uploadProgress.phase === 'failed' && (uploadProgress.error ?? 'Upload interrupted. You can resume it.')}
-                {uploadProgress.phase === 'complete' && 'Upload complete.'}
-              </p>
-
-              <div className="mt-5 flex justify-end gap-2">
-                {uploadProgress.phase === 'uploading' && (
-                  <button onClick={pauseUpload} className="flex items-center gap-2 rounded-lg border border-zinc-300 dark:border-white/15 px-3 py-2 text-sm hover:bg-zinc-100 dark:hover:bg-white/10">
-                    <Icon name="pause-line" size={14} /> Pause
-                  </button>
-                )}
-                {(uploadProgress.phase === 'paused' || uploadProgress.phase === 'failed') && (
-                  <button onClick={resumeUpload} className="flex items-center gap-2 rounded-lg bg-accent-fill px-3 py-2 text-sm text-accent-text hover:bg-accent-fill-hover">
-                    <Icon name="arrow-go-back-line" size={14} /> Resume upload
-                  </button>
-                )}
-                {uploadProgress.phase === 'complete' && (
-                  <button onClick={closeUploadPrompt} className="rounded-lg bg-accent-fill px-3 py-2 text-sm text-accent-text hover:bg-accent-fill-hover">Close</button>
-                )}
-              </div>
-            </div>
-          </div>
+          <UploadDialog progress={uploadProgress} onPause={pauseUpload} onResume={resumeUpload} onClose={closeUploadPrompt} />
         )}
       </div>
     </Layout>

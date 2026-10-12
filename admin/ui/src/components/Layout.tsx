@@ -222,22 +222,151 @@ function UserSettingsModal({ onClose }: { onClose: () => void }) {
   )
 }
 
-export function Layout({ children }: { children: React.ReactNode }) {
-  const { role, username, authProvider, clear, passwordExpired, setPasswordExpired } = useAuth()
-  const orgName = useBranding((s) => s.orgName)
-  const logoUrl = useBranding((s) => s.logoUrl)
+const MENU_ITEM_CLASS = 'flex items-center gap-3 w-full px-3 py-2 text-sm text-muted-foreground hover:text-foreground hover:bg-neutral-surface transition-colors'
+
+function NavLink({ item, active, onNavigate }: {
+  item: { to: string; label: string; icon: string }
+  active: boolean
+  onNavigate: () => void
+}) {
+  return (
+    <Link
+      to={item.to}
+      onClick={onNavigate}
+      className={cn(
+        'flex items-center gap-3 pl-3 pr-3 py-2 text-sm border-l-2 transition-colors',
+        active
+          ? 'border-primary text-foreground'
+          : 'border-transparent text-muted-foreground hover:text-foreground hover:bg-neutral-surface'
+      )}
+    >
+      <Icon name={item.icon} size={16} />
+      {active ? `[ ${item.label} ]` : item.label}
+    </Link>
+  )
+}
+
+function NotificationsMenu() {
+  const role = useAuth((s) => s.role)
+  const navigate = useNavigate()
+  const notifications = useNotifications((s) => s.items)
+  const clearNotifications = useNotifications((s) => s.clear)
+  const [open, setOpen] = useState(false)
+
+  return (
+    <div className="relative ml-auto">
+      <button
+        onClick={() => setOpen((v) => !v)}
+        aria-label="Notifications"
+        className="p-1.5 hover:bg-neutral-surface text-muted-foreground relative focus:outline-none focus:ring-3 focus:ring-ring"
+      >
+        <Icon name="notification-3-line" size={16} />
+        {notifications.length > 0 && (
+          <span className="absolute top-0.5 right-0.5 w-2 h-2 rounded-full bg-critical" />
+        )}
+      </button>
+      {open && (
+        <div className="fixed top-14 left-4 right-4 w-auto md:absolute md:top-full md:left-auto md:right-0 md:mt-2 md:w-72 border border-border bg-surface-raised shadow-lg z-50 max-h-80 overflow-y-auto">
+          <div className="flex items-center justify-between px-3 py-2 border-b border-border">
+            <span className="scout-label">Notifications</span>
+            <button onClick={clearNotifications} className="text-xs text-primary-emphasis hover:underline">Clear all</button>
+          </div>
+          {notifications.length === 0 ? (
+            <p className="px-3 py-4 text-sm text-subtle text-center">No notifications yet</p>
+          ) : (
+            notifications.map((n) => {
+              const content = (
+                <>
+                  <span className={`w-1.5 h-1.5 rounded-full mt-1.5 ${n.type === 'success' ? 'bg-nominal' : 'bg-critical'}`} />
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm text-foreground break-words">{n.message}</p>
+                    <p className="text-xs text-subtle">{new Date(n.timestamp).toLocaleTimeString()}</p>
+                  </div>
+                </>
+              )
+              return role === 'superadmin' ? (
+                <button
+                  key={n.id}
+                  onClick={() => { setOpen(false); navigate({ to: '/logs' }) }}
+                  title="View logs"
+                  className="flex items-start gap-2 w-full text-left px-3 py-2 border-b border-border-faint last:border-0 hover:bg-neutral-surface transition-colors"
+                >
+                  {content}
+                </button>
+              ) : (
+                <div key={n.id} className="flex items-start gap-2 px-3 py-2 border-b border-border-faint last:border-0">
+                  {content}
+                </div>
+              )
+            })
+          )}
+        </div>
+      )}
+    </div>
+  )
+}
+
+function UserMenu({ onOpenSettings, onLogout }: { onOpenSettings: () => void; onLogout: () => void }) {
+  const { role, username, authProvider } = useAuth()
   const theme = useTheme((s) => s.theme)
   const toggleTheme = useTheme((s) => s.toggleTheme)
+  const [open, setOpen] = useState(false)
+
+  return (
+    <div className="relative">
+      <button
+        onClick={() => setOpen((v) => !v)}
+        aria-label="User menu"
+        aria-expanded={open}
+        className="w-7 h-7 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-xs font-semibold shrink-0 focus:outline-none focus:ring-3 focus:ring-ring"
+      >
+        {(username ?? '?').slice(0, 2).toUpperCase()}
+      </button>
+      {open && (
+        <div className="fixed top-14 left-4 right-4 w-auto md:absolute md:top-full md:left-auto md:right-0 md:mt-2 md:w-56 border border-border bg-surface-raised shadow-lg z-50 overflow-hidden">
+          <div className="px-3 py-2.5 border-b border-border">
+            <p className="text-sm text-foreground truncate">{username}</p>
+            <p className="text-xs text-subtle">{role}</p>
+          </div>
+          <div className="p-1">
+            <button onClick={() => { toggleTheme(); setOpen(false) }} className={MENU_ITEM_CLASS}>
+              {theme === 'dark' ? <Icon name="sun-line" size={16} /> : <Icon name="moon-line" size={16} />}
+              {theme === 'dark' ? 'Light mode' : 'Dark mode'}
+            </button>
+            {authProvider === 'local' && (
+              <button onClick={() => { setOpen(false); onOpenSettings() }} className={MENU_ITEM_CLASS}>
+                <Icon name="group-line" size={16} />
+                Account settings
+              </button>
+            )}
+            {role === 'superadmin' && (
+              <Link to="/branding" onClick={() => setOpen(false)} className={MENU_ITEM_CLASS}>
+                <Icon name="settings-3-line" size={16} />
+                Settings
+              </Link>
+            )}
+            <button onClick={() => { setOpen(false); onLogout() }} className={MENU_ITEM_CLASS}>
+              <Icon name="logout-box-r-line" size={16} />
+              Sign out
+            </button>
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
+
+export function Layout({ children }: { children: React.ReactNode }) {
+  const { role, authProvider, clear, passwordExpired, setPasswordExpired } = useAuth()
+  const orgName = useBranding((s) => s.orgName)
+  const logoUrl = useBranding((s) => s.logoUrl)
   const navigate = useNavigate()
   const routerState = useRouterState()
   const current = routerState.location.pathname
   const setPathname = useRoute((s) => s.setPathname)
   const [showUserSettings, setShowUserSettings] = useState(false)
   const [sidebarOpen, setSidebarOpen] = useState(false)
-  const notifications = useNotifications((s) => s.items)
-  const clearNotifications = useNotifications((s) => s.clear)
-  const [notifOpen, setNotifOpen] = useState(false)
-  const [userMenuOpen, setUserMenuOpen] = useState(false)
+  const closeSidebar = () => setSidebarOpen(false)
 
   useEffect(() => {
     setPathname(current)
@@ -278,109 +407,8 @@ export function Layout({ children }: { children: React.ReactNode }) {
         </button>
         {logoUrl && <img src={logoUrl} alt="" className="w-7 h-7 object-contain shrink-0" />}
         <span className="font-display font-bold text-xl tracking-tight truncate">{orgName}</span>
-        <div className="relative ml-auto">
-          <button
-            onClick={() => setNotifOpen((v) => !v)}
-            aria-label="Notifications"
-            className="p-1.5 hover:bg-neutral-surface text-muted-foreground relative focus:outline-none focus:ring-3 focus:ring-ring"
-          >
-            <Icon name="notification-3-line" size={16} />
-            {notifications.length > 0 && (
-              <span className="absolute top-0.5 right-0.5 w-2 h-2 rounded-full bg-critical" />
-            )}
-          </button>
-          {notifOpen && (
-            <div className="fixed top-14 left-4 right-4 w-auto md:absolute md:top-full md:left-auto md:right-0 md:mt-2 md:w-72 border border-border bg-surface-raised shadow-lg z-50 max-h-80 overflow-y-auto">
-              <div className="flex items-center justify-between px-3 py-2 border-b border-border">
-                <span className="scout-label">Notifications</span>
-                <button onClick={clearNotifications} className="text-xs text-primary-emphasis hover:underline">Clear all</button>
-              </div>
-              {notifications.length === 0 ? (
-                <p className="px-3 py-4 text-sm text-subtle text-center">No notifications yet</p>
-              ) : (
-                notifications.map((n) => {
-                  const content = (
-                    <>
-                      <span className={`w-1.5 h-1.5 rounded-full mt-1.5 ${n.type === 'success' ? 'bg-nominal' : 'bg-critical'}`} />
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm text-foreground break-words">{n.message}</p>
-                        <p className="text-xs text-subtle">{new Date(n.timestamp).toLocaleTimeString()}</p>
-                      </div>
-                    </>
-                  )
-                  return role === 'superadmin' ? (
-                    <button
-                      key={n.id}
-                      onClick={() => { setNotifOpen(false); navigate({ to: '/logs' }) }}
-                      title="View logs"
-                      className="flex items-start gap-2 w-full text-left px-3 py-2 border-b border-border-faint last:border-0 hover:bg-neutral-surface transition-colors"
-                    >
-                      {content}
-                    </button>
-                  ) : (
-                    <div key={n.id} className="flex items-start gap-2 px-3 py-2 border-b border-border-faint last:border-0">
-                      {content}
-                    </div>
-                  )
-                })
-              )}
-            </div>
-          )}
-        </div>
-
-        <div className="relative">
-          <button
-            onClick={() => setUserMenuOpen((v) => !v)}
-            aria-label="User menu"
-            aria-expanded={userMenuOpen}
-            className="w-7 h-7 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-xs font-semibold shrink-0 focus:outline-none focus:ring-3 focus:ring-ring"
-          >
-            {(username ?? '?').slice(0, 2).toUpperCase()}
-          </button>
-          {userMenuOpen && (
-            <div className="fixed top-14 left-4 right-4 w-auto md:absolute md:top-full md:left-auto md:right-0 md:mt-2 md:w-56 border border-border bg-surface-raised shadow-lg z-50 overflow-hidden">
-              <div className="px-3 py-2.5 border-b border-border">
-                <p className="text-sm text-foreground truncate">{username}</p>
-                <p className="text-xs text-subtle">{role}</p>
-              </div>
-              <div className="p-1">
-                <button
-                  onClick={() => { toggleTheme(); setUserMenuOpen(false) }}
-                  className="flex items-center gap-3 w-full px-3 py-2 text-sm text-muted-foreground hover:text-foreground hover:bg-neutral-surface transition-colors"
-                >
-                  {theme === 'dark' ? <Icon name="sun-line" size={16} /> : <Icon name="moon-line" size={16} />}
-                  {theme === 'dark' ? 'Light mode' : 'Dark mode'}
-                </button>
-                {authProvider === 'local' && (
-                  <button
-                    onClick={() => { setUserMenuOpen(false); setShowUserSettings(true) }}
-                    className="flex items-center gap-3 w-full px-3 py-2 text-sm text-muted-foreground hover:text-foreground hover:bg-neutral-surface transition-colors"
-                  >
-                    <Icon name="group-line" size={16} />
-                    Account settings
-                  </button>
-                )}
-                {role === 'superadmin' && (
-                  <Link
-                    to="/branding"
-                    onClick={() => setUserMenuOpen(false)}
-                    className="flex items-center gap-3 w-full px-3 py-2 text-sm text-muted-foreground hover:text-foreground hover:bg-neutral-surface transition-colors"
-                  >
-                    <Icon name="settings-3-line" size={16} />
-                    Settings
-                  </Link>
-                )}
-                <button
-                  onClick={() => { setUserMenuOpen(false); handleLogout() }}
-                  className="flex items-center gap-3 w-full px-3 py-2 text-sm text-muted-foreground hover:text-foreground hover:bg-neutral-surface transition-colors"
-                >
-                  <Icon name="logout-box-r-line" size={16} />
-                  Sign out
-                </button>
-              </div>
-            </div>
-          )}
-        </div>
+        <NotificationsMenu />
+        <UserMenu onOpenSettings={() => setShowUserSettings(true)} onLogout={handleLogout} />
       </header>
       {sidebarOpen && (
         <div className="fixed inset-0 top-14 bg-overlay z-30" onClick={() => setSidebarOpen(false)} />
@@ -391,40 +419,14 @@ export function Layout({ children }: { children: React.ReactNode }) {
         sidebarOpen ? 'translate-x-0' : '-translate-x-full'
       )}>
         <nav className="flex-1 p-2 space-y-1">
-          {items.map(({ to, label, icon }) => (
-            <Link
-              key={to}
-              to={to}
-              onClick={() => setSidebarOpen(false)}
-              className={cn(
-                'flex items-center gap-3 pl-3 pr-3 py-2 text-sm border-l-2 transition-colors',
-                current === to
-                  ? 'border-primary text-foreground'
-                  : 'border-transparent text-muted-foreground hover:text-foreground hover:bg-neutral-surface'
-              )}
-            >
-              <Icon name={icon} size={16} />
-              {current === to ? `[ ${label} ]` : label}
-            </Link>
+          {items.map((item) => (
+            <NavLink key={item.to} item={item} active={current === item.to} onNavigate={closeSidebar} />
           ))}
           {adminItems.length > 0 && (
             <>
               <div className="scout-label pt-3 pb-1 px-3">Admin</div>
-              {adminItems.map(({ to, label, icon }) => (
-                <Link
-                  key={to}
-                  to={to}
-                  onClick={() => setSidebarOpen(false)}
-                  className={cn(
-                    'flex items-center gap-3 pl-3 pr-3 py-2 text-sm border-l-2 transition-colors',
-                    current === to
-                      ? 'border-primary text-foreground'
-                      : 'border-transparent text-muted-foreground hover:text-foreground hover:bg-neutral-surface'
-                  )}
-                >
-                  <Icon name={icon} size={16} />
-                  {current === to ? `[ ${label} ]` : label}
-                </Link>
+              {adminItems.map((item) => (
+                <NavLink key={item.to} item={item} active={current === item.to} onNavigate={closeSidebar} />
               ))}
             </>
           )}

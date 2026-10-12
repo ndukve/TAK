@@ -73,6 +73,187 @@ interface ProxyStatus {
   warning: string | null
 }
 
+const INPUT_CLASS = 'w-full rounded-lg border border-zinc-300 dark:border-white/10 bg-zinc-50 dark:bg-black/20 px-3 py-2 text-sm'
+const NUM_INPUT_CLASS = 'mt-1 w-full rounded-lg border border-zinc-300 dark:border-white/10 bg-zinc-50 dark:bg-black/20 px-2 py-2 text-sm text-zinc-900 dark:text-white'
+const PRIMARY_BTN_CLASS = 'flex items-center gap-2 rounded-lg bg-accent-fill px-3 py-2 text-sm text-accent-text hover:bg-accent-fill-hover disabled:opacity-50'
+
+const STATUS_BADGE_CLASS: Record<string, string> = {
+  completed: 'bg-green-100 text-green-700 dark:bg-green-500/10 dark:text-green-400',
+  failed: 'bg-red-100 text-red-700 dark:bg-red-500/10 dark:text-red-400',
+}
+const STATUS_BADGE_DEFAULT = 'bg-zinc-200 text-zinc-600 dark:bg-white/10 dark:text-zinc-300'
+
+interface EntryFormProps {
+  busy: boolean
+  setBusy: (busy: boolean) => void
+  onCreated: (id: string) => Promise<void>
+}
+
+function AddXmlFileForm({ busy, setBusy, onCreated }: EntryFormProps) {
+  const [fileName, setFileName] = useState('')
+  const fileRef = useRef<HTMLInputElement>(null)
+
+  async function submit(event: React.FormEvent) {
+    event.preventDefault()
+    const file = fileRef.current?.files?.[0]
+    if (!file) {
+      notify.error('Choose an ATAK XML map source')
+      return
+    }
+    const form = new FormData()
+    form.append('name', fileName)
+    form.append('file', file)
+    setBusy(true)
+    try {
+      const result = await apiJson<{ id: string; name: string }>('/api/basemaps/custom/file', { method: 'POST', body: form })
+      await onCreated(result.id)
+      setFileName('')
+      if (fileRef.current) fileRef.current.value = ''
+      notify.success(`${result.name} added`)
+    } catch (error) {
+      notify.error(errorMessage(error))
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  return (
+    <form onSubmit={submit} className="hud-frame relative rounded-lg border border-zinc-200 dark:border-white/10 hud-glass p-4 space-y-3">
+      <HudCorners />
+      <div className="flex items-center gap-2"><Icon name="upload-2-line" size={16} /><h2 className="text-sm font-semibold">Add XML File</h2></div>
+      <p className="text-xs text-zinc-500">Upload an ATAK/MOBAC customMapSource or customWmsMapSource XML file.</p>
+      <input value={fileName} onChange={event => setFileName(event.target.value)} required maxLength={80} placeholder="Basemap name" className={INPUT_CLASS} />
+      <input ref={fileRef} type="file" accept=".xml,text/xml,application/xml" required className="w-full rounded-lg border border-zinc-300 dark:border-white/10 bg-zinc-50 dark:bg-black/20 px-3 py-2 text-xs" />
+      <button disabled={busy} className={PRIMARY_BTN_CLASS}><Icon name="upload-line" size={14} /> Add XML File</button>
+    </form>
+  )
+}
+
+function AddXmlUrlForm({ busy, setBusy, onCreated }: EntryFormProps) {
+  const [urlName, setUrlName] = useState('')
+  const [xmlUrl, setXmlUrl] = useState('')
+
+  async function submit(event: React.FormEvent) {
+    event.preventDefault()
+    setBusy(true)
+    try {
+      const result = await apiJson<{ id: string; name: string }>('/api/basemaps/custom/url', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: urlName, url: xmlUrl }),
+      })
+      await onCreated(result.id)
+      setUrlName('')
+      setXmlUrl('')
+      notify.success(`${result.name} added`)
+    } catch (error) {
+      notify.error(errorMessage(error))
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  return (
+    <form onSubmit={submit} className="hud-frame relative rounded-lg border border-zinc-200 dark:border-white/10 hud-glass p-4 space-y-3">
+      <HudCorners />
+      <div className="flex items-center gap-2"><Icon name="rainy-line" size={16} /><h2 className="text-sm font-semibold">Add XML URL</h2></div>
+      <p className="text-xs text-zinc-500">Import a public HTTPS URL that points directly to an ATAK XML map source.</p>
+      <input value={urlName} onChange={event => setUrlName(event.target.value)} required maxLength={80} placeholder="Basemap name" className={INPUT_CLASS} />
+      <input value={xmlUrl} onChange={event => setXmlUrl(event.target.value)} required type="url" placeholder="https://example.com/map.xml" className={INPUT_CLASS} />
+      <button disabled={busy} className={PRIMARY_BTN_CLASS}><Icon name="upload-line" size={14} /> Add XML URL</button>
+    </form>
+  )
+}
+
+function BuildOfflineForm({ busy, setBusy, offlineSources, onCreated }: EntryFormProps & { offlineSources: OfflineSource[] }) {
+  const [name, setName] = useState('Lithuania AOI')
+  const [source, setSource] = useState('esri-imagery')
+  const [bounds, setBounds] = useState({ west: '20.8', south: '53.8', east: '26.9', north: '56.5' })
+  const [zoom, setZoom] = useState({ min: '6', max: '10' })
+
+  async function submit(event: React.FormEvent) {
+    event.preventDefault()
+    setBusy(true)
+    try {
+      const result = await apiJson<{ id: string; name: string; tile_count: number }>('/api/basemaps/offline/build', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name,
+          source_id: source,
+          west: Number(bounds.west),
+          south: Number(bounds.south),
+          east: Number(bounds.east),
+          north: Number(bounds.north),
+          min_zoom: Number(zoom.min),
+          max_zoom: Number(zoom.max),
+        }),
+      })
+      await onCreated(result.id)
+      notify.success(`${result.name} built with ${result.tile_count} offline tiles`)
+    } catch (error) {
+      notify.error(errorMessage(error))
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  return (
+    <form onSubmit={submit} className="hud-frame relative rounded-lg border border-zinc-200 dark:border-white/10 hud-glass p-4 space-y-3">
+      <HudCorners />
+      <div className="flex items-center gap-2"><Icon name="rainy-line" size={16} /><h2 className="text-sm font-semibold">Build Offline AOI</h2></div>
+      <p className="text-xs text-zinc-500">Download a bounded area into MBTiles, then select it above and push it inside the TAK mission package.</p>
+      <div className="grid gap-3 md:grid-cols-2">
+        <input value={name} onChange={event => setName(event.target.value)} required maxLength={80} placeholder="Offline map name" className={INPUT_CLASS} />
+        <select value={source} onChange={event => setSource(event.target.value)} className={INPUT_CLASS}>
+          {offlineSources.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
+        </select>
+      </div>
+      <div className="grid grid-cols-2 gap-2 md:grid-cols-4">
+        {(['west', 'south', 'east', 'north'] as const).map(field => (
+          <label key={field} className="text-xs capitalize text-zinc-500">{field}<input type="number" step="any" required value={bounds[field]} onChange={event => setBounds(current => ({ ...current, [field]: event.target.value }))} className={NUM_INPUT_CLASS} /></label>
+        ))}
+      </div>
+      <div className="grid grid-cols-2 gap-2 md:max-w-xs">
+        <label className="text-xs text-zinc-500">Min zoom<input type="number" min={0} max={20} required value={zoom.min} onChange={event => setZoom(current => ({ ...current, min: event.target.value }))} className={NUM_INPUT_CLASS} /></label>
+        <label className="text-xs text-zinc-500">Max zoom<input type="number" min={0} max={20} required value={zoom.max} onChange={event => setZoom(current => ({ ...current, max: event.target.value }))} className={NUM_INPUT_CLASS} /></label>
+      </div>
+      <button disabled={busy} className={PRIMARY_BTN_CLASS}><Icon name="upload-line" size={14} /> {busy ? 'Building…' : 'Build MBTiles AOI'}</button>
+    </form>
+  )
+}
+
+function HistoryRow({ distribution, busy, onRefresh, onResend, onDelete }: {
+  distribution: PushResult
+  busy: boolean
+  onRefresh: (d: PushResult) => Promise<void>
+  onResend: (d: PushResult) => Promise<void>
+  onDelete: (d: PushResult) => Promise<void>
+}) {
+  const finished = distribution.status === 'completed' || distribution.status === 'failed'
+  return (
+    <div className="flex flex-wrap items-center gap-3 rounded-lg border border-zinc-200 dark:border-white/10 p-3">
+      <div className="min-w-0 flex-1">
+        <div className="flex items-center gap-2">
+          <span className={`rounded-lg px-1.5 py-0.5 text-[10px] font-bold uppercase ${STATUS_BADGE_CLASS[distribution.status] ?? STATUS_BADGE_DEFAULT}`}>{distribution.status}</span>
+          <span className="truncate font-mono text-xs">{distribution.mission_name ?? distribution.request_id}</span>
+        </div>
+        <p className="mt-1 text-[11px] text-zinc-500">{distribution.layer_count} layers · {distribution.recipient_count} recipients · {distribution.accepted_count} accepted · {new Date(distribution.created_at).toLocaleString()}</p>
+        {distribution.error && <p className="mt-1 text-xs text-red-500">{distribution.error}</p>}
+      </div>
+      {finished && (
+        <div className="flex gap-1">
+          {distribution.status === 'completed' && (
+            <button onClick={() => { void onRefresh(distribution) }} disabled={busy} title="Refresh acceptance" className="rounded-lg p-2 hover:bg-zinc-100 dark:hover:bg-white/10"><Icon name="refresh-line" size={13} /></button>
+          )}
+          <button onClick={() => { void onResend(distribution) }} disabled={busy} title="Resend" className="rounded-lg p-2 hover:bg-zinc-100 dark:hover:bg-white/10"><Icon name="arrow-go-back-line" size={13} /></button>
+          <button onClick={() => { void onDelete(distribution) }} disabled={busy} title="Delete mission" className="rounded-lg p-2 text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10"><Icon name="delete-bin-2-line" size={13} /></button>
+        </div>
+      )}
+    </div>
+  )
+}
+
 function BasemapsPage() {
   const [presets, setPresets] = useState<Preset[]>([])
   const [librarySources, setLibrarySources] = useState<LibrarySource[]>([])
@@ -90,14 +271,6 @@ function BasemapsPage() {
   const [history, setHistory] = useState<PushResult[]>([])
   const [health, setHealth] = useState<SourceHealth[]>([])
   const [overlayOpacity, setOverlayOpacity] = useState(70)
-  const [fileName, setFileName] = useState('')
-  const [urlName, setUrlName] = useState('')
-  const [xmlUrl, setXmlUrl] = useState('')
-  const [offlineName, setOfflineName] = useState('Lithuania AOI')
-  const [offlineSource, setOfflineSource] = useState('esri-imagery')
-  const [offlineBounds, setOfflineBounds] = useState({ west: '20.8', south: '53.8', east: '26.9', north: '56.5' })
-  const [offlineZoom, setOfflineZoom] = useState({ min: '6', max: '10' })
-  const fileRef = useRef<HTMLInputElement>(null)
 
   const loadCatalog = useCallback(async () => {
     const data = await apiJson<{
@@ -219,50 +392,9 @@ function BasemapsPage() {
     }
   }
 
-  async function addXmlFile(event: React.FormEvent) {
-    event.preventDefault()
-    const file = fileRef.current?.files?.[0]
-    if (!file) {
-      notify.error('Choose an ATAK XML map source')
-      return
-    }
-    const form = new FormData()
-    form.append('name', fileName)
-    form.append('file', file)
-    setBusy(true)
-    try {
-      const result = await apiJson<{ id: string; name: string }>('/api/basemaps/custom/file', { method: 'POST', body: form })
-      await loadCatalog()
-      setSelected(current => new Set(current).add(result.id))
-      setFileName('')
-      if (fileRef.current) fileRef.current.value = ''
-      notify.success(`${result.name} added`)
-    } catch (error) {
-      notify.error(errorMessage(error))
-    } finally {
-      setBusy(false)
-    }
-  }
-
-  async function addXmlUrl(event: React.FormEvent) {
-    event.preventDefault()
-    setBusy(true)
-    try {
-      const result = await apiJson<{ id: string; name: string }>('/api/basemaps/custom/url', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name: urlName, url: xmlUrl }),
-      })
-      await loadCatalog()
-      setSelected(current => new Set(current).add(result.id))
-      setUrlName('')
-      setXmlUrl('')
-      notify.success(`${result.name} added`)
-    } catch (error) {
-      notify.error(errorMessage(error))
-    } finally {
-      setBusy(false)
-    }
+  async function entryCreated(id: string) {
+    await loadCatalog()
+    setSelected(current => new Set(current).add(id))
   }
 
   async function checkSources() {
@@ -273,34 +405,6 @@ function BasemapsPage() {
       const failures = result.sources.filter(source => source.status === 'unhealthy').length
       if (failures) notify.error(`${failures} upstream source${failures === 1 ? '' : 's'} failed`)
       else notify.success('All upstream map sources are healthy')
-    } catch (error) {
-      notify.error(errorMessage(error))
-    } finally {
-      setBusy(false)
-    }
-  }
-
-  async function buildOffline(event: React.FormEvent) {
-    event.preventDefault()
-    setBusy(true)
-    try {
-      const result = await apiJson<{ id: string; name: string; tile_count: number }>('/api/basemaps/offline/build', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          name: offlineName,
-          source_id: offlineSource,
-          west: Number(offlineBounds.west),
-          south: Number(offlineBounds.south),
-          east: Number(offlineBounds.east),
-          north: Number(offlineBounds.north),
-          min_zoom: Number(offlineZoom.min),
-          max_zoom: Number(offlineZoom.max),
-        }),
-      })
-      await loadCatalog()
-      setSelected(current => new Set(current).add(result.id))
-      notify.success(`${result.name} built with ${result.tile_count} offline tiles`)
     } catch (error) {
       notify.error(errorMessage(error))
     } finally {
@@ -570,23 +674,8 @@ function BasemapsPage() {
         </section>
 
         <section className="grid gap-4 lg:grid-cols-2">
-          <form onSubmit={addXmlFile} className="hud-frame relative rounded-lg border border-zinc-200 dark:border-white/10 hud-glass p-4 space-y-3">
-            <HudCorners />
-            <div className="flex items-center gap-2"><Icon name="upload-2-line" size={16} /><h2 className="text-sm font-semibold">Add XML File</h2></div>
-            <p className="text-xs text-zinc-500">Upload an ATAK/MOBAC customMapSource or customWmsMapSource XML file.</p>
-            <input value={fileName} onChange={event => setFileName(event.target.value)} required maxLength={80} placeholder="Basemap name" className="w-full rounded-lg border border-zinc-300 dark:border-white/10 bg-zinc-50 dark:bg-black/20 px-3 py-2 text-sm" />
-            <input ref={fileRef} type="file" accept=".xml,text/xml,application/xml" required className="w-full rounded-lg border border-zinc-300 dark:border-white/10 bg-zinc-50 dark:bg-black/20 px-3 py-2 text-xs" />
-            <button disabled={busy} className="flex items-center gap-2 rounded-lg bg-accent-fill px-3 py-2 text-sm text-accent-text hover:bg-accent-fill-hover disabled:opacity-50"><Icon name="upload-line" size={14} /> Add XML File</button>
-          </form>
-
-          <form onSubmit={addXmlUrl} className="hud-frame relative rounded-lg border border-zinc-200 dark:border-white/10 hud-glass p-4 space-y-3">
-            <HudCorners />
-            <div className="flex items-center gap-2"><Icon name="rainy-line" size={16} /><h2 className="text-sm font-semibold">Add XML URL</h2></div>
-            <p className="text-xs text-zinc-500">Import a public HTTPS URL that points directly to an ATAK XML map source.</p>
-            <input value={urlName} onChange={event => setUrlName(event.target.value)} required maxLength={80} placeholder="Basemap name" className="w-full rounded-lg border border-zinc-300 dark:border-white/10 bg-zinc-50 dark:bg-black/20 px-3 py-2 text-sm" />
-            <input value={xmlUrl} onChange={event => setXmlUrl(event.target.value)} required type="url" placeholder="https://example.com/map.xml" className="w-full rounded-lg border border-zinc-300 dark:border-white/10 bg-zinc-50 dark:bg-black/20 px-3 py-2 text-sm" />
-            <button disabled={busy} className="flex items-center gap-2 rounded-lg bg-accent-fill px-3 py-2 text-sm text-accent-text hover:bg-accent-fill-hover disabled:opacity-50"><Icon name="upload-line" size={14} /> Add XML URL</button>
-          </form>
+          <AddXmlFileForm busy={busy} setBusy={setBusy} onCreated={entryCreated} />
+          <AddXmlUrlForm busy={busy} setBusy={setBusy} onCreated={entryCreated} />
         </section>
 
         <section className="hud-frame relative rounded-lg border border-zinc-200 dark:border-white/10 hud-glass p-4">
@@ -600,51 +689,20 @@ function BasemapsPage() {
           ) : (
             <div className="mt-3 space-y-2">
               {history.map(distribution => (
-                <div key={distribution.id} className="flex flex-wrap items-center gap-3 rounded-lg border border-zinc-200 dark:border-white/10 p-3">
-                  <div className="min-w-0 flex-1">
-                    <div className="flex items-center gap-2">
-                      <span className={`rounded-lg px-1.5 py-0.5 text-[10px] font-bold uppercase ${distribution.status === 'completed' ? 'bg-green-100 text-green-700 dark:bg-green-500/10 dark:text-green-400' : distribution.status === 'failed' ? 'bg-red-100 text-red-700 dark:bg-red-500/10 dark:text-red-400' : 'bg-zinc-200 text-zinc-600 dark:bg-white/10 dark:text-zinc-300'}`}>{distribution.status}</span>
-                      <span className="truncate font-mono text-xs">{distribution.mission_name ?? distribution.request_id}</span>
-                    </div>
-                    <p className="mt-1 text-[11px] text-zinc-500">{distribution.layer_count} layers · {distribution.recipient_count} recipients · {distribution.accepted_count} accepted · {new Date(distribution.created_at).toLocaleString()}</p>
-                    {distribution.error && <p className="mt-1 text-xs text-red-500">{distribution.error}</p>}
-                  </div>
-                  {(distribution.status === 'completed' || distribution.status === 'failed') && (
-                    <div className="flex gap-1">
-                      {distribution.status === 'completed' && (
-                      <button onClick={() => { void refreshDelivery(distribution) }} disabled={busy} title="Refresh acceptance" className="rounded-lg p-2 hover:bg-zinc-100 dark:hover:bg-white/10"><Icon name="refresh-line" size={13} /></button>
-                      )}
-                      <button onClick={() => { void resend(distribution) }} disabled={busy} title="Resend" className="rounded-lg p-2 hover:bg-zinc-100 dark:hover:bg-white/10"><Icon name="arrow-go-back-line" size={13} /></button>
-                      <button onClick={() => { void removeDistribution(distribution) }} disabled={busy} title="Delete mission" className="rounded-lg p-2 text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10"><Icon name="delete-bin-2-line" size={13} /></button>
-                    </div>
-                  )}
-                </div>
+                <HistoryRow
+                  key={distribution.id}
+                  distribution={distribution}
+                  busy={busy}
+                  onRefresh={refreshDelivery}
+                  onResend={resend}
+                  onDelete={removeDistribution}
+                />
               ))}
             </div>
           )}
         </section>
 
-        <form onSubmit={buildOffline} className="hud-frame relative rounded-lg border border-zinc-200 dark:border-white/10 hud-glass p-4 space-y-3">
-          <HudCorners />
-          <div className="flex items-center gap-2"><Icon name="rainy-line" size={16} /><h2 className="text-sm font-semibold">Build Offline AOI</h2></div>
-          <p className="text-xs text-zinc-500">Download a bounded area into MBTiles, then select it above and push it inside the TAK mission package.</p>
-          <div className="grid gap-3 md:grid-cols-2">
-            <input value={offlineName} onChange={event => setOfflineName(event.target.value)} required maxLength={80} placeholder="Offline map name" className="rounded-lg border border-zinc-300 dark:border-white/10 bg-zinc-50 dark:bg-black/20 px-3 py-2 text-sm" />
-            <select value={offlineSource} onChange={event => setOfflineSource(event.target.value)} className="rounded-lg border border-zinc-300 dark:border-white/10 bg-zinc-50 dark:bg-black/20 px-3 py-2 text-sm">
-              {offlineSources.map(source => <option key={source.id} value={source.id}>{source.name}</option>)}
-            </select>
-          </div>
-          <div className="grid grid-cols-2 gap-2 md:grid-cols-4">
-            {(['west', 'south', 'east', 'north'] as const).map(field => (
-              <label key={field} className="text-xs capitalize text-zinc-500">{field}<input type="number" step="any" required value={offlineBounds[field]} onChange={event => setOfflineBounds(current => ({ ...current, [field]: event.target.value }))} className="mt-1 w-full rounded-lg border border-zinc-300 dark:border-white/10 bg-zinc-50 dark:bg-black/20 px-2 py-2 text-sm text-zinc-900 dark:text-white" /></label>
-            ))}
-          </div>
-          <div className="grid grid-cols-2 gap-2 md:max-w-xs">
-            <label className="text-xs text-zinc-500">Min zoom<input type="number" min={0} max={20} required value={offlineZoom.min} onChange={event => setOfflineZoom(current => ({ ...current, min: event.target.value }))} className="mt-1 w-full rounded-lg border border-zinc-300 dark:border-white/10 bg-zinc-50 dark:bg-black/20 px-2 py-2 text-sm text-zinc-900 dark:text-white" /></label>
-            <label className="text-xs text-zinc-500">Max zoom<input type="number" min={0} max={20} required value={offlineZoom.max} onChange={event => setOfflineZoom(current => ({ ...current, max: event.target.value }))} className="mt-1 w-full rounded-lg border border-zinc-300 dark:border-white/10 bg-zinc-50 dark:bg-black/20 px-2 py-2 text-sm text-zinc-900 dark:text-white" /></label>
-          </div>
-          <button disabled={busy} className="flex items-center gap-2 rounded-lg bg-accent-fill px-3 py-2 text-sm text-accent-text hover:bg-accent-fill-hover disabled:opacity-50"><Icon name="upload-line" size={14} /> {busy ? 'Building…' : 'Build MBTiles AOI'}</button>
-        </form>
+        <BuildOfflineForm busy={busy} setBusy={setBusy} offlineSources={offlineSources} onCreated={entryCreated} />
 
         <p className="text-[11px] text-zinc-500">{providerNotice}</p>
       </div>

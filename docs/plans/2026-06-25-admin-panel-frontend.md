@@ -657,7 +657,6 @@ git commit -m "feat: add sidebar layout and dashboard with live health cards"
 
 **Files:**
 - Create: `admin/ui/src/routes/users.tsx`
-- Create: `admin/ui/src/routes/users.new.tsx`
 
 **Interfaces:**
 - Produces: `/users` list with enable/disable/delete actions, `/users/new` cert wizard
@@ -1451,7 +1450,6 @@ git commit -m "feat: add shell tab with xterm.js and password elevation"
 
 **Files:**
 - Create: `admin/ui/src/routes/admin-users.tsx`
-- Create: `admin/ui/src/routes/admin-users.new.tsx`
 
 - [ ] **Step 1: Write admin/ui/src/routes/admin-users.tsx**
 

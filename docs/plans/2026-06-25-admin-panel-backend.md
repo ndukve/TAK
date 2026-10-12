@@ -154,8 +154,6 @@ git commit -m "feat: scaffold admin service with FastAPI health endpoint"
 - Create: `admin/api/db.py`
 - Create: `admin/api/models.py`
 - Create: `admin/alembic.ini`
-- Create: `admin/alembic/env.py`
-- Create: `admin/alembic/versions/0001_initial.py`
 
 **Interfaces:**
 - Produces:
