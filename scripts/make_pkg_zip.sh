@@ -5,7 +5,7 @@
 #
 # CLIENT_CERT_NAME must end in -ATAK, -WinTAK, -iTAK, or -Service — this
 # selects the package layout. iTAK requires certs + the preference file at
-# the zip root (no content/ + MANIFEST/ nesting), unlike ATAK/WinTAK's
+# the zip root (no certs/ + MANIFEST/ nesting), unlike ATAK/WinTAK's
 # Mission Package format, which iTAK's importer does not reliably recognize.
 # Service has no TAK client app to import a mission package into, so it gets
 # a decrypted PEM bundle (cert.pem/key.pem/ca.pem) for generic mTLS use
@@ -73,15 +73,15 @@ case "$CLIENT_CERT_NAME" in
         chmod 600 ${WORK_DIR}/key.pem
         ;;
     *)
-        # Nested Mission Package layout (ATAK/WinTAK): content/ + MANIFEST/.
+        # Nested Mission Package layout (ATAK/WinTAK): certs/ + MANIFEST/.
         # TAK_defaults.pref ships at the zip root even in this layout — only
-        # blueteam.pref/cert/truststore live under content/ (see manifest).
-        cat ${WORK_DIR}/content/blueteam.pref.tpl | gomplate > ${WORK_DIR}/content/blueteam.pref
+        # blueteam.pref/cert/truststore live under certs/ (see manifest).
+        cat ${WORK_DIR}/certs/blueteam.pref.tpl | gomplate > ${WORK_DIR}/certs/blueteam.pref
         cat ${WORK_DIR}/TAK_defaults.pref.tpl     | gomplate > ${WORK_DIR}/TAK_defaults.pref
         cat ${WORK_DIR}/MANIFEST/manifest.xml.tpl  | gomplate > ${WORK_DIR}/MANIFEST/manifest.xml
-        rm ${WORK_DIR}/content/blueteam.pref.tpl ${WORK_DIR}/TAK_defaults.pref.tpl ${WORK_DIR}/MANIFEST/manifest.xml.tpl
-        cp ${CR}/files/${CLIENT_CERT_NAME}.p12 ${WORK_DIR}/content/
-        cp ${CR}/files/truststore-root.p12     ${WORK_DIR}/content/
+        rm ${WORK_DIR}/certs/blueteam.pref.tpl ${WORK_DIR}/TAK_defaults.pref.tpl ${WORK_DIR}/MANIFEST/manifest.xml.tpl
+        cp ${CR}/files/${CLIENT_CERT_NAME}.p12 ${WORK_DIR}/certs/
+        cp ${CR}/files/truststore-root.p12     ${WORK_DIR}/certs/
         ;;
 esac
 

@@ -31,15 +31,15 @@ mkdir -p ${WORK_DIR}
 
 cp -R /opt/templates/missionpkg/* ${WORK_DIR}/
 
-cat ${WORK_DIR}/content/blueteam.pref.tpl | gomplate > ${WORK_DIR}/content/blueteam.pref
+cat ${WORK_DIR}/certs/blueteam.pref.tpl | gomplate > ${WORK_DIR}/certs/blueteam.pref
 cat ${WORK_DIR}/MANIFEST/manifest.xml.tpl  | gomplate > ${WORK_DIR}/MANIFEST/manifest.xml
-rm ${WORK_DIR}/content/blueteam.pref.tpl ${WORK_DIR}/MANIFEST/manifest.xml.tpl
+rm ${WORK_DIR}/certs/blueteam.pref.tpl ${WORK_DIR}/MANIFEST/manifest.xml.tpl
 
 cd ${CR}
 CAPASS=${CA_PASS} PASS="${CLIENT_CERT_PASSWORD}" bash makeCert.sh client "${CLIENT_CERT_NAME}" >/dev/null
 
-cp ${CR}/files/${CLIENT_CERT_NAME}.p12 ${WORK_DIR}/content/
-cp ${CR}/files/truststore-root.p12     ${WORK_DIR}/content/
+cp ${CR}/files/${CLIENT_CERT_NAME}.p12 ${WORK_DIR}/certs/
+cp ${CR}/files/truststore-root.p12     ${WORK_DIR}/certs/
 
 cd ${WORK_DIR}
 zip -r ${tmp_dir}/${CLIENT_CERT_NAME}.zip ./ >/dev/null
