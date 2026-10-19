@@ -3,7 +3,7 @@
 # Requires: set -euo pipefail already active in the caller.
 
 # shellcheck disable=SC2034  # colors used by scripts that source this file, not within it
-R='\033[0;31m' G='\033[0;32m' Y='\033[1;33m' C='\033[0;36m'
+R='\033[0;31m' G='\033[0;32m' Y='\033[1;33m' C='\033[38;2;0;73;144m'
 W='\033[1;37m' DIM='\033[2m' NC='\033[0m'
 ok()   { printf "${G}  ✓${NC}  %s\n" "$*"; }
 fail() { printf "${R}  ✗${NC}  %s\n" "$*"; exit 1; }

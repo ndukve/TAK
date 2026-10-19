@@ -95,6 +95,28 @@ if ! package_selftest; then
     _HEALTH_FAILED=1
 fi
 
+info "Disk space"
+# A full disk stops builds, databases and services (the TAK VM was found at 100%): warn early, fail only when nearly full.
+_seen_disks=""
+for _p in / "$(docker info --format '{{.DockerRootDir}}' 2>/dev/null || true)"; do
+    if [ -z "$_p" ] || [ ! -d "$_p" ]; then continue; fi
+    _dev="$(df -P "$_p" | awk 'NR == 2 {print $1}')"
+    case " $_seen_disks " in *" $_dev "*) continue ;; esac
+    _seen_disks="$_seen_disks $_dev"
+    _used="$(df -P "$_p" | awk 'NR == 2 {gsub("%", "", $5); print $5}')"
+    [[ "$_used" =~ ^[0-9]+$ ]] || continue
+    if (( _used >= 95 )); then
+        warn "$_p is ${_used}% full ($_dev): builds and databases fail at 100%"
+        docker system df 2>/dev/null || true
+        _HEALTH_FAILED=1
+    elif (( _used >= 85 )); then
+        warn "$_p is ${_used}% full ($_dev)"
+        docker system df 2>/dev/null || true
+    else
+        ok "$_p ${_used}% used ($_dev)"
+    fi
+done
+
 # ── Service status ────────────────────────────────────────────────────────────
 info "Container status:"
 $_DC ps --format 'table {{.Name}}\t{{.Status}}' 2>/dev/null || $_DC ps

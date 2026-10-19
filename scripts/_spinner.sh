@@ -2,7 +2,7 @@
 # Shared colored spinner helpers — source this from non-interactive scripts.
 # No whiptail dependency. Requires: set -euo pipefail already active in the caller.
 
-R='\033[0;31m' G='\033[0;32m' Y='\033[1;33m' C='\033[0;36m'
+R='\033[0;31m' G='\033[0;32m' Y='\033[1;33m' C='\033[38;2;0;73;144m'
 W='\033[1;37m' DIM='\033[2m' NC='\033[0m'
 # shellcheck disable=SC2034 # used by scripts/_ask.sh, which sources this file
 BOLD='\033[1m'

@@ -40,6 +40,9 @@ WT_BACKTITLE="TAK Server Installer"
 # shellcheck source=scripts/scrub_admin_secret.sh
 . "$SCRIPT_DIR/scripts/scrub_admin_secret.sh"
 
+# ── OS facts first, in the RutOS login-banner layout ─────────────────────
+[[ -f "$SCRIPT_DIR/scripts/_banner.sh" ]] && { . "$SCRIPT_DIR/scripts/_banner.sh"; os_banner; }
+
 # ── Startup banner (ported from the INTCORE installer's ASCII splash) ──────
 echo -e "${C}"
 cat <<'BANNER'

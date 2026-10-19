@@ -11,7 +11,7 @@
 # a decrypted PEM bundle (cert.pem/key.pem/ca.pem) for generic mTLS use
 # instead — same shape as generate_service_cert.sh's terminal-only output.
 
-G='\033[0;32m' R='\033[0;31m' C='\033[0;36m' NC='\033[0m'
+G='\033[0;32m' R='\033[0;31m' C='\033[38;2;0;73;144m' NC='\033[0m'
 ok()   { printf "${G}  ✓${NC}  %s\n" "$*"; }
 fail() { printf "${R}  ✗${NC}  %s\n" "$*" >&2; exit 1; }
 info() { printf "${C}  →${NC}  %s\n" "$*"; }
