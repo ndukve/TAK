@@ -32,14 +32,19 @@ run_spin "Dumping cot database" "cot database dumped" bash -c \
     "$ENV_FILE" "$PGUSER" "$OUT_DIR/cot_db.sql" \
     || fail "cot database dump failed (see output above)."
 
+# The data lives on the host under TAK_DATA_DIR. The CA key and client keys are mode 600 and owned by TAK's own uid, which the admin
+# container's user cannot read (a tar through it silently drops them), so read them as root from a throwaway container
+# (nginx:alpine is a vendored image, busybox tar).
+DATA_DIR="$(grep '^TAK_DATA_DIR=' "$ENV_FILE" | tail -1 | cut -d= -f2-)"
+DATA_DIR="${DATA_DIR:-/srv/tak-data}"
 run_spin "Archiving certs and packages" "certs/packages archived" bash -c \
-    'docker compose --env-file "$1" exec -T admin tar czf - -C /opt/tak/data . > "$2"' _ \
-    "$ENV_FILE" "$OUT_DIR/takserver_data.tar.gz" \
+    'docker run --rm -u 0 --network none -v "$1":/d:ro --entrypoint tar nginx:alpine czf - -C /d . > "$2"' _ \
+    "$DATA_DIR/takserver_data" "$OUT_DIR/takserver_data.tar.gz" \
     || fail "takserver_data archive failed (see output above)."
 
 run_spin "Archiving plugins" "plugins archived" bash -c \
-    'docker compose --env-file "$1" exec -T admin tar czf - -C /opt/tak/plugins . > "$2"' _ \
-    "$ENV_FILE" "$OUT_DIR/tak_plugins.tar.gz" \
+    'docker run --rm -u 0 --network none -v "$1":/d:ro --entrypoint tar nginx:alpine czf - -C /d . > "$2"' _ \
+    "$DATA_DIR/tak_plugins" "$OUT_DIR/tak_plugins.tar.gz" \
     || fail "tak_plugins archive failed (see output above)."
 
 info "Archiving maps..."

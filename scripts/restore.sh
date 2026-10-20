@@ -49,10 +49,12 @@ else
     warn "No cot_db.sql in backup — skipped"
 fi
 
+DATA_DIR="$(grep '^TAK_DATA_DIR=' "$ENV_FILE" | tail -1 | cut -d= -f2-)"
+DATA_DIR="${DATA_DIR:-/srv/tak-data}"
 if [ -f "$BACKUP_DIR/takserver_data.tar.gz" ]; then
     run_spin "Restoring certs and packages" "certs/packages restored" bash -c \
-        'cat "$1" | docker compose --env-file "$2" exec -T admin bash -c "rm -rf /opt/tak/data/* && tar xzf - -C /opt/tak/data"' _ \
-        "$BACKUP_DIR/takserver_data.tar.gz" "$ENV_FILE" \
+        'cat "$1" | docker run --rm -i -u 0 --network none -v "$2":/d --entrypoint sh nginx:alpine -c "rm -rf /d/* /d/.[!.]* && tar xzf - -C /d"' _ \
+        "$BACKUP_DIR/takserver_data.tar.gz" "$DATA_DIR/takserver_data" \
         || fail "takserver_data restore failed (see output above)."
 else
     warn "No takserver_data.tar.gz in backup — skipped"
@@ -60,8 +62,8 @@ fi
 
 if [ -f "$BACKUP_DIR/tak_plugins.tar.gz" ]; then
     run_spin "Restoring plugins" "plugins restored" bash -c \
-        'cat "$1" | docker compose --env-file "$2" exec -T admin bash -c "rm -rf /opt/tak/plugins/* && tar xzf - -C /opt/tak/plugins"' _ \
-        "$BACKUP_DIR/tak_plugins.tar.gz" "$ENV_FILE" \
+        'cat "$1" | docker run --rm -i -u 0 --network none -v "$2":/d --entrypoint sh nginx:alpine -c "rm -rf /d/* /d/.[!.]* && tar xzf - -C /d"' _ \
+        "$BACKUP_DIR/tak_plugins.tar.gz" "$DATA_DIR/tak_plugins" \
         || fail "plugins restore failed (see output above)."
 else
     warn "No tak_plugins.tar.gz in backup — skipped"

@@ -37,6 +37,8 @@ WT_BACKTITLE="TAK Server Installer"
 . "$SCRIPT_DIR/scripts/_tui.sh"
 # shellcheck source=scripts/refresh_vendor.sh
 . "$SCRIPT_DIR/scripts/refresh_vendor.sh"
+# shellcheck source=scripts/data_dir.sh
+. "$SCRIPT_DIR/scripts/data_dir.sh"
 # shellcheck source=scripts/scrub_admin_secret.sh
 . "$SCRIPT_DIR/scripts/scrub_admin_secret.sh"
 
@@ -130,6 +132,9 @@ if [ -f "$ENV_FILE" ]; then
         run_with_gauge "Reinstall" "Stopping containers and removing images..." -- bash -c \
             "docker compose --env-file '$ENV_FILE' down --remove-orphans --rmi local" || true
         ok "Containers and images removed"
+        # The data lives outside Docker (TAK_DATA_DIR) and is untouched by this reinstall; old named volumes are copied over once.
+        ensure_data_dir "$ENV_FILE"
+        migrate_volumes_to_data_dir "$ENV_FILE"
 
         run_with_gauge "Vendored Images" "Loading pre-fetched images (if any)..." -- \
             load_vendored_images "$SCRIPT_DIR/takserver-dist" \
@@ -371,6 +376,8 @@ chmod 600 "$ENV_FILE"
 # ── [7/7] Build & start ───────────────────────────────────────────────────────
 cd "$SCRIPT_DIR"
 docker compose --env-file "$ENV_FILE" down --remove-orphans 2>/dev/null || true
+ensure_data_dir "$ENV_FILE"
+migrate_volumes_to_data_dir "$ENV_FILE"
 
 run_with_gauge "Vendored Images [7/7]" "Loading pre-fetched images (if any)..." -- \
     load_vendored_images "$SCRIPT_DIR/takserver-dist" \

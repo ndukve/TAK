@@ -15,6 +15,8 @@ ENV_FILE="$SCRIPT_DIR/takserver.env"
 . "$SCRIPT_DIR/scripts/scrub_admin_secret.sh"
 # shellcheck source=scripts/sync_server_address.sh
 . "$SCRIPT_DIR/scripts/sync_server_address.sh"
+# shellcheck source=scripts/data_dir.sh
+. "$SCRIPT_DIR/scripts/data_dir.sh"
 # shellcheck source=scripts/cleanup_stale_pycache.sh
 . "$SCRIPT_DIR/scripts/cleanup_stale_pycache.sh"
 
@@ -162,6 +164,7 @@ else
     printf 'DOCKER_SOCKET_GID=%s\n' "$DOCKER_SOCKET_GID" >> "$ENV_FILE"
     ok "Added DOCKER_SOCKET_GID"
 fi
+ensure_data_dir "$ENV_FILE"
 section_done
 
 # How much room the build needs depends on how much of it is cached. When the TAK image
@@ -221,6 +224,8 @@ RUNNING_SERVICES="$(docker compose --env-file "$ENV_FILE" --profile '*' ps --ser
 info "Running before the update: ${RUNNING_SERVICES:-none}"
 docker compose --env-file "$ENV_FILE" --profile '*' stop >/dev/null 2>&1 || true
 ok "Everything stopped"
+# Data kept outside Docker (TAK_DATA_DIR): a server that still has the old named volumes has them copied over here, once.
+migrate_volumes_to_data_dir "$ENV_FILE"
 # A failed build must not leave the server down: start what was running again (old images).
 restore_previous() {
     warn "Update step failed — starting the previous containers again"

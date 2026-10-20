@@ -18,7 +18,7 @@ x-tak: &tak-base
     ADMIN_FIRST_PASS: ""
     OIDC_CLIENT_SECRET: ""
   volumes:
-    - takserver_data:/opt/tak/data
+    - ${TAK_DATA_DIR:-/srv/tak-data}/takserver_data:/opt/tak/data
   networks:
     - taknet
   restart: unless-stopped
@@ -34,7 +34,7 @@ services:
       POSTGRES_USER: ${POSTGRES_USER:-martiuser}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
     volumes:
-      - takdb_data:/var/lib/postgresql/data
+      - ${TAK_DATA_DIR:-/srv/tak-data}/takdb_data:/var/lib/postgresql/data
     networks:
       - taknet
     restart: unless-stopped
@@ -77,9 +77,9 @@ services:
     security_opt:
       - no-new-privileges:true
     volumes:
-      - takserver_data:/opt/tak/data
-      - tak_plugins:/opt/tak/plugins
-      - tak_plugin_conf:/opt/tak/conf/plugins
+      - ${TAK_DATA_DIR:-/srv/tak-data}/takserver_data:/opt/tak/data
+      - ${TAK_DATA_DIR:-/srv/tak-data}/tak_plugins:/opt/tak/plugins
+      - ${TAK_DATA_DIR:-/srv/tak-data}/tak_plugin_conf:/opt/tak/conf/plugins
     restart: "no"
     logging: *default-logging
 
@@ -133,7 +133,7 @@ services:
       ADMIN_FIRST_PASS: ""
       OIDC_CLIENT_SECRET: ""
     volumes:
-      - takserver_data:/opt/tak/data
+      - ${TAK_DATA_DIR:-/srv/tak-data}/takserver_data:/opt/tak/data
     restart: unless-stopped
     logging: *default-logging
     # This is the actual CoT-streaming service — every ATAK/WinTAK client
@@ -164,7 +164,7 @@ services:
       ADMIN_FIRST_PASS: ""
       OIDC_CLIENT_SECRET: ""
     volumes:
-      - takserver_data:/opt/tak/data
+      - ${TAK_DATA_DIR:-/srv/tak-data}/takserver_data:/opt/tak/data
     restart: unless-stopped
     logging: *default-logging
     # Same FD-exhaustion exposure as takserver_messaging above — the REST/
@@ -189,7 +189,7 @@ services:
       ADMIN_FIRST_PASS: ""
       OIDC_CLIENT_SECRET: ""
     volumes:
-      - takserver_data:/opt/tak/data
+      - ${TAK_DATA_DIR:-/srv/tak-data}/takserver_data:/opt/tak/data
     restart: unless-stopped
     logging: *default-logging
     command: ["/bin/bash", "/opt/scripts/start-tak.sh", "retention"]
@@ -208,9 +208,9 @@ services:
       ADMIN_FIRST_PASS: ""
       OIDC_CLIENT_SECRET: ""
     volumes:
-      - takserver_data:/opt/tak/data
-      - tak_plugins:/opt/tak/plugins
-      - tak_plugin_conf:/opt/tak/conf/plugins
+      - ${TAK_DATA_DIR:-/srv/tak-data}/takserver_data:/opt/tak/data
+      - ${TAK_DATA_DIR:-/srv/tak-data}/tak_plugins:/opt/tak/plugins
+      - ${TAK_DATA_DIR:-/srv/tak-data}/tak_plugin_conf:/opt/tak/conf/plugins
     restart: unless-stopped
     logging: *default-logging
     command: ["/bin/bash", "/opt/scripts/start-tak.sh", "pm"]
@@ -274,8 +274,8 @@ services:
     security_opt:
       - no-new-privileges:true
     volumes:
-      - takserver_data:/opt/tak/data
-      - tak_plugins:/opt/tak/plugins
+      - ${TAK_DATA_DIR:-/srv/tak-data}/takserver_data:/opt/tak/data
+      - ${TAK_DATA_DIR:-/srv/tak-data}/tak_plugins:/opt/tak/plugins
       - ./packages/tak-maps:/opt/tak/maps
       - admin_ssl:/etc/nginx/ssl
       - admin_tmp:/tmp/admin
@@ -310,8 +310,8 @@ services:
     group_add:
       - "10000"
     volumes:
-      - takserver_data:/opt/tak/data:rw
-      - tak_plugins:/opt/tak/plugins:rw
+      - ${TAK_DATA_DIR:-/srv/tak-data}/takserver_data:/opt/tak/data:rw
+      - ${TAK_DATA_DIR:-/srv/tak-data}/tak_plugins:/opt/tak/plugins:rw
       - ./packages/tak-maps:/opt/tak/maps:rw
       - /proc:/host/proc:ro
       - admin_ssl:/etc/nginx-ssl:ro
@@ -362,10 +362,6 @@ services:
     logging: *default-logging
 
 volumes:
-  takdb_data:
-  takserver_data:
-  tak_plugins:
-  tak_plugin_conf:
   admin_ssl:
   admin_tmp:
 
