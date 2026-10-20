@@ -74,3 +74,7 @@ Admin panel: Dashboard (overall status), Logs (superadmin).
 ## If the WebUI is unreachable
 
 `./scripts/admin_fallback.sh` — an interactive terminal menu to browse and download packages/maps. Read-only (no create/delete), requires SSH access to the server. See [09-troubleshooting.md](09-troubleshooting.md).
+
+## CoT retention and data location
+
+The server keeps its data under `TAK_DATA_DIR` (default `/srv/tak-data`) on the host, not in Docker volumes (see doc 08). CoT history is purged by the retention service from two keys in `takserver.env`: `TAK_RETENTION_COT_DAYS` (days to keep, or `null` for forever) and `TAK_RETENTION_CRON` (a Spring cron for the purge run). The default schedule `-` keeps the service idle, so a server where both are unset never deletes anything and the database grows without limit when a gateway streams CoT into it (20 GB in 12 hours was seen). After changing them, recreate the container: `docker compose --env-file takserver.env up -d --force-recreate takserver_retention`. Check the size with `df -h /` and `select pg_size_pretty(pg_database_size('cot'))` in the `takdb` container. Deleted rows are reused by new data but the files shrink only after a `VACUUM FULL`.

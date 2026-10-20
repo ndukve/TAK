@@ -3,7 +3,9 @@
 # Requires: set -euo pipefail already active in the caller.
 
 # shellcheck disable=SC2034  # colors used by scripts that source this file, not within it
-R='\033[0;31m' G='\033[0;32m' Y='\033[1;33m' C='\033[38;2;0;73;144m'
+# NATO flag blue #004990: exact on a truecolor terminal, the nearest 256-colour entry (24) on an xterm-256color one, standard blue on a plain console (the Proxmox/Linux console has no 24-bit colour and would show cyan)
+case "${COLORTERM:-}" in *truecolor*|*24bit*) _NB='\033[38;2;0;73;144m' ;; *) if [ "$(tput colors 2>/dev/null || echo 8)" -ge 256 ] 2>/dev/null; then _NB='\033[38;5;24m'; else _NB='\033[0;34m'; fi ;; esac
+R='\033[0;31m' G='\033[0;32m' Y='\033[1;33m' C="$_NB"
 W='\033[1;37m' DIM='\033[2m' NC='\033[0m'
 ok()   { printf "${G}  ✓${NC}  %s\n" "$*"; }
 fail() { printf "${R}  ✗${NC}  %s\n" "$*"; exit 1; }

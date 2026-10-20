@@ -74,3 +74,7 @@ Admin panelėje: Dashboard (bendra būsena), Logs (superadmin).
 ## Ką daryti, jei WebUI nepasiekiama
 
 `./scripts/admin_fallback.sh` — terminalo interaktyvus meniu paketų/žemėlapių peržiūrai ir atsisiuntimui. Tik skaitymui (be kūrimo/naikinimo), reikalauja SSH prieigos prie serverio. Žr. [09-problemu-sprendimas.md](09-problemu-sprendimas.md).
+
+## CoT saugojimas (retention) ir duomenų vieta
+
+Serveris duomenis laiko pagrindiniame kompiuteryje, kataloge `TAK_DATA_DIR` (numatyta `/srv/tak-data`), o ne Docker tomuose (žr. 08 dokumentą). CoT istoriją valo saugojimo (retention) paslauga pagal du raktus `takserver.env`: `TAK_RETENTION_COT_DAYS` (kiek dienų laikyti arba `null` – amžinai) ir `TAK_RETENTION_CRON` (Spring cron valymui). Numatytas tvarkaraštis `-` palieka paslaugą neveikiančią, todėl serveris, kuriame abu raktai nenustatyti, niekada nieko netrina, o duomenų bazė auga be ribų, kai šliuzas siunčia CoT (matyta 20 GB per 12 valandų). Pakeitę raktus iš naujo sukurkite konteinerį: `docker compose --env-file takserver.env up -d --force-recreate takserver_retention`. Dydį tikrinkite `df -h /` ir `select pg_size_pretty(pg_database_size('cot'))` konteineryje `takdb`. Ištrintos eilutės panaudojamos iš naujo, bet failai susitraukia tik po `VACUUM FULL`.

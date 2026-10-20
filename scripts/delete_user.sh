@@ -5,7 +5,7 @@
 # revoked) leaves the .key/.p12/.certpass/.zip files in place, which makes
 # gen_client_cert.sh refuse to recreate the same name afterward.
 
-G='\033[0;32m' R='\033[0;31m' C='\033[38;2;0;73;144m' NC='\033[0m'
+G='\033[0;32m' R='\033[0;31m' C='\033[0;34m' NC='\033[0m'
 ok()   { printf "${G}  ✓${NC}  %s\n" "$*"; }
 fail() { printf "${R}  ✗${NC}  %s\n" "$*" >&2; exit 1; }
 info() { printf "${C}  →${NC}  %s\n" "$*"; }

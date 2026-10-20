@@ -82,6 +82,11 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - **Never run `git commit` or `git push`.** Stage changes with `git add <exact files>` (never `git add -A`/`git add .`) and stop there. The user commits and pushes everything themselves, manually, on their own schedule.
 
 <!-- rtk-instructions v2 -->
+
+- Data lives under `TAK_DATA_DIR` (default `/srv/tak-data`, bind mounts), not Docker volumes (`scripts/data_dir.sh`, doc 08); `backup.sh` reads it as root. CoT retention is `TAK_RETENTION_COT_DAYS` + `TAK_RETENTION_CRON` in `takserver.env` (cron `-` means never purge).
+- Update the docs (English and Lithuanian) and the agent notes in the same change as the code, every time.
+- Script colour: NATO blue `#004990` is chosen by terminal capability in each host script (`_NB`: truecolor exact, 256-colour `38;5;24`, else standard blue `0;34`); the Proxmox/Linux console has no 24-bit colour and showed cyan. Do not hardcode the truecolor escape again.
+
 # Command output
 
 Command output here is condensed to save tokens, keeping every signal and

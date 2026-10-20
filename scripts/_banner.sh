@@ -5,7 +5,9 @@
 # NATO flag blue is #004990 (RGB 0, 73, 144; Pantone 280 C).
 
 os_banner() {
-    local rule="--------------------------------------------------------" nb='\033[38;2;0;73;144m' nc='\033[0m'
+    # NATO flag blue #004990: exact on a truecolor terminal, the nearest 256-colour entry (24) on an xterm-256color one, standard blue on a plain console (the Proxmox/Linux console has no 24-bit colour and would show cyan)
+    case "${COLORTERM:-}" in *truecolor*|*24bit*) _NB='\033[38;2;0;73;144m' ;; *) if [ "$(tput colors 2>/dev/null || echo 8)" -ge 256 ] 2>/dev/null; then _NB='\033[38;5;24m'; else _NB='\033[0;34m'; fi ;; esac
+    local rule="--------------------------------------------------------" nb="$_NB" nc='\033[0m'
     local os kernel arch host virt up
     os="$(. /etc/os-release 2>/dev/null && printf '%s' "${PRETTY_NAME:-}")"
     os="${os:-$(uname -s)}"
