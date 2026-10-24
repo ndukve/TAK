@@ -19,10 +19,11 @@ If both NetBird and Tailscale are already running on the server, `install.sh` as
 | 8089 | TCP/TLS | CoT — primary TAK client connection (mTLS) |
 | 8443 | HTTPS | Marti API |
 | 8087 | TCP (plaintext) | Anonymous CoT input (no TLS, no client certificate; see `TAK_USER_GROUP` in `templates/CoreConfig.tpl`), published on the host's loopback only — **never publish it on a network interface; clients use 8089** |
-| 9444 | HTTPS | Admin panel — WebUI, authenticated package/plugin/map downloads |
+| 1414 | HTTPS | Admin panel — WebUI, authenticated package/plugin/map downloads |
+| 443 | HTTPS | The same admin panel without a port in the URL (`https://tak.efdi.ltu`); `docker-compose.yml` publishes both 1414 and 443 for `admin_proxy` |
 | 9000–9002 | TCP/TLS | Federation (see [05-certificates-and-security.md](05-certificates-and-security.md)) |
 
-> **`Makefile` and the root `README.md` mention port 8888** as an anonymous package server — this is stale. The actual current path is `GET /api/packages/{name}/download` via the admin panel port **9444**, authenticated (`admin`/`superadmin`/`field` role). If a `:8888` download doesn't work, use the admin panel or `./scripts/admin_fallback.sh` instead.
+> **`Makefile` and the root `README.md` mention port 8888** as an anonymous package server — this is stale. The actual current path is `GET /api/packages/{name}/download` via the admin panel port **1414**, authenticated (`admin`/`superadmin`/`field` role). If a `:8888` download doesn't work, use the admin panel or `./scripts/admin_fallback.sh` instead.
 
 ## Downloading client packages
 

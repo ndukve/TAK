@@ -19,10 +19,11 @@ Jei serveryje jau veikia ir NetBird, ir Tailscale, `install.sh` paklaus, kurį n
 | 8089 | TCP/TLS | CoT — pagrindinė TAK kliento jungtis (mTLS) |
 | 8443 | HTTPS | Marti API |
 | 8087 | TCP (plaintext) | Anoniminis CoT įėjimas (be TLS ir be kliento sertifikato; žr. `TAK_USER_GROUP` faile `templates/CoreConfig.tpl`), paskelbtas tik serverio loopback sąsajoje — **niekada neskelbti tinklo sąsajoje; klientai naudoja 8089** |
-| 9444 | HTTPS | Admin panelė — WebUI, autentifikuotas paketų/papildinių/žemėlapių atsisiuntimas |
+| 1414 | HTTPS | Admin panelė — WebUI, autentifikuotas paketų/papildinių/žemėlapių atsisiuntimas |
+| 443 | HTTPS | Ta pati admin panelė be prievado adrese (`https://tak.efdi.ltu`); `docker-compose.yml` skelbia ir 1414, ir 443 prievadą `admin_proxy` konteineriui |
 | 9000–9002 | TCP/TLS | Federacija (žr. [05-sertifikatai-ir-saugumas.md](05-sertifikatai-ir-saugumas.md)) |
 
-> **`Makefile` ir šaknies `README.md` mini portą 8888** kaip anoniminį paketų serverį — šis kelias pasenęs. Faktinis kelias per naujausią kodą: `GET /api/packages/{vardas}/download` per admin panelės portą **9444**, autentifikuotas (`admin`/`superadmin`/`field` rolė). Jei atsisiuntimas per `:8888` neveikia, naudoti admin panelę arba `./scripts/admin_fallback.sh`.
+> **`Makefile` ir šaknies `README.md` mini portą 8888** kaip anoniminį paketų serverį — šis kelias pasenęs. Faktinis kelias per naujausią kodą: `GET /api/packages/{vardas}/download` per admin panelės portą **1414**, autentifikuotas (`admin`/`superadmin`/`field` rolė). Jei atsisiuntimas per `:8888` neveikia, naudoti admin panelę arba `./scripts/admin_fallback.sh`.
 
 ## Klientų paketų atsisiuntimas
 

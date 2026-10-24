@@ -329,7 +329,7 @@ services:
     restart: unless-stopped
     logging: *default-logging
 
-  # ── Admin TLS reverse proxy (port 9444 HTTPS) ────────────────────────────
+  # ── Admin TLS reverse proxy (port 1414 HTTPS, and 443) ────────────────────────────
   admin_proxy:
     image: admin-proxy:local
     build:
@@ -342,7 +342,8 @@ services:
       - admin_ssl:/etc/nginx/ssl
     entrypoint: ["/bin/sh", "/entrypoint.sh"]
     ports:
-      - "9444:8443"
+      - "1414:8443"
+      - "443:8443"
     read_only: true
     cap_drop:
       - ALL

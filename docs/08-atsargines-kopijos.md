@@ -23,6 +23,8 @@ Visi failai gauna `chmod 600` — juose yra slaptažodžiai ir sertifikatų rakt
 
 **Destruktyvu.** Perrašo esamą admin DB, TAK CoT DB, sertifikatus/paketus, papildinius ir žemėlapius atsarginės kopijos duomenimis. Reikalauja įvesti `restore`, kad patvirtintumėte.
 
+**Atkūrimas į naują įdiegimą:** `restore.sh` neatkuria `takserver.env`, tačiau atkurti sertifikatai užšifruoti senojo failo slaptažodžiais. Prieš atkurdami nukopijuokite `CA_PASS`, `ADMIN_CERT_PASS`, `TAKSERVER_CERT_PASS` ir `ADMIN_SECRET_KEY` iš kopijos `takserver.env` į naująjį (nauji `POSTGRES_*` slaptažodžiai lieka, nes nauja duomenų bazė turi savo roles). Jei šios keturios reikšmės skiriasi, skriptas dabar atsisako vykdyti, nieko neperrašęs. Po atkūrimo paleiskite `docker compose --env-file takserver.env up -d --force-recreate`, o ne `make up`.
+
 > Prieš atkūrimą įsitikinkite, kad `<backup-dir>` yra teisingas — skriptas patikrina tik `admin_db.sql` egzistavimą kaip minimalų validumo ženklą, ne pilną turinio nuoseklumą.
 
 ## Kada daryti atsarginę kopiją

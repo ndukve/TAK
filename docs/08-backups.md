@@ -23,6 +23,8 @@ All output files get `chmod 600` — they contain passwords and certificate keys
 
 **Destructive.** Overwrites the current admin DB, TAK CoT DB, certs/packages, plugins, and maps with the backup's data. Requires typing `restore` to confirm.
 
+**Restoring onto a fresh install:** `restore.sh` does not restore `takserver.env`, but the restored certificates are encrypted with the old file's passwords. Before restoring, copy `CA_PASS`, `ADMIN_CERT_PASS`, `TAKSERVER_CERT_PASS` and `ADMIN_SECRET_KEY` from the backup's `takserver.env` into the new one (keep the new `POSTGRES_*` passwords; the new database has its own roles). The script now refuses to start when these four differ, before it overwrites anything. Afterwards run `docker compose --env-file takserver.env up -d --force-recreate`, not `make up`.
+
 > Double-check `<backup-dir>` before restoring — the script only validates that `admin_db.sql` exists as a minimal sanity check, not full content consistency.
 
 ## When to back up

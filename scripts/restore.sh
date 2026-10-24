@@ -16,6 +16,17 @@ BACKUP_DIR="$1"
 [ -d "$BACKUP_DIR" ] || fail "Backup directory not found: $BACKUP_DIR"
 [ -f "$BACKUP_DIR/admin_db.sql" ] || fail "Not a valid backup — admin_db.sql missing in $BACKUP_DIR"
 
+# The restored certificates are encrypted with the backed-up takserver.env's passwords, which this script
+# does not restore (the new install generated its own). With different values the admin_permissions step
+# cannot open the CA and the containers do not come up, so refuse before anything is overwritten.
+if [ -f "$BACKUP_DIR/takserver.env" ]; then
+    for key in CA_PASS ADMIN_CERT_PASS TAKSERVER_CERT_PASS ADMIN_SECRET_KEY; do
+        old=$(grep "^${key}=" "$BACKUP_DIR/takserver.env" | cut -d= -f2- || true)
+        new=$(grep "^${key}=" "$ENV_FILE" | cut -d= -f2- || true)
+        [ "$old" = "$new" ] || fail "$key in $ENV_FILE differs from the backup's takserver.env. Copy these four values from the backup first (CA_PASS ADMIN_CERT_PASS TAKSERVER_CERT_PASS ADMIN_SECRET_KEY); see docs/08-backups.md."
+    done
+fi
+
 cd "$SCRIPT_DIR"
 banner "Restore"
 
@@ -28,20 +39,20 @@ read -rp "Type 'restore' to confirm: " CONFIRM
 PGUSER=$(grep '^POSTGRES_USER=' "$ENV_FILE" | cut -d= -f2)
 PGUSER="${PGUSER:-martiuser}"
 
-info "Stopping admin (avoid writes during restore)..."
-docker compose --env-file "$ENV_FILE" stop admin admin_proxy || true
+info "Stopping admin and TAK Server (they hold connections to the databases being dropped)..."
+docker compose --env-file "$ENV_FILE" stop admin admin_proxy takserver_messaging takserver_api takserver_retention takserver_pluginmanager || true
 
 run_spin "Restoring admin database" "admin database restored" bash -c \
-    'docker compose --env-file "$1" exec -T takdb psql -U "$2" -c "DROP DATABASE IF EXISTS admin;" \
-    && docker compose --env-file "$1" exec -T takdb psql -U "$2" -c "CREATE DATABASE admin;" \
+    'docker compose --env-file "$1" exec -T takdb psql -U "$2" -d postgres -c "DROP DATABASE IF EXISTS admin;" \
+    && docker compose --env-file "$1" exec -T takdb psql -U "$2" -d postgres -c "CREATE DATABASE admin;" \
     && docker compose --env-file "$1" exec -T takdb psql -U "$2" admin < "$3"' _ \
     "$ENV_FILE" "$PGUSER" "$BACKUP_DIR/admin_db.sql" \
     || fail "admin database restore failed (see output above)."
 
 if [ -f "$BACKUP_DIR/cot_db.sql" ]; then
     run_spin "Restoring cot database" "cot database restored" bash -c \
-        'docker compose --env-file "$1" exec -T takdb psql -U "$2" -c "DROP DATABASE IF EXISTS cot;" \
-        && docker compose --env-file "$1" exec -T takdb psql -U "$2" -c "CREATE DATABASE cot;" \
+        'docker compose --env-file "$1" exec -T takdb psql -U "$2" -d postgres -c "DROP DATABASE IF EXISTS cot;" \
+        && docker compose --env-file "$1" exec -T takdb psql -U "$2" -d postgres -c "CREATE DATABASE cot;" \
         && docker compose --env-file "$1" exec -T takdb psql -U "$2" cot < "$3"' _ \
         "$ENV_FILE" "$PGUSER" "$BACKUP_DIR/cot_db.sql" \
         || fail "cot database restore failed (see output above)."
