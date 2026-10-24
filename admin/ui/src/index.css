@@ -293,3 +293,19 @@
 .tak-dark-tiles {
   filter: invert(1) hue-rotate(180deg) brightness(0.9) contrast(0.9);
 }
+
+/* Soft corners, as in the gateway WebUI. The ui kit (components/ui) draws square boxes; its radius tokens
+   (scout-tokens.css) are already rounded, so the radius is set here by slot. This sits in the base layer so
+   a rounded-* class on a call site still wins. */
+@layer base {
+  [data-slot="button"], [data-slot="input"], [data-slot="textarea"], [data-slot="select-trigger"], [data-slot="native-select"],
+  [data-slot="toggle"], [data-slot="tabs-list"], [data-slot="tabs-tab"], [data-slot="kbd"], [data-slot="badge"],
+  [data-slot="dropdown-menu-item"], [data-slot="select-item"], [data-slot="dropdown-menu-checkbox-item"],
+  [data-slot="progress"], [data-slot="status"], [data-slot="skeleton"] { border-radius: var(--radius-md); }
+  [data-slot="card"], [data-slot="dialog-content"], [data-slot="alert-dialog-content"], [data-slot="popover-content"],
+  [data-slot="select-content"], [data-slot="dropdown-menu-content"], [data-slot="hover-card-content"], [data-slot="alert"],
+  [data-slot="table-container"], [data-slot="empty-state"], [data-slot="stat"], [data-slot="tooltip-content"] { border-radius: var(--radius-lg); }
+  [data-slot="checkbox"], [data-slot="radio"] { border-radius: var(--radius-xs); }
+  [data-slot="radio"], [data-slot="switch"], [data-slot="switch-thumb"], [data-slot="avatar"] { border-radius: 9999px; }
+  .hud-card, .hud-glass { border-radius: var(--radius-lg); }
+}

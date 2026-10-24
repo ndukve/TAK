@@ -6,6 +6,7 @@ import { apiJson } from '@/lib/api'
 import { useAuth } from '@/store/auth'
 import { cn } from '@/lib/utils'
 import { Skeleton } from '@/components/Skeleton'
+import { Icon } from '@/components/ui/icon'
 import { LiveMapWidget } from '@/components/LiveMapWidget'
 import { StatusPill } from '@/components/StatusPill'
 
@@ -121,128 +122,103 @@ function DashboardPage() {
 
   return (
     <Layout>
-      <div className="p-8">
-        <PageHeader eyebrow="SYSTEM / OVERVIEW" title="Dashboard" />
+      <div className="p-4 md:p-5">
+        <PageHeader title="Dashboard" />
 
         {system && (
-          <section className={cn(
-            'border mb-8 p-5 relative',
+          <div className={cn(
+            'mb-4 flex flex-wrap items-center gap-x-4 gap-y-1 rounded-lg border px-4 py-2.5 text-sm',
             nominal ? 'border-green-500/35' : 'border-yellow-500/35'
           )}>
-            <div className="flex items-start justify-between gap-6 flex-wrap">
-              <div>
-                <div className="text-[10px] tracking-[0.1em] text-zinc-500 mb-2">[ OVERALL / JUDGMENT ]</div>
-                <div className={cn('font-mono text-2xl font-bold mb-2', nominal ? 'text-green-600 dark:text-green-400' : 'text-yellow-600 dark:text-yellow-400')}>
-                  {nominal ? 'NOMINAL' : 'INCOMPLETE'}
-                </div>
-                <p className="text-xs text-zinc-500 max-w-md">
-                  {nominal
-                    ? `All ${services.length} services running, latest observation ${fetchedAt ? formatAge((Date.now() - fetchedAt) / 1000) : 'pending'}.`
-                    : `${attentionCount} of ${services.length + (diskState !== 'ok' ? 1 : 0)} tracked signals need attention — ${
-                        downServices[0] ? `${downServices[0].name} is ${downServices[0].status}` : 'disk usage is elevated'
-                      }.`}
-                </p>
-              </div>
-            </div>
-          </section>
+            <span className={cn('size-2 rounded-full', nominal ? 'bg-green-500' : 'bg-yellow-500')} />
+            <span className={cn('font-medium', nominal ? 'text-green-600 dark:text-green-400' : 'text-yellow-600 dark:text-yellow-400')}>{nominal ? 'Nominal' : 'Needs attention'}</span>
+            <span className="text-xs text-zinc-500">
+              {nominal
+                ? `All ${services.length} services running.`
+                : `${attentionCount} of ${services.length + (diskState !== 'ok' ? 1 : 0)} tracked signals need attention: ${
+                    downServices[0] ? `${downServices[0].name} is ${downServices[0].status}` : 'disk usage is elevated'
+                  }.`}
+            </span>
+            <span className="ml-auto"><FreshnessLabel since={fetchedAt} /></span>
+          </div>
         )}
 
-        {!nominal && system && attentionCount > 0 && (
-          <section className="mb-8">
-            <div className="text-[10px] tracking-[0.1em] text-zinc-500 mb-3">[ ATTENTION / {attentionCount} ]</div>
-            <div className="border border-zinc-200 dark:border-white/10">
-              {downServices.map(s => (
-                <div key={s.name} className="flex items-center justify-between px-4 py-2.5 border-b border-zinc-100 dark:border-white/5 last:border-0 text-sm">
-                  <span>{s.name}</span>
-                  <span className="text-[10px] text-red-600 dark:text-red-400 uppercase tracking-[0.06em]">{s.status}</span>
-                </div>
-              ))}
-              {diskState !== 'ok' && (
-                <div className="flex items-center justify-between px-4 py-2.5 border-b border-zinc-100 dark:border-white/5 last:border-0 text-sm">
-                  <span>Disk usage</span>
-                  <span className={cn('text-[10px] uppercase tracking-[0.06em]', diskState === 'critical' ? 'text-red-600 dark:text-red-400' : 'text-yellow-600 dark:text-yellow-400')}>
-                    {diskPercent.toFixed(0)}% used
-                  </span>
-                </div>
-              )}
-            </div>
-          </section>
-        )}
-
-        <div className="flex items-center justify-between mb-3">
-          <h2 className="text-[11px] tracking-[0.1em] text-zinc-500 uppercase">System state</h2>
-          <FreshnessLabel since={fetchedAt} />
-        </div>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-px bg-zinc-200 dark:bg-white/10 border border-zinc-200 dark:border-white/10 mb-8 hud-enter overflow-hidden">
+        <div className="mb-4 grid grid-cols-[repeat(auto-fit,minmax(10.5rem,1fr))] gap-px overflow-hidden rounded-lg border border-zinc-200 bg-zinc-200 dark:border-white/10 dark:bg-white/10">
           {system ? (
             <>
-              <SystemStatCard num="01" label="CPU" value={system.cpu_percent !== null ? `${system.cpu_percent}%` : '—'} />
-              <SystemStatCard num="02" label="RAM" value={system.mem_used_mb !== null && system.mem_total_mb !== null ? `${(system.mem_used_mb / 1024).toFixed(1)} / ${(system.mem_total_mb / 1024).toFixed(1)} GB` : 'N/A'} />
-              <SystemStatCard num="03" label="Disk" value={diskAvailable ? `${system.disk_used_gb!.toFixed(1)} / ${system.disk_total_gb!.toFixed(1)} GB` : 'N/A'} state={diskState} />
-              <SystemStatCard num="04" label="Uptime" value={formatUptime(system.uptime_seconds)} />
-              <SystemStatCard num="05" label="Load avg" value={system.load_avg ? system.load_avg.map(n => n.toFixed(2)).join(' / ') : 'N/A'} />
-              <SystemStatCard num="06" label="Network" value={`↓${formatBytesPerSec(system.net_rx_bytes_per_sec)} ↑${formatBytesPerSec(system.net_tx_bytes_per_sec)}`} />
+              <SystemStatCard icon="cpu-line" label="CPU" value={system.cpu_percent !== null ? `${system.cpu_percent}%` : '—'} />
+              <SystemStatCard icon="ram-line" label="RAM" value={system.mem_used_mb !== null && system.mem_total_mb !== null ? `${(system.mem_used_mb / 1024).toFixed(1)} / ${(system.mem_total_mb / 1024).toFixed(1)} GB` : 'N/A'} />
+              <SystemStatCard icon="hard-drive-2-line" label="Disk" value={diskAvailable ? `${system.disk_used_gb!.toFixed(1)} / ${system.disk_total_gb!.toFixed(1)} GB` : 'N/A'} state={diskState} />
+              <SystemStatCard icon="time-line" label="Uptime" value={formatUptime(system.uptime_seconds)} />
+              <SystemStatCard icon="pulse-line" label="Load avg" value={system.load_avg ? system.load_avg.map(n => n.toFixed(2)).join(' / ') : 'N/A'} />
+              <SystemStatCard icon="arrow-up-down-line" label="Network" value={`↓${formatBytesPerSec(system.net_rx_bytes_per_sec)} ↑${formatBytesPerSec(system.net_tx_bytes_per_sec)}`} />
             </>
           ) : (
             Array.from({ length: 6 }).map((_, i) => (
-              <div key={i} className="bg-white dark:bg-zinc-900 p-4 min-h-28">
-                <div className="flex items-start justify-between mb-3">
-                  <Skeleton className="h-2.5 w-10" />
-                </div>
-                <Skeleton className="h-6 w-24" />
+              <div key={i} className="bg-white px-4 py-2.5 dark:bg-zinc-900">
+                <Skeleton className="h-2.5 w-10" />
+                <Skeleton className="mt-2 h-3.5 w-20" />
               </div>
             ))
           )}
         </div>
 
-        <h2 className="text-[11px] tracking-[0.1em] text-zinc-500 uppercase mb-3">Services</h2>
-        <div className="border border-zinc-200 dark:border-white/10 mb-8 overflow-x-auto hud-enter hud-enter-delay-1">
-          <div className="grid grid-cols-[1.6fr_1fr_1fr_1fr] min-w-[560px] px-4 py-2.5 text-[10px] tracking-[0.1em] uppercase text-zinc-500 border-b border-zinc-200 dark:border-white/10">
-            <span>Service</span><span>Status</span><span>Deployment</span><span>Actions</span>
-          </div>
-          {services.map(s => (
-            <ServiceRow key={s.name} service={s} />
-          ))}
+        <div className="mb-4 grid gap-4 lg:grid-cols-3">
+          <section className="min-w-0 rounded-lg border border-zinc-200 bg-white dark:border-white/10 dark:bg-zinc-900 lg:col-span-2">
+            <header className="border-b border-zinc-200 px-4 py-2 text-sm font-medium dark:border-white/10">Services</header>
+            <div className="overflow-x-auto">
+              <div className="grid min-w-[480px] grid-cols-[1.6fr_1fr_1fr_1fr] border-b border-zinc-200 px-4 py-1.5 text-xs text-zinc-500 dark:border-white/10">
+                <span>Service</span><span>Status</span><span>Deployment</span><span>Actions</span>
+              </div>
+              {services.map(s => (
+                <ServiceRow key={s.name} service={s} />
+              ))}
+            </div>
+          </section>
+          {services.length > 0 && (
+            <section className="min-w-0 rounded-lg border border-zinc-200 bg-white dark:border-white/10 dark:bg-zinc-900">
+              <header className="border-b border-zinc-200 px-4 py-2 text-sm font-medium dark:border-white/10">Service topology</header>
+              <ServiceTopology services={services} />
+            </section>
+          )}
         </div>
 
-        {services.length > 0 && (
-          <div className="mb-8">
-            <h2 className="text-[11px] tracking-[0.1em] text-zinc-500 uppercase mb-3">Service topology</h2>
-            <ServiceTopology services={services} />
-          </div>
-        )}
-
         {role !== 'readonly' && (
-          <div>
-            <div className="flex items-center justify-between mb-3">
-              <h2 className="text-[11px] tracking-[0.1em] text-zinc-500 uppercase">Live Map</h2>
+          <section className="rounded-lg border border-zinc-200 bg-white dark:border-white/10 dark:bg-zinc-900">
+            <header className="flex items-center justify-between border-b border-zinc-200 px-4 py-2 dark:border-white/10">
+              <h2 className="text-sm font-medium">Live Map</h2>
               <Link to="/live-map" className="text-xs text-accent-ring hover:underline">Open full map →</Link>
-            </div>
-            <LiveMapWidget height="480px" pollMs={8000} />
-          </div>
+            </header>
+            <LiveMapWidget height="420px" pollMs={8000} />
+          </section>
         )}
       </div>
     </Layout>
   )
 }
 
-function SystemStatCard({ num, label, value, state = 'ok' }: { num: string; label: string; value: string; state?: 'ok' | 'warn' | 'critical' }) {
+function SystemStatCard({ icon, label, value, state = 'ok' }: { icon: string; label: string; value: string; state?: 'ok' | 'warn' | 'critical' }) {
   const textClass = state === 'critical' ? 'text-red-600 dark:text-red-400' : state === 'warn' ? 'text-yellow-600 dark:text-yellow-400' : 'text-zinc-900 dark:text-zinc-100'
   return (
-    <div className="bg-white dark:bg-zinc-900 p-4 min-h-28 flex flex-col justify-between">
-      <span className="text-[10px] tracking-[0.1em] text-zinc-500">{num} / {label.toUpperCase()}</span>
-      <p title={value} className={cn('font-mono text-xl font-semibold tracking-tight truncate', textClass)}>{value}</p>
+    <div className="flex min-w-0 items-center gap-3 bg-white px-4 py-2.5 dark:bg-zinc-900">
+      <span className="flex size-8 shrink-0 items-center justify-center rounded-md border border-zinc-200 bg-zinc-100 dark:border-white/10 dark:bg-white/[0.05]">
+        <Icon name={icon} size={16} className={state === 'ok' ? 'text-zinc-500 dark:text-zinc-400' : textClass} />
+      </span>
+      <div className="min-w-0">
+        <p className="text-xs text-zinc-500">{label}</p>
+        <p title={value} className={cn('mt-0.5 truncate text-sm font-medium', textClass)}>{value}</p>
+      </div>
     </div>
   )
 }
 
 function ServiceTopology({ services }: { services: ServiceState[] }) {
   return (
-    <div className="border border-zinc-200 dark:border-white/10 p-8 overflow-x-auto">
+    <div className="p-4 overflow-x-auto">
       <div className="flex flex-col items-center min-w-[560px]">
-        <div className="border border-zinc-300 dark:border-white/20 px-5 py-2.5 text-center">
+        <div className="rounded-md border border-zinc-300 dark:border-white/20 px-4 py-2 text-center">
           <div className="text-sm font-semibold">nginx · admin api</div>
-          <div className="text-[9px] tracking-[0.1em] text-zinc-500 mt-1">MANAGED HOST</div>
+          <div className="text-[10px] text-zinc-500 mt-0.5">managed host</div>
         </div>
         <div className="w-px h-5 bg-zinc-300 dark:bg-white/20" />
         <div className="relative w-[92%] h-px bg-zinc-300 dark:bg-white/20" />
@@ -252,18 +228,15 @@ function ServiceTopology({ services }: { services: ServiceState[] }) {
             return (
               <div key={s.name} className="flex flex-col items-center flex-1">
                 <div className="w-px h-4 bg-zinc-300 dark:bg-white/20" />
-                <div className="border border-zinc-200 dark:border-white/10 bg-white dark:bg-zinc-900 px-2 py-2.5 text-center w-full">
-                  <span className={cn('inline-block w-1.5 h-1.5 mb-1.5', running ? 'bg-green-500' : 'bg-red-500')} />
+                <div className="rounded-md border border-zinc-200 dark:border-white/10 bg-white dark:bg-zinc-900 px-2 py-2 text-center w-full">
+                  <span className={cn('inline-block size-1.5 rounded-full mb-1.5', running ? 'bg-green-500' : 'bg-red-500')} />
                   <div className="text-[10px] font-medium truncate" title={s.name}>{s.name.replace('takserver_', '')}</div>
-                  <div className="text-[8px] tracking-[0.08em] text-zinc-500 mt-1 uppercase">[ {s.status} ]</div>
+                  <div className="text-[9px] text-zinc-500 mt-0.5">{s.status}</div>
                 </div>
               </div>
             )
           })}
         </div>
-      </div>
-      <div className="text-center text-[10px] tracking-[0.1em] text-zinc-500 mt-6">
-        SCHEMATIC OF THE LOCAL SERVICE TREE · EACH BOX REPORTS ITS OWN HEALTH
       </div>
     </div>
   )
@@ -276,7 +249,7 @@ function ServiceRow({ service }: { service: ServiceState }) {
   const canViewLogs = role === 'superadmin' && LOGGABLE_SERVICES.has(loggableName)
 
   return (
-    <div className="grid grid-cols-[1.6fr_1fr_1fr_1fr] min-w-[560px] items-center px-4 py-3 border-b border-zinc-100 dark:border-white/5 last:border-0">
+    <div className="grid grid-cols-[1.6fr_1fr_1fr_1fr] min-w-[480px] items-center px-4 py-2 border-b border-zinc-100 dark:border-white/5 last:border-0">
       <span title={service.name} className="text-sm truncate pr-2">{service.name}</span>
       <span><StatusPill text={service.status} tone={running ? 'ok' : 'bad'} /></span>
       <span className="text-xs text-zinc-500">{running ? 'applied' : 'unconfirmed'}</span>

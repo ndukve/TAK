@@ -80,7 +80,7 @@ EOF
             # shellcheck source=/dev/null
             . "$SCRIPT_DIR/dev.env"
             set +a
-            exec "$VENV_UVICORN" api.main:app --reload --port 8889
+            exec "$SCRIPT_DIR/admin/.venv/bin/python" -m uvicorn api.main:app --reload --port 8889
         ) > "$API_LOGFILE" 2>&1 &
         echo "$!" > "$API_PIDFILE"
 

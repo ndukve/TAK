@@ -11,6 +11,7 @@ import { notify } from '@/lib/notify'
 import { useBranding } from '@/store/branding'
 import { useTheme } from '@/store/theme'
 import { useNotifications } from '@/store/notifications'
+import { useAnnouncement } from '@/store/announcement'
 import { PasswordInput } from '@/components/PasswordInput'
 
 const INPUT_CLASS = "h-9 w-full min-w-0 border bg-surface-inset px-3 font-sans text-sm text-foreground transition-[border-color,box-shadow] duration-120 ease-standard outline-none placeholder:text-subtle focus-visible:border-primary focus-visible:ring-3 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
@@ -35,6 +36,10 @@ function HamburgerIcon({ open }: { open: boolean }) {
     </span>
   )
 }
+
+// The docs live in the repo; the links open them on the private Forgejo (needs a login there).
+const DOCS_URL = 'https://gv3mkw.mokomasis.org/gabrielius.ndukve/TAK/src/branch/main/docs'
+const TROUBLESHOOTING_URL = `${DOCS_URL}/09-troubleshooting.md`
 
 const navItems = [
   { to: '/', label: 'Dashboard', icon: 'dashboard-line' },
@@ -222,26 +227,28 @@ function UserSettingsModal({ onClose }: { onClose: () => void }) {
   )
 }
 
-const MENU_ITEM_CLASS = 'flex items-center gap-3 w-full px-3 py-2 text-sm text-muted-foreground hover:text-foreground hover:bg-neutral-surface transition-colors'
+const MENU_ITEM_CLASS = 'flex items-center gap-3 w-full px-3 py-2 rounded-md text-sm text-muted-foreground hover:text-foreground hover:bg-neutral-surface transition-colors'
 
-function NavLink({ item, active, onNavigate }: {
+function NavLink({ item, active, onNavigate, collapsed }: {
   item: { to: string; label: string; icon: string }
   active: boolean
   onNavigate: () => void
+  collapsed: boolean
 }) {
   return (
     <Link
       to={item.to}
+      title={collapsed ? item.label : undefined}
       onClick={onNavigate}
       className={cn(
-        'flex items-center gap-3 pl-3 pr-3 py-2 text-sm border-l-2 transition-colors',
+        'flex items-center gap-3 px-3 py-2 rounded-md text-sm whitespace-nowrap transition-colors',
         active
-          ? 'border-primary text-foreground'
-          : 'border-transparent text-muted-foreground hover:text-foreground hover:bg-neutral-surface'
+          ? 'bg-primary/15 text-foreground'
+          : 'text-muted-foreground hover:text-foreground hover:bg-neutral-surface'
       )}
     >
-      <Icon name={item.icon} size={16} />
-      {active ? `[ ${item.label} ]` : item.label}
+      <Icon name={item.icon} size={16} className="shrink-0" />
+      {item.label}
     </Link>
   )
 }
@@ -258,7 +265,7 @@ function NotificationsMenu() {
       <button
         onClick={() => setOpen((v) => !v)}
         aria-label="Notifications"
-        className="p-1.5 hover:bg-neutral-surface text-muted-foreground relative focus:outline-none focus:ring-3 focus:ring-ring"
+        className="p-1.5 rounded-md hover:bg-neutral-surface text-muted-foreground relative focus:outline-none focus:ring-3 focus:ring-ring"
       >
         <Icon name="notification-3-line" size={16} />
         {notifications.length > 0 && (
@@ -266,7 +273,7 @@ function NotificationsMenu() {
         )}
       </button>
       {open && (
-        <div className="fixed top-14 left-4 right-4 w-auto md:absolute md:top-full md:left-auto md:right-0 md:mt-2 md:w-72 border border-border bg-surface-raised shadow-lg z-50 max-h-80 overflow-y-auto">
+        <div className="fixed top-[var(--topbar)] left-4 right-4 w-auto md:absolute md:top-full md:left-auto md:right-0 md:mt-2 md:w-72 rounded-lg border border-border bg-surface-raised shadow-lg z-50 max-h-80 overflow-y-auto">
           <div className="flex items-center justify-between px-3 py-2 border-b border-border">
             <span className="scout-label">Notifications</span>
             <button onClick={clearNotifications} className="text-xs text-primary-emphasis hover:underline">Clear all</button>
@@ -306,6 +313,34 @@ function NotificationsMenu() {
   )
 }
 
+function HelpMenu() {
+  const [open, setOpen] = useState(false)
+  return (
+    <div className="relative">
+      <button
+        onClick={() => setOpen((v) => !v)}
+        aria-label="Help and support"
+        aria-expanded={open}
+        className="p-1.5 rounded-md hover:bg-neutral-surface text-muted-foreground focus:outline-none focus:ring-3 focus:ring-ring"
+      >
+        <Icon name="question-line" size={16} />
+      </button>
+      {open && (
+        <div className="fixed top-[var(--topbar)] left-4 right-4 w-auto md:absolute md:top-full md:left-auto md:right-0 md:mt-2 md:w-56 rounded-lg border border-border bg-surface-raised shadow-lg z-50 overflow-hidden" onClick={() => setOpen(false)}>
+          <p className="px-3 py-2.5 text-sm text-foreground border-b border-border">Help and Support</p>
+          <div className="p-1">
+            {[['Documentation', DOCS_URL], ['Troubleshooting', TROUBLESHOOTING_URL]].map(([label, href]) => (
+              <a key={label} href={href} target="_blank" rel="noopener noreferrer" className={cn(MENU_ITEM_CLASS, 'justify-between')}>
+                {label}<Icon name="external-link-line" size={13} />
+              </a>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
+
 function UserMenu({ onOpenSettings, onLogout }: { onOpenSettings: () => void; onLogout: () => void }) {
   const { role, username, authProvider } = useAuth()
   const theme = useTheme((s) => s.theme)
@@ -323,7 +358,7 @@ function UserMenu({ onOpenSettings, onLogout }: { onOpenSettings: () => void; on
         {(username ?? '?').slice(0, 2).toUpperCase()}
       </button>
       {open && (
-        <div className="fixed top-14 left-4 right-4 w-auto md:absolute md:top-full md:left-auto md:right-0 md:mt-2 md:w-56 border border-border bg-surface-raised shadow-lg z-50 overflow-hidden">
+        <div className="fixed top-[var(--topbar)] left-4 right-4 w-auto md:absolute md:top-full md:left-auto md:right-0 md:mt-2 md:w-56 rounded-lg border border-border bg-surface-raised shadow-lg z-50 overflow-hidden">
           <div className="px-3 py-2.5 border-b border-border">
             <p className="text-sm text-foreground truncate">{username}</p>
             <p className="text-xs text-subtle">{role}</p>
@@ -334,10 +369,16 @@ function UserMenu({ onOpenSettings, onLogout }: { onOpenSettings: () => void; on
               {theme === 'dark' ? 'Light mode' : 'Dark mode'}
             </button>
             {authProvider === 'local' && (
-              <button onClick={() => { setOpen(false); onOpenSettings() }} className={MENU_ITEM_CLASS}>
-                <Icon name="group-line" size={16} />
-                Account settings
-              </button>
+              <>
+                <button onClick={() => { setOpen(false); onOpenSettings() }} className={MENU_ITEM_CLASS}>
+                  <Icon name="user-line" size={16} />
+                  Profile settings
+                </button>
+                <button onClick={() => { setOpen(false); onOpenSettings() }} className={MENU_ITEM_CLASS}>
+                  <Icon name="key-2-line" size={16} />
+                  Change password
+                </button>
+              </>
             )}
             {role === 'superadmin' && (
               <Link to="/branding" onClick={() => setOpen(false)} className={MENU_ITEM_CLASS}>
@@ -347,7 +388,7 @@ function UserMenu({ onOpenSettings, onLogout }: { onOpenSettings: () => void; on
             )}
             <button onClick={() => { setOpen(false); onLogout() }} className={MENU_ITEM_CLASS}>
               <Icon name="logout-box-r-line" size={16} />
-              Sign out
+              Log out
             </button>
           </div>
         </div>
@@ -365,8 +406,21 @@ export function Layout({ children }: { children: React.ReactNode }) {
   const current = routerState.location.pathname
   const setPathname = useRoute((s) => s.setPathname)
   const [showUserSettings, setShowUserSettings] = useState(false)
+  const announcement = useAnnouncement()
+  const showBar = !!announcement.message && !announcement.dismissed
+  const topbar = showBar ? '5.5rem' : '3.5rem'
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const closeSidebar = () => setSidebarOpen(false)
+  // Desktop sidebar: full width, or an icon rail that opens while the pointer is over it.
+  const [collapsed, setCollapsed] = useState(() => {
+    try { return localStorage.getItem('tak-nav-collapsed') === '1' } catch { return false }
+  })
+  function toggleCollapsed() {
+    setCollapsed((v) => {
+      try { localStorage.setItem('tak-nav-collapsed', v ? '0' : '1') } catch { /* private window */ }
+      return !v
+    })
+  }
 
   useEffect(() => {
     setPathname(current)
@@ -389,53 +443,81 @@ export function Layout({ children }: { children: React.ReactNode }) {
     : []
 
   return (
-    <div className="flex h-screen bg-background text-foreground">
+    <div style={{ '--topbar': topbar } as React.CSSProperties} className="flex h-screen bg-background text-foreground">
       <a
         href="#main-content"
         className="sr-only focus:not-sr-only focus:absolute focus:top-2 focus:left-2 focus:z-50 focus:px-3 focus:py-2 focus:bg-primary focus:text-primary-foreground focus:text-sm"
       >
         Skip to content
       </a>
-      <header className="fixed top-0 left-0 right-0 z-50 h-14 pl-16 pr-4 flex items-center gap-2 min-w-0 border-b border-border bg-surface/95 backdrop-blur-xl">
+      {showBar && (
+        <div role="status" className="fixed top-0 left-0 right-0 z-[60] flex h-9 items-center justify-center gap-3 bg-primary px-10 text-sm text-primary-foreground">
+          <span className="rounded bg-black/25 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide">Info</span>
+          <span className="truncate">{announcement.message}</span>
+          <button onClick={announcement.dismiss} aria-label="Dismiss" className="absolute right-3 flex h-6 w-6 items-center justify-center hover:bg-black/20"><Icon name="close-line" size={14} /></button>
+        </div>
+      )}
+      <header style={{ top: showBar ? '2.25rem' : 0 }} className="fixed left-0 right-0 z-50 h-14 px-3 md:px-4 flex items-center gap-3 min-w-0 border-b border-border bg-surface">
         <button
           onClick={() => setSidebarOpen(v => !v)}
-          className="fixed top-2.5 left-3 z-50 flex items-center justify-center p-2.5 border border-border bg-surface text-muted-foreground hover:text-foreground transition-colors"
+          className="md:hidden flex items-center justify-center p-2 rounded-md border border-border text-muted-foreground hover:text-foreground transition-colors"
           aria-label="Toggle menu"
           aria-expanded={sidebarOpen}
         >
           <HamburgerIcon open={sidebarOpen} />
         </button>
-        {logoUrl && <img src={logoUrl} alt="" className="w-7 h-7 object-contain shrink-0" />}
+        {logoUrl && <img src={logoUrl} alt="" className="w-7 h-7 rounded-md object-contain shrink-0" />}
         <span className="font-display font-bold text-xl tracking-tight truncate">{orgName}</span>
+        <button
+          onClick={toggleCollapsed}
+          aria-label={collapsed ? 'Expand navigation' : 'Collapse navigation'}
+          className="hidden md:flex ml-1 h-9 w-9 items-center justify-center rounded-md text-muted-foreground hover:text-foreground hover:bg-neutral-surface transition-colors"
+        >
+          <Icon name={collapsed ? 'menu-unfold-line' : 'menu-fold-line'} size={16} />
+        </button>
         <NotificationsMenu />
+        <HelpMenu />
         <UserMenu onOpenSettings={() => setShowUserSettings(true)} onLogout={handleLogout} />
       </header>
       {sidebarOpen && (
-        <div className="fixed inset-0 top-14 bg-overlay z-30" onClick={() => setSidebarOpen(false)} />
+        <div className="md:hidden fixed inset-0 top-[var(--topbar)] bg-overlay z-30" onClick={() => setSidebarOpen(false)} />
       )}
       <aside className={cn(
-        'w-64 flex-shrink-0 border-r border-border flex flex-col',
-        'fixed top-14 bottom-0 left-0 z-40 bg-surface/95 shadow-xl backdrop-blur-xl transition-transform duration-300 ease-in-out',
-        sidebarOpen ? 'translate-x-0' : '-translate-x-full'
+        'group/nav fixed top-[var(--topbar)] bottom-0 left-0 z-40 flex flex-col overflow-hidden border-r border-border bg-surface transition-all duration-200 ease-out',
+        'w-60 max-w-[85vw]',
+        sidebarOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0',
+        collapsed && 'md:w-16 md:hover:w-60 md:hover:shadow-xl'
       )}>
-        <nav className="flex-1 p-2 space-y-1">
-          {items.map((item) => (
-            <NavLink key={item.to} item={item} active={current === item.to} onNavigate={closeSidebar} />
-          ))}
-          {adminItems.length > 0 && (
-            <>
-              <div className="scout-label pt-3 pb-1 px-3">Admin</div>
-              {adminItems.map((item) => (
-                <NavLink key={item.to} item={item} active={current === item.to} onNavigate={closeSidebar} />
+        <nav className="flex-1 w-60 overflow-y-auto overflow-x-hidden px-2 py-3 space-y-0.5">
+          {[{ label: 'Overview', entries: items }, ...(adminItems.length > 0 ? [{ label: 'Administration', entries: adminItems }] : [])].map(({ label, entries }) => (
+            <div key={label} className="space-y-0.5">
+              <div className={cn(
+                'px-3 pt-3 pb-1 text-[11px] font-medium uppercase tracking-wide text-subtle whitespace-nowrap',
+                collapsed && 'md:opacity-0 md:group-hover/nav:opacity-100 transition-opacity'
+              )}>{label}</div>
+              {entries.map((item) => (
+                <NavLink key={item.to} item={item} active={current === item.to} onNavigate={closeSidebar} collapsed={collapsed} />
               ))}
-            </>
-          )}
+            </div>
+          ))}
         </nav>
-        <div className="p-2 border-t border-border">
-          <p className="px-3 pt-1 text-[10px] text-subtle text-center">TAK Admin {__APP_VERSION__}</p>
+        <div className="w-60 p-2 border-t border-border space-y-0.5">
+          <a
+            href={DOCS_URL}
+            target="_blank"
+            rel="noopener noreferrer"
+            title={collapsed ? 'Documentation' : undefined}
+            className="flex items-center gap-3 px-3 py-2 rounded-md text-sm whitespace-nowrap text-muted-foreground hover:text-foreground hover:bg-neutral-surface transition-colors"
+          >
+            <Icon name="book-open-line" size={16} className="shrink-0" />
+            <span className={cn(collapsed && 'md:opacity-0 md:group-hover/nav:opacity-100 transition-opacity')}>Documentation</span>
+          </a>
+          <div className={cn('mx-1 mt-1 rounded-md border border-border px-3 py-2 text-xs text-subtle whitespace-nowrap', collapsed && 'md:opacity-0 md:group-hover/nav:opacity-100 transition-opacity')}>
+            <div className="flex items-center justify-between gap-3"><span>WebUI</span><span className="font-medium text-foreground">{__APP_VERSION__}</span></div>
+          </div>
         </div>
       </aside>
-      <main id="main-content" tabIndex={-1} className="flex-1 overflow-auto pt-14 isolate hud-grid-bg">{children}</main>
+      <main id="main-content" tabIndex={-1} className={cn('flex-1 min-w-0 overflow-auto pt-[var(--topbar)] isolate transition-[padding] duration-200', collapsed ? 'md:pl-16' : 'md:pl-60')}>{children}</main>
       {showUserSettings && <UserSettingsModal onClose={() => setShowUserSettings(false)} />}
       {authProvider === 'local' && passwordExpired && <ChangePasswordModal forced onClose={() => setPasswordExpired(false)} />}
     </div>

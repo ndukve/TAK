@@ -42,7 +42,7 @@ function UserTable({ users, loading, emptyText, createFieldLogin, renameFieldAcc
   pendingUsers: Set<string>
 }) {
   return (
-    <div className="border border-zinc-200 dark:border-white/10 mb-6">
+    <div className="rounded-lg border border-zinc-200 dark:border-white/10 mb-6 overflow-hidden">
       <div className="overflow-x-auto">
       <table className="w-full text-sm min-w-[560px]">
         <thead className="text-zinc-500">

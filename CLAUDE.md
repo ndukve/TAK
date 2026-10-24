@@ -95,4 +95,8 @@ normally, and batch related commands into one call to avoid extra turns.
 Truncated results state their recovery path in their own output. Re-run a
 command as `rtk proxy <cmd>` only when its result is unusable: empty when
 output was clearly expected, contradicting its exit code, or garbled.
-<!-- /rtk-instructions -->
+<!-- /rtk-instructions -->- WebUI design direction (2026-10-23): the console follows the layout of NetBird's dashboard in NATO blue (`#004990`): fixed top bar, collapsible grouped sidebar (`admin/ui/src/components/Layout.tsx`). NetBird's dashboard is AGPL-3.0: never copy its code, class strings, icons, logo or assets here; the layout is written independently from its structure only. Default accent (`api/branding.py`, `api/models.py`, `ui/src/store/branding.ts`) is NATO blue; an existing database keeps its stored accent.
+
+## Project knowledge for agents
+
+- WebUI look (2026-10-24): kept in step with EFDI-Core's admin UI (NetBird-style shell: top bar with help and user menus, info bar via `store/announcement.ts`, dense Dashboard, no corner brackets). NetBird's dashboard is AGPL-3.0: never copy its code, class strings, icons or assets; write from the structure only. The topology, device names and vulnerability panel of EFDI-Core are not ported (TAK has no router graph).

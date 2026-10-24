@@ -13,11 +13,11 @@ interface BrandingState {
 }
 
 const DEFAULTS = {
-  orgName: 'TAK Admin',
-  accentFill: '#2563eb',
-  accentFillHover: '#3b82f6',
+  orgName: 'TAK WebUI',
+  accentFill: '#004990',
+  accentFillHover: '#0a5cb0',
   accentText: '#ffffff',
-  accentRing: '#2563eb',
+  accentRing: '#3a86d1',
   logoUrl: null as string | null,
 }
 

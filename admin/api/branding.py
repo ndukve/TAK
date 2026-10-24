@@ -18,11 +18,11 @@ _superadmin = require_role("superadmin")
 _HEX_COLOR_RE = re.compile(r"^#[0-9a-fA-F]{6}$")
 
 _DEFAULTS = {
-    "org_name": "TAK Admin",
-    "accent_fill": "#2563eb",
-    "accent_fill_hover": "#3b82f6",
+    "org_name": "TAK WebUI",
+    "accent_fill": "#004990",
+    "accent_fill_hover": "#0a5cb0",
     "accent_text": "#ffffff",
-    "accent_ring": "#2563eb",
+    "accent_ring": "#3a86d1",
 }
 
 LOGO_DIR = "/opt/tak/data/branding"

@@ -65,11 +65,11 @@ class BrandSettings(Base):
     __tablename__ = "brand_settings"
 
     id: Mapped[str] = mapped_column(String(16), primary_key=True, default=lambda: "singleton")
-    org_name: Mapped[str] = mapped_column(String(64), default="TAK Admin")
-    accent_fill: Mapped[str] = mapped_column(String(16), default="#2563eb")
-    accent_fill_hover: Mapped[str] = mapped_column(String(16), default="#3b82f6")
+    org_name: Mapped[str] = mapped_column(String(64), default="TAK WebUI")
+    accent_fill: Mapped[str] = mapped_column(String(16), default="#004990")
+    accent_fill_hover: Mapped[str] = mapped_column(String(16), default="#0a5cb0")
     accent_text: Mapped[str] = mapped_column(String(16), default="#ffffff")
-    accent_ring: Mapped[str] = mapped_column(String(16), default="#2563eb")
+    accent_ring: Mapped[str] = mapped_column(String(16), default="#3a86d1")
     logo_filename: Mapped[str | None] = mapped_column(String(128), nullable=True)
 
 
