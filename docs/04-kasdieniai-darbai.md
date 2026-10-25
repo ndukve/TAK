@@ -60,6 +60,19 @@ Sertifikatas mašininei integracijai (pvz. EFDI moon-pod), be TAK kliento paketo
 make add-service NAME=efdi-pod
 ```
 
+## Admin panelės slaptažodžio keitimas
+
+`scripts/reset_admin_password.sh` nėra komanda: jis tik apibrėžia funkciją, kurią kviečia `health.sh`. Norėdami nustatyti naują `admin` paskyros slaptažodį, įveskite jį tyliai ir iškvieskite funkciją kaip root iš repozitorijos aplanko:
+
+```bash
+cd ~/tak-server
+read -rs -p 'Naujas admin slaptažodis: ' P; echo
+sudo bash -c '. scripts/reset_admin_password.sh; reset_admin_password takserver.env admin "$1"' _ "$P"
+unset P
+```
+
+Funkcija įrašo naują bcrypt maišą į `admin_users`. Slaptažodis trumpam matomas procesų sąraše, tai tinka vieno naudotojo serveryje. Dar kartą nustačius `ADMIN_FIRST_PASS`, nieko nepasikeičia, kai paskyra jau yra. Diegimo programos baigiamasis ekranas pirmąjį slaptažodį parodo atviru tekstu, todėl jį pakeiskite iškart po diegimo.
+
 ## Būsena ir logai
 
 ```bash

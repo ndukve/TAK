@@ -60,6 +60,19 @@ A certificate for a machine integration (e.g. an EFDI moon-pod), without a TAK c
 make add-service NAME=efdi-pod
 ```
 
+## Resetting the admin panel password
+
+`scripts/reset_admin_password.sh` is not a command: it only defines the function that `health.sh` calls. To set a new password for the admin panel's `admin` account, read it silently and call the function as root from the repository directory:
+
+```bash
+cd ~/tak-server
+read -rs -p 'New admin password: ' P; echo
+sudo bash -c '. scripts/reset_admin_password.sh; reset_admin_password takserver.env admin "$1"' _ "$P"
+unset P
+```
+
+It writes a fresh bcrypt hash into `admin_users`. The password shows in the process list for a moment, which is acceptable on a single-user host. Setting `ADMIN_FIRST_PASS` again does nothing once the account exists. The installer's closing screen prints the first password in plain text, so change it straight after installing.
+
 ## Status and logs
 
 ```bash
