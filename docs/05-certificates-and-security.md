@@ -12,7 +12,7 @@ Rebuilding the image does **not** regenerate certificates — they live in the v
 
 The server certificate keeps the internal common name `takserver` and includes `TAK_SERVER_ADDRESS` and, when set, `TAK_SERVER_ADDRESS_LAN` as subject alternative names (SANs). The TAK display name shown in new client packages is configured in **Settings → Branding**; it does not control certificate identity or network addresses. Command-line package creation continues to use `TAK_SERVER_NAME` from the env file.
 
-For an existing installation, back up TAK data with `scripts/backup.sh`, then run `scripts/renew_server_cert.sh`. It replaces only the server certificate files under the existing CA, verifies the configured SANs, and restarts the TLS services. Existing client certificates remain signed by the same CA. Clients must import a newly generated package if their connection address changed.
+For an existing installation, back up TAK data with `scripts/backup.sh`, then run `scripts/renew_server_cert.sh`. It replaces only the server certificate files under the existing CA, verifies the configured SANs, verifies the JKS contains the newly issued certificate, and only then restarts the TLS services. Existing client certificates remain signed by the same CA. Clients must import a newly generated package if their connection address changed.
 
 ## Admin panel authentication
 

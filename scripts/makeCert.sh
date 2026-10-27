@@ -118,7 +118,19 @@ openssl pkcs12 ${LEGACY_PROVIDER} -export -in "${SNAME}".pem -inkey "${SNAME}".k
 
 openssl pkcs12 ${LEGACY_PROVIDER} -export -in "${SNAME}".pem -nokeys -out "${SNAME}-public".p12 -name "${SNAME}" -CAfile ca.pem -passout pass:public
 
-keytool -importkeystore -deststorepass "${PASS}" -destkeypass "${PASS}" -destkeystore "${SNAME}".jks -srckeystore "${SNAME}".p12 -srcstoretype PKCS12 -srcstorepass "${PASS}" -alias "${SNAME}"
+keytool -importkeystore -noprompt \
+    -deststoretype JKS -deststorepass "${PASS}" -destkeypass "${PASS}" \
+    -destkeystore "${SNAME}".jks -destalias "${SNAME}" \
+    -srckeystore "${SNAME}".p12 -srcstoretype PKCS12 \
+    -srcstorepass "${PASS}" -srckeypass "${PASS}" -srcalias "${SNAME}" \
+    || { echo "Failed to import ${SNAME}.p12 into ${SNAME}.jks" >&2; exit 1; }
+
+jks_fingerprint=$(keytool -exportcert -keystore "${SNAME}".jks -storepass "${PASS}" -alias "${SNAME}" | openssl x509 -noout -fingerprint -sha256) \
+    || { echo "Failed to read ${SNAME} certificate from its JKS" >&2; exit 1; }
+cert_fingerprint=$(openssl x509 -in "${SNAME}".pem -noout -fingerprint -sha256) \
+    || { echo "Failed to read ${SNAME}.pem" >&2; exit 1; }
+[ "$jks_fingerprint" = "$cert_fingerprint" ] \
+    || { echo "${SNAME}.jks does not contain the newly issued certificate" >&2; exit 1; }
 
 else # a CA
 

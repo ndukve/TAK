@@ -44,7 +44,11 @@ read -r -p 'Type REISSUE TAK SERVER CERT to continue: ' confirmation
     }
     check_name "$TAK_SERVER_ADDRESS"
     if [ -n "${TAK_SERVER_ADDRESS_LAN:-}" ]; then check_name "$TAK_SERVER_ADDRESS_LAN"; fi
-    test -s /opt/tak/data/certs/files/takserver.jks
+    jks=/opt/tak/data/certs/files/takserver.jks
+    test -s "$jks"
+    pem_fingerprint=$(openssl x509 -in "$cert" -noout -fingerprint -sha256)
+    jks_fingerprint=$(keytool -exportcert -keystore "$jks" -storepass "$TAKSERVER_CERT_PASS" -alias takserver | openssl x509 -noout -fingerprint -sha256)
+    [ "$jks_fingerprint" = "$pem_fingerprint" ] || { echo "JKS does not contain the newly issued server certificate" >&2; exit 1; }
 ' || fail "Certificate issuance or SAN verification failed; inspect before restarting TAK"
 
 "${DC[@]}" restart takserver_config takserver_messaging takserver_api \

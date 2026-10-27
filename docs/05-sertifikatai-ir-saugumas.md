@@ -12,7 +12,7 @@ Atvaizdo (image) atnaujinimas **neatnaujina** sertifikatų — jie lieka tome. P
 
 Serverio sertifikate paliekamas vidinis bendrasis vardas (CN) `takserver`, o subject alternative name (SAN) įrašomi `TAK_SERVER_ADDRESS` ir, jei nustatytas, `TAK_SERVER_ADDRESS_LAN`. Naujų klientų paketų TAK serverio rodomą pavadinimą nustatykite **Settings → Branding**; jis nekeičia sertifikato tapatybės ar tinklo adresų. Paketų kūrimas komandine eilute ir toliau naudoja `TAK_SERVER_NAME` iš env failo.
 
-Esamame diegime pirmiausia sukurkite TAK duomenų atsarginę kopiją su `scripts/backup.sh`, tada vykdykite `scripts/renew_server_cert.sh`. Jis pakeičia tik serverio sertifikato failus, pasirašytus esamu CA, patikrina SAN reikšmes ir iš naujo paleidžia TLS servisus. Esami klientų sertifikatai lieka pasirašyti tuo pačiu CA. Jei pasikeitė prisijungimo adresas, klientams reikia importuoti naujai sugeneruotą paketą.
+Esamame diegime pirmiausia sukurkite TAK duomenų atsarginę kopiją su `scripts/backup.sh`, tada vykdykite `scripts/renew_server_cert.sh`. Jis pakeičia tik serverio sertifikato failus, pasirašytus esamu CA, patikrina SAN reikšmes, patikrina, ar JKS yra naujai išduotas sertifikatas, ir tik tada iš naujo paleidžia TLS servisus. Esami klientų sertifikatai lieka pasirašyti tuo pačiu CA. Jei pasikeitė prisijungimo adresas, klientams reikia importuoti naujai sugeneruotą paketą.
 
 ## Admin panelės autentifikacija
 
