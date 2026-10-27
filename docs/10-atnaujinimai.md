@@ -1,29 +1,13 @@
-# 10 — Atnaujinimai
 
-```bash
-make update
-# arba tiesiogiai:
-./scripts/update.sh
-```
 
-## Kas vyksta
+## Atnaujinimas iš privačios saugyklos
 
-1. **Pull** — `git fetch` + `git merge --ff-only` dabartinei šakai. Jei `update.sh` pats pasikeitė, skriptas persileidžia iš naujo (nesitęsia su pasenusiu buferiu).
-2. **Env backfill** — patikrina, ar `takserver.env` turi visus reikiamus kintamuosius; trūkstamus prideda su numatytosiomis reikšmėmis.
-3. **Rebuild** — atvaizdai perstatomi su nauju `GIT_COMMIT` žymekliu.
-4. **`admin_proxy` restart** — priverstinis, kad nginx visada turėtų naują `admin` konteinerio IP (kitaip liktų 502 klaidos iki kito restart'o).
-5. **Self-test → self-heal** — greitas funkcinis testas po build'o. Jei nepavyksta, automatiškai iškviečiamas `health.sh` (priverstinis `--no-cache` perstatymas). Tik jei ir tai nepadeda — skriptas sustoja su klaida.
+Atnaujinimo skriptas traukia iš šeimininko `origin`. Kai saugykla privati (Forgejo kopija), git reikalauja prisijungimo.
 
-## Prieš atnaujinant
+**Numatytasis būdas: prisijungiate kiekvieną kartą, niekas neišsaugoma.** Terminale paleiskite `scripts/update.sh`. Prieš pradedant atnaujinimą jis paprašo Forgejo naudotojo vardo ir slaptažodžio; vietoj paskyros slaptažodžio įklijuokite **tik skaitymo prieigos raktą (token)**. Atsakymas laikomas tik atmintyje (git `credential-cache`) kol vyksta paleidimas ir ištrinamas, kai skriptas baigia darbą: jokiame šeimininko faile jo nėra. Be terminalo (cron, paslauga) skriptas niekada neklausia ir sustoja su aiškiu pranešimu.
 
-- Padaryti atsarginę kopiją (žr. [08-atsargines-kopijos.md](08-atsargines-kopijos.md)), ypač produkciniame diegime.
-- Įsitikinti, kad repo nėra `detached HEAD` būsenoje (`update.sh` tai patikrina ir sustoja su nurodymu `git checkout main`).
-- Fast-forward-only: jei vietoje yra nesuderinamų lokalių pakeitimų, `update.sh` sustos ir nepadarys merge — reikia rankiniu būdu išspręsti prieš bandant vėl.
+1. **Nukreipkite `origin` į privačią saugyklą** (vieną kartą, diegimo kataloge): `git remote set-url origin https://gv3mkw.mokomasis.org/gabrielius.ndukve/TAK.git`. Į adresą niekada nerašykite token.
+2. **Susikurkite token sau.** Forgejo: Settings, Applications, sukurkite prieigos token, pavadintą pagal paskirtį, tik su `read:repository` sritimi. Nutekėjęs token leidžia skaityti, bet ne rašyti; atšaukti jį galima bet kada.
+3. **Paleiskite atnaujinimą** ir paprašyti įveskite naudotojo vardą bei token. Neteisinga reikšmė sustabdo paleidimą, kol dar niekas nepasikeitė.
 
-## Po atnaujinimo
-
-```bash
-docker compose --env-file takserver.env logs -f
-```
-
-Patikrinti, kad visi servisai veikia (`make status`) ir admin panelė pasiekiama.
+**Atnaujinimas be žmogaus (nebūtina).** Šeimininkui, kuris turi atsinaujinti pats, naudokite atskirą mašininį naudotoją (pavyzdžiui `efdi-deploy`) su tik skaitymo prieiga prie `TAK` ir savo token, tada paleiskite `git config --global credential.helper store` ir vieną kartą ranka `git fetch`; token liks `~/.git-credentials` (teisės 600). Tai darykite tik ten, kur leistina saugoti kredencialą. Agentas token niekada neliečia.

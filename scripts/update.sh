@@ -104,13 +104,35 @@ BRANCH="$(git rev-parse --abbrev-ref HEAD)"
 [ "$BRANCH" = "HEAD" ] && fail "Repo is in detached HEAD state — run: git checkout main"
 _OLD_HEAD="$(git rev-parse HEAD)"
 
+# The gateway's resolver (NetBird's) drops a lookup now and then (docs: troubleshooting, DNS); give the remote's name a few
+# chances to resolve before git is blamed. Never fails by itself: git reports a name that really does not resolve.
+_remote_host="$(git remote get-url origin 2>/dev/null | sed -nE 's#^[a-z+]+://([^@/]*@)?([^/:]+).*#\2#p')"
+if [[ -n "$_remote_host" ]]; then
+    for _try in 1 2 3 4 5; do
+        getent hosts "$_remote_host" >/dev/null 2>&1 && break
+        sleep 3
+    done
+fi
+
+# A private remote asks for a username and a password (or token). Ask before the spinner starts so the prompt is visible, and keep the
+# answer in memory only (git credential-cache, wiped when this script ends): nothing is written to disk, even when the host has a credential
+# helper such as `store` configured (the empty helper below resets it). Without a terminal, never prompt.
+_git_cred=(-c "credential.helper=" -c "credential.helper=cache --timeout=300")
+trap 'git credential-cache exit >/dev/null 2>&1 || true' EXIT
+if [ -t 0 ] && [ -t 1 ]; then
+    git "${_git_cred[@]}" ls-remote origin >/dev/null \
+        || fail "Could not read the remote: wrong username or token, or no network (docs: Updating from a private repository)"
+else
+    export GIT_TERMINAL_PROMPT=0
+fi
+
 spin_start "Fetching latest changes (branch: $BRANCH)"
 _PULL_LOG="$(mktemp)"
-if ! git fetch origin "$BRANCH" > "$_PULL_LOG" 2>&1; then
+if ! git "${_git_cred[@]}" fetch origin "$BRANCH" > "$_PULL_LOG" 2>&1; then
     spin_stop ""
     cat "$_PULL_LOG"
     rm -f "$_PULL_LOG"
-    fail "git fetch failed — check network/remote (output above)"
+    fail "git fetch failed — an authentication or 'repository not found' message above means the username or token was refused (docs: Updating from a private repository); otherwise check network and the remote"
 fi
 if ! git merge --ff-only "origin/$BRANCH" >> "$_PULL_LOG" 2>&1; then
     spin_stop ""

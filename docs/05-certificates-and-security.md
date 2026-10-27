@@ -6,7 +6,13 @@ Every client gets its own certificate, signed by the server's CA. Certificates a
 
 > **Changing certificate passwords requires wiping the volume.** If you change `TAKSERVER_CERT_PASS` or `CA_PASS` in `takserver.env` after the first run, the JKS files already in the volume stay encrypted with the old password and no longer match. You need to delete the volumes (`docker compose down -v`) and let `firstrun.sh` regenerate everything — which means **every** previously issued client certificate stops working and has to be reissued.
 
-Rebuilding the image does **not** regenerate certificates — they live in the volume. Only deleting the volume triggers regeneration.
+Rebuilding the image does **not** regenerate certificates — they live in the volume. First-run regeneration occurs only after deleting the volume; use the server certificate renewal procedure below to replace only the server leaf without deleting client identities.
+
+## TAK server certificate name
+
+The server certificate keeps the internal common name `takserver` and includes `TAK_SERVER_ADDRESS` and, when set, `TAK_SERVER_ADDRESS_LAN` as subject alternative names (SANs). The TAK display name shown in new client packages is configured in **Settings → Branding**; it does not control certificate identity or network addresses. Command-line package creation continues to use `TAK_SERVER_NAME` from the env file.
+
+For an existing installation, back up TAK data with `scripts/backup.sh`, then run `scripts/renew_server_cert.sh`. It replaces only the server certificate files under the existing CA, verifies the configured SANs, and restarts the TLS services. Existing client certificates remain signed by the same CA. Clients must import a newly generated package if their connection address changed.
 
 ## Admin panel authentication
 

@@ -47,23 +47,38 @@ fi
 fi
 
 if [ "$1" == "server" ]; then
-if [[ $SNAME =~ ^[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}$ ]]; then
-ALTNAMEFIELD="IP.1"
-else
-ALTNAMEFIELD="DNS.1"
-fi
+    [ -n "${TAK_SERVER_ADDRESS:-}" ] || { echo "TAK_SERVER_ADDRESS is required for a server certificate" >&2; exit 1; }
 
 cp ../config.cfg "config-${SNAME}.cfg"
 
-echo "
+    declare -A SEEN_SAN=()
+    dns_index=0
+    ip_index=0
+    san_lines=""
+    for san_name in "$SNAME" "$TAK_SERVER_ADDRESS" "${TAK_SERVER_ADDRESS_LAN:-}"; do
+        [ -n "$san_name" ] || continue
+        [ -z "${SEEN_SAN[$san_name]+x}" ] || continue
+        SEEN_SAN[$san_name]=1
 
-subjectAltName = @alt_names
+        if [[ "$san_name" =~ ^[0-9]{1,3}(\.[0-9]{1,3}){3}$ || "$san_name" == *:* ]]; then
+            ip_index=$((ip_index + 1))
+            san_type=IP
+            san_index=$ip_index
+        elif [[ "$san_name" =~ ^[A-Za-z0-9]([A-Za-z0-9.-]*[A-Za-z0-9])?$ ]]; then
+            dns_index=$((dns_index + 1))
+            san_type=DNS
+            san_index=$dns_index
+        else
+            echo "Invalid server certificate SAN value" >&2
+            exit 1
+        fi
+        san_lines+="${san_type}.${san_index} = ${san_name}"$'\n'
+    done
 
-[alt_names]
-
-$ALTNAMEFIELD = $SNAME
-
-" >> "config-${SNAME}.cfg"
+    {
+        printf '\nsubjectAltName = @alt_names\n\n[alt_names]\n'
+        printf '%s' "$san_lines"
+    } >> "config-${SNAME}.cfg"
 
 CONFIG=config-$SNAME.cfg
 

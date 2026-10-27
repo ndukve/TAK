@@ -19,6 +19,7 @@ _HEX_COLOR_RE = re.compile(r"^#[0-9a-fA-F]{6}$")
 
 _DEFAULTS = {
     "org_name": "TAK WebUI",
+    "tak_server_name": os.environ.get("TAK_SERVER_NAME") or "TAK Server",
     "accent_fill": "#004990",
     "accent_fill_hover": "#0a5cb0",
     "accent_text": "#ffffff",
@@ -32,6 +33,7 @@ _ALLOWED_LOGO_EXT = {".png", ".jpg", ".jpeg"}  # no .svg — served without sani
 
 class BrandingUpdateRequest(BaseModel):
     org_name: str | None = None
+    tak_server_name: str | None = None
     accent_fill: str | None = None
     accent_fill_hover: str | None = None
     accent_text: str | None = None
@@ -55,6 +57,7 @@ def _serialize(settings: BrandSettings) -> dict:
         logo_url = f"/api/branding/logo/{settings.logo_filename}"
     return {
         "org_name": settings.org_name,
+        "tak_server_name": settings.tak_server_name,
         "accent_fill": settings.accent_fill,
         "accent_fill_hover": settings.accent_fill_hover,
         "accent_text": settings.accent_text,
@@ -76,6 +79,11 @@ async def update_branding(body: BrandingUpdateRequest, db: AsyncSession = Depend
         if not (1 <= len(body.org_name) <= 64):
             raise HTTPException(status_code=400, detail="org_name must be 1-64 characters")
         settings.org_name = body.org_name
+    if body.tak_server_name is not None:
+        name = body.tak_server_name
+        if not (1 <= len(name) <= 64) or any(ord(char) < 32 or char in '<>&"\'' for char in name):
+            raise HTTPException(status_code=400, detail="tak_server_name must be 1-64 characters and cannot contain XML markup characters")
+        settings.tak_server_name = name
     for field in ("accent_fill", "accent_fill_hover", "accent_text", "accent_ring"):
         value = getattr(body, field)
         if value is not None:

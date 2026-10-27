@@ -6,7 +6,13 @@ Kiekvienas klientas gauna savo sertifikatą, pasirašytą serverio CA. Sertifika
 
 > **Sertifikatų slaptažodžių keitimas reikalauja tomo išvalymo.** Jei pakeičiate `TAKSERVER_CERT_PASS` arba `CA_PASS` faile `takserver.env` po pirmo paleidimo, esami JKS failai tome liks užšifruoti senu slaptažodžiu ir nebesutaps su nauju. Reikia ištrinti tomus (`docker compose down -v`) ir leisti `firstrun.sh` sugeneruoti viską iš naujo — o tai reiškia, kad **visi** anksčiau išduoti kliento sertifikatai nustos veikę ir turės būti perleisti.
 
-Atvaizdo (image) atnaujinimas **neatnaujina** sertifikatų — jie lieka tome. Tik tomo ištrynimas paleidžia regeneravimą.
+Atvaizdo (image) atnaujinimas **neatnaujina** sertifikatų — jie lieka tome. Pirmasis generavimas iš naujo vyksta tik ištrynus tomą; norėdami pakeisti tik serverio galinį sertifikatą ir išsaugoti klientų tapatybes, naudokite žemiau aprašytą serverio sertifikato atnaujinimo procedūrą.
+
+## TAK serverio sertifikato vardas
+
+Serverio sertifikate paliekamas vidinis bendrasis vardas (CN) `takserver`, o subject alternative name (SAN) įrašomi `TAK_SERVER_ADDRESS` ir, jei nustatytas, `TAK_SERVER_ADDRESS_LAN`. Naujų klientų paketų TAK serverio rodomą pavadinimą nustatykite **Settings → Branding**; jis nekeičia sertifikato tapatybės ar tinklo adresų. Paketų kūrimas komandine eilute ir toliau naudoja `TAK_SERVER_NAME` iš env failo.
+
+Esamame diegime pirmiausia sukurkite TAK duomenų atsarginę kopiją su `scripts/backup.sh`, tada vykdykite `scripts/renew_server_cert.sh`. Jis pakeičia tik serverio sertifikato failus, pasirašytus esamu CA, patikrina SAN reikšmes ir iš naujo paleidžia TLS servisus. Esami klientų sertifikatai lieka pasirašyti tuo pačiu CA. Jei pasikeitė prisijungimo adresas, klientams reikia importuoti naujai sugeneruotą paketą.
 
 ## Admin panelės autentifikacija
 

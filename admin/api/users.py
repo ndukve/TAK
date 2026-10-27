@@ -13,7 +13,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from .db import get_db
 from .deps import pwd_ctx, require_role, write_audit
 from .docker_exec import run_in_container
-from .models import AdminUser
+from .models import AdminUser, BrandSettings
 from .password_policy import validate_password
 
 router = APIRouter(prefix="/api/users", tags=["users"])
@@ -22,6 +22,7 @@ _admin = require_role("admin", "superadmin")
 TAK_DATA = "/opt/tak/data/certs/files"
 CLIENTPKGS = f"{TAK_DATA}/clientpkgs"
 SERVER_ADDR = os.environ.get("TAK_SERVER_ADDRESS", "localhost")
+SERVER_NAME = os.environ.get("TAK_SERVER_NAME") or "TAK Server"
 # Set only when a VPN is active (see scripts/sync_server_address.sh) — a
 # second, LAN-direct connection option for devices on the same local
 # network as the server, alongside the VPN address above.
@@ -197,7 +198,12 @@ async def gen_cert(body: UsernameRequest, db: AsyncSession = Depends(get_db), ac
 @router.post("/make-package", status_code=201)
 async def make_package(body: MakePackageRequest, db: AsyncSession = Depends(get_db), actor=Depends(_admin)):
     username = _validate_new_username(body.username)
-    env = {"CLIENT_CERT_NAME": username, "TAK_SERVER_ADDRESS": SERVER_ADDR}
+    brand = await db.get(BrandSettings, "singleton")
+    env = {
+        "CLIENT_CERT_NAME": username,
+        "TAK_SERVER_ADDRESS": SERVER_ADDR,
+        "TAK_SERVER_NAME": brand.tak_server_name if brand else SERVER_NAME,
+    }
     if SERVER_ADDR_LAN:
         env["TAK_SERVER_ADDRESS_LAN"] = SERVER_ADDR_LAN
     if body.team:
@@ -241,6 +247,8 @@ async def renew_user(body: RenewUserRequest, db: AsyncSession = Depends(get_db),
 
     target = _validate_new_username(body.new_username or username)
     renaming = target != username
+    brand = await db.get(BrandSettings, "singleton")
+    server_name = brand.tak_server_name if brand else SERVER_NAME
 
     async def _issue(name: str):
         code, out = await run_in_container(
@@ -248,7 +256,7 @@ async def renew_user(body: RenewUserRequest, db: AsyncSession = Depends(get_db),
         )
         if code != 0:
             raise HTTPException(status_code=500, detail=f"gen-cert failed: {out}")
-        env = {"CLIENT_CERT_NAME": name, "TAK_SERVER_ADDRESS": SERVER_ADDR}
+        env = {"CLIENT_CERT_NAME": name, "TAK_SERVER_ADDRESS": SERVER_ADDR, "TAK_SERVER_NAME": server_name}
         if SERVER_ADDR_LAN:
             env["TAK_SERVER_ADDRESS_LAN"] = SERVER_ADDR_LAN
         if body.team:

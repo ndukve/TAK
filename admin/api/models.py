@@ -66,6 +66,7 @@ class BrandSettings(Base):
 
     id: Mapped[str] = mapped_column(String(16), primary_key=True, default=lambda: "singleton")
     org_name: Mapped[str] = mapped_column(String(64), default="TAK WebUI")
+    tak_server_name: Mapped[str] = mapped_column(String(64), default="TAK Server")
     accent_fill: Mapped[str] = mapped_column(String(16), default="#004990")
     accent_fill_hover: Mapped[str] = mapped_column(String(16), default="#0a5cb0")
     accent_text: Mapped[str] = mapped_column(String(16), default="#ffffff")

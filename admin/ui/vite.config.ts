@@ -6,7 +6,9 @@ import path from 'path'
 import { execSync } from 'child_process'
 
 function gitVersion(): string {
-  if (process.env.APP_VERSION) return process.env.APP_VERSION
+  // The Docker build passes the full 40-character commit hash; the sidebar only has room for git's short form.
+  const shorten = (v: string) => (/^[0-9a-f]{40}$/.test(v) ? v.slice(0, 7) : v)
+  if (process.env.APP_VERSION) return shorten(process.env.APP_VERSION)
   try {
     return execSync('git describe --tags --always', { cwd: __dirname, stdio: ['ignore', 'pipe', 'ignore'] }).toString().trim()
   } catch {

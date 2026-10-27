@@ -42,6 +42,19 @@ async def lifespan(app: FastAPI):
             "ALTER TABLE brand_settings ADD COLUMN IF NOT EXISTS logo_filename VARCHAR(128)"
         ))
         await conn.execute(text(
+            "ALTER TABLE brand_settings ADD COLUMN IF NOT EXISTS tak_server_name VARCHAR(64)"
+        ))
+        await conn.execute(
+            text("UPDATE brand_settings SET tak_server_name = :name WHERE tak_server_name IS NULL"),
+            {"name": os.environ.get("TAK_SERVER_NAME") or "TAK Server"},
+        )
+        await conn.execute(text(
+            "ALTER TABLE brand_settings ALTER COLUMN tak_server_name SET DEFAULT 'TAK Server'"
+        ))
+        await conn.execute(text(
+            "ALTER TABLE brand_settings ALTER COLUMN tak_server_name SET NOT NULL"
+        ))
+        await conn.execute(text(
             "ALTER TABLE admin_users ADD COLUMN IF NOT EXISTS auth_provider VARCHAR(16) NOT NULL DEFAULT 'local'"
         ))
         await conn.execute(text(

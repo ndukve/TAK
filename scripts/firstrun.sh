@@ -61,6 +61,7 @@ fi
 
 if [[ ! -f "${CR}/files/takserver.pem" ]]; then
     info "Generating server certificate"
+    [ -n "${TAK_SERVER_ADDRESS:-}" ] || fail "TAK_SERVER_ADDRESS is required to issue a server certificate"
     CAPASS=${CA_PASS} PASS="${TAKSERVER_CERT_PASS}" bash makeCert.sh server takserver >/dev/null
     ok "Server certificate ready"
 else

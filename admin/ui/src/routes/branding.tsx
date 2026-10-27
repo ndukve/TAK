@@ -17,6 +17,7 @@ export const Route = createFileRoute('/branding')({
 
 interface BrandingResponse {
   org_name: string
+  tak_server_name: string
   accent_fill: string
   accent_fill_hover: string
   accent_text: string
@@ -26,6 +27,7 @@ interface BrandingResponse {
 
 function BrandingPage() {
   const [orgName, setOrgName] = useState('')
+  const [takServerName, setTakServerName] = useState('TAK Server')
   const [accentFill, setAccentFill] = useState('#2dd4bf')
   const [accentFillHover, setAccentFillHover] = useState('#5eead4')
   const [accentText, setAccentText] = useState('#052e2b')
@@ -39,6 +41,7 @@ function BrandingPage() {
     try {
       const data = await apiJson<BrandingResponse>('/api/branding')
       setOrgName(data.org_name)
+      setTakServerName(data.tak_server_name)
       setAccentFill(data.accent_fill)
       setAccentFillHover(data.accent_fill_hover)
       setAccentText(data.accent_text)
@@ -60,6 +63,7 @@ function BrandingPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           org_name: orgName,
+          tak_server_name: takServerName,
           accent_fill: accentFill,
           accent_fill_hover: accentFillHover,
           accent_text: accentText,
@@ -122,6 +126,14 @@ function BrandingPage() {
             <input type="text" value={orgName} onChange={e => setOrgName(e.target.value)}
               maxLength={64} required
               className="w-full px-3 py-2 rounded-lg bg-zinc-200 dark:bg-zinc-950 border border-zinc-300 dark:border-white/10 text-zinc-900 dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-accent-ring" />
+          </div>
+
+          <div className="space-y-1">
+            <label className="text-sm text-zinc-700 dark:text-zinc-300">TAK server display name</label>
+            <input type="text" value={takServerName} onChange={e => setTakServerName(e.target.value)}
+              maxLength={64} required
+              className="w-full px-3 py-2 rounded-lg bg-zinc-200 dark:bg-zinc-950 border border-zinc-300 dark:border-white/10 text-zinc-900 dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-accent-ring" />
+            <p className="text-xs text-zinc-500">Used in newly generated client packages. Does not change certificate identity or connection addresses.</p>
           </div>
 
           <div className="grid grid-cols-2 gap-3">
