@@ -29,6 +29,10 @@ The admin API has no direct access to the Docker socket. Every container operati
 
 Packages, plugins, and map sources: extension allowlist, size cap, path sanitization against traversal.
 
+## Dependency security checks
+
+CI audits the checked-in Python and UI dependency lockfiles before running tests or building the UI. When an audit fails, update the affected dependency to a patched compatible release and regenerate its lockfile; do not skip the audit step.
+
 ## Federation
 
 Server-to-server TAK federation is configured in `templates/CoreConfig.tpl` (ports 9000–9002, mutual TLS). The ports are published by default in `docker-compose.yml`, but actual federation requires a mutual certificate exchange with the other TAK server — see the `<federation>` block in `templates/CoreConfig.tpl`.

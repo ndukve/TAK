@@ -29,6 +29,10 @@ Admin API neturi tiesioginės prieigos prie Docker socket. Visos konteinerių op
 
 Paketai, papildiniai ir žemėlapių šaltiniai: leidžiamų plėtinių sąrašas (allowlist), dydžio apribojimas, kelio sanitizacija prieš path traversal ataką.
 
+## Priklausomybių saugumo patikros
+
+CI prieš testus ar UI kūrimą tikrina į repozitoriją įkeltus Python ir UI priklausomybių lock failus. Jei patikra randa pažeidžiamą priklausomybę, atnaujinkite ją į suderinamą pataisytą versiją ir iš naujo sugeneruokite atitinkamą lock failą; patikros nepraleiskite.
+
 ## Federacija
 
 TAK-serveris-į-TAK-serverį federacija sukonfigūruota `templates/CoreConfig.tpl` (portai 9000–9002, TLS abipusė autentifikacija). Numatytai portai atverti `docker-compose.yml`, bet realiam federavimui reikia abipusio sertifikatų pasikeitimo su kitu TAK serveriu — žr. `templates/CoreConfig.tpl` `<federation>` bloką.

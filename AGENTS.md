@@ -32,3 +32,4 @@ TAK is the TAK Server packaging for EFDI (Docker, rootful today) with its own ad
 - Revoking a user certificate means the `certmod` revoked group, not only deleting the package.
 - Server certificates keep internal CN `takserver` and include `TAK_SERVER_ADDRESS` plus optional `TAK_SERVER_ADDRESS_LAN` as SANs. Existing installations need operator-run `scripts/renew_server_cert.sh` after a backup; image updates do not rotate stored certificates.
 - WebUI package creation reads the TAK display name from `BrandSettings.tak_server_name`; command-line package creation continues to use `TAK_SERVER_NAME` from the env file.
+- Python and UI CI jobs run dependency audits before tests/builds; check failed-step logs because an audit failure prevents those later steps from running.
