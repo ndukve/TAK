@@ -74,8 +74,8 @@ case "$CLIENT_CERT_NAME" in
         cat ${WORK_DIR}/TAK_defaults.pref.tpl     | gomplate > ${WORK_DIR}/TAK_defaults.pref
         cat ${WORK_DIR}/MANIFEST/manifest.xml.tpl | gomplate > ${WORK_DIR}/MANIFEST/manifest.xml
         rm ${WORK_DIR}/blueteam.pref.tpl ${WORK_DIR}/TAK_defaults.pref.tpl ${WORK_DIR}/MANIFEST/manifest.xml.tpl
-        cp ${CR}/files/${CLIENT_CERT_NAME}.p12 ${WORK_DIR}/
-        cp ${CR}/files/truststore-root.p12     ${WORK_DIR}/
+        modernize_p12 "${CR}/files/${CLIENT_CERT_NAME}.p12" "${WORK_DIR}/${CLIENT_CERT_NAME}.p12" "$CLIENT_CERT_PASSWORD" -nodes
+        modernize_p12 "${CR}/files/truststore-root.p12" "${WORK_DIR}/truststore-root.p12" "$CA_PASS" -nokeys
         ;;
     *-Service)
         # No TAK client app to import a mission package into — export a
