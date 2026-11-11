@@ -242,14 +242,16 @@ function NavLink({ item, active, onNavigate, collapsed }: {
       title={collapsed ? item.label : undefined}
       onClick={onNavigate}
       className={cn(
-        'flex items-center gap-3 px-3 py-2 rounded-md text-sm whitespace-nowrap transition-colors',
+        'flex items-center gap-3 px-3 py-2 rounded-md text-sm whitespace-nowrap overflow-hidden transition-[color,background-color,width] duration-200',
+        // Icon rail: the row is as wide as its icon, so the label and the active highlight are not cut off at the rail's edge.
+        collapsed && 'md:w-10 md:group-hover/nav:w-full',
         active
           ? 'bg-primary/15 text-foreground'
           : 'text-muted-foreground hover:text-foreground hover:bg-neutral-surface'
       )}
     >
       <Icon name={item.icon} size={16} className="shrink-0" />
-      {item.label}
+      <span className={cn(collapsed && 'md:opacity-0 md:group-hover/nav:opacity-100 transition-opacity')}>{item.label}</span>
     </Link>
   )
 }
@@ -508,7 +510,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
             target="_blank"
             rel="noopener noreferrer"
             title={collapsed ? 'Documentation' : undefined}
-            className="flex items-center gap-3 px-3 py-2 rounded-md text-sm whitespace-nowrap text-muted-foreground hover:text-foreground hover:bg-neutral-surface transition-colors"
+            className={cn('flex items-center gap-3 px-3 py-2 rounded-md text-sm whitespace-nowrap overflow-hidden text-muted-foreground hover:text-foreground hover:bg-neutral-surface transition-[color,background-color,width] duration-200', collapsed && 'md:w-10 md:group-hover/nav:w-full')}
           >
             <Icon name="book-open-line" size={16} className="shrink-0" />
             <span className={cn(collapsed && 'md:opacity-0 md:group-hover/nav:opacity-100 transition-opacity')}>Documentation</span>
