@@ -11,7 +11,7 @@ Jums reikės:
 
 | Situacija | Ką naudoti |
 |---|---|
-| Visi įrenginiai tame **pačiame tinkle (LAN arba Wi-Fi)** kaip serveris | Serverio vietinis IP — VPN nereikia |
+| Visi įrenginiai tame **pačiame tinkle (LAN arba Wi-Fi)** kaip serveris | serverio vietinis IP — VPN nereikia |
 | Įrenginiai jungiasi **nuotoliniu būdu** (kitas tinklas, internetas) | NetBird arba Tailscale tunelį |
 
 ---
@@ -20,9 +20,9 @@ Jums reikės:
 
 ### A variantas — Vietinis tinklas (be VPN)
 
-Jei telefonai, nešiojami kompiuteriai ir TAK serveris yra tame pačiame Wi-Fi arba LAN tinkle, VPN nereikia. Serverio vietinis IP (pvz. `192.168.1.50`) naudojamas kaip serverio adresas.
+Jei telefonai, laptop'ai ir TAK serveris yra tame pačiame Wi-Fi arba LAN tinkle, VPN nereikia. serverio vietinis IP (pvz. `192.168.1.50`) naudojamas kaip serverio adresas.
 
-> **Priskirti statinį IP** serveriui (arba DHCP rezervaciją maršrutizatoriuje). Jei IP pasikeičia, esami duomenų paketai nustos veikti.
+> **Priskirti statinį IP** serveriui (arba DHCP rezervaciją router'yje). Jei IP pasikeičia, esami duomenų paketai nustos veikti.
 
 Pereikite prie 2 žingsnio. Diegimo metu pasirinksite **„Enter address manually"** ir įvesite serverio LAN IP.
 
@@ -55,7 +55,7 @@ Kai paklaus apie tinklą, pasirinkite variantą pagal 1 žingsnį:
 
 Skriptas automatiškai:
 
-- Atnaujins OS (`apt`/`dnf` upgrade) — jei po to reikės perkrauti, skriptas
+- Atnaujins OS'ą (`apt`/`dnf` upgrade) — jei po to reikės perkrauti, skriptas
   sustos ir apie tai praneš; tiesiog perkraukite ir vėl paleiskite tą pačią komandą
 - Įdiegs Docker Engine
 - Prisijungs prie pasirinkto tinklo (arba praleis, jei rankinis IP)
@@ -89,7 +89,7 @@ Kiekvienas vartotojas gauna duomenų paketą (`.zip`), kuriame yra:
 |---|---|
 | `<šaukinys>.p12` | **Kliento sertifikatas** — įrenginio tapatybė serveriui (mTLS) |
 | `truststore-root.p12` | **CA pasitikėjimo saugykla** — leidžia įrenginiui patikrinti serverio sertifikatą |
-| `blueteam.pref` | Serverio adresas, prievadas ir sertifikatų nustatymai |
+| `blueteam.pref` | serverio adresas, prievadas ir sertifikatų nustatymai |
 
 Abu sertifikatų failai būtini. Kliento sertifikatas autentifikuoja įrenginį serveriui; pasitikėjimo saugykla — serverį įrenginiui.
 
@@ -100,7 +100,7 @@ Tai yra atskiros TAK sąvokos:
 | Sąvoka | Pavyzdys | Paskirtis |
 |---|---|---|
 | Kliento sertifikatas | `Alpha1-iTAK` | Unikaliai autentifikuoja vieną kliento diegimą. Nenaudokite jo kitame įrenginyje. |
-| Serverio maršrutizavimo grupė | `TAK-USERS` | Nustato, kurie autentifikuoti klientai gali keistis CoT duomenimis. Šis diegimas suteikia IN ir OUT teises. |
+| serverio maršrutizavimo grupė | `TAK-USERS` | Nustato, kurie autentifikuoti klientai gali keistis CoT duomenimis. Šis diegimas suteikia IN ir OUT teises. |
 | CoT priklausomybė | Draugiškas, priešiškas, neutralus, nežinomas | Valdo taktinę simboliką, pvz., draugiškus stačiakampius ar priešiškus rombus. |
 | TAK komandos spalva | Žydra, raudona, žalia, geltona | Kliento operacinės komandos atributas; jis nesuteikia prieigos prie serverio. |
 
@@ -155,7 +155,7 @@ Vietoje `<SERVERIO_IP>` naudokite:
 ip addr show wt0 | grep "inet " | awk '{print $2}' | cut -d/ -f1
 ```
 
-Sugeneravus paketą per administravimo skydelį, tam žmogui automatiškai sukuriama (arba pakartotinai panaudojama) paskyra: naudotojo vardas — jo bazinis šaukinys (pvz. `Alpha1`, be priesagos), o slaptažodis parodomas vieną kartą jo sukūrimo metu. Perduokite tą slaptažodį naudotojui kitu kanalu, ir jis galės pats prisijungti prie administravimo skydelio iš savo telefono ar nešiojamo kompiuterio, matyti tik savo paketus ir juos atsisiųsti tiesiogiai — operatoriui nebereikės perduoti `.zip` failo rankiniu būdu.
+Sugeneravus paketą per administravimo skydelį, tam žmogui automatiškai sukuriama (arba pakartotinai panaudojama) paskyra: naudotojo vardas — jo bazinis šaukinys (pvz. `Alpha1`, be priesagos), o slaptažodis parodomas vieną kartą jo sukūrimo metu. Perduokite tą slaptažodį naudotojui kitu kanalu, ir jis galės pats prisijungti prie administravimo skydelio iš savo telefono ar laptop'o, matyti tik savo paketus ir juos atsisiųsti tiesiogiai — operatoriui nebereikės perduoti `.zip` failo rankiniu būdu.
 
 ---
 
@@ -174,7 +174,7 @@ Hamburger meniu → **Import Manager** → Import → pasirinkite `.zip`
 
 > **WinTAK pastaba:** Nenaudokite „Install CA" arba „Install Client Cert" langų — jie skirti tik rankiniam sertifikatų diegimui. Import Manager vienu veiksmu įdiegs serverio ryšį, sertifikatus ir žemėlapių šaltinius.
 
-Serverio įrašas atsiras automatiškai. Paspauskite **Connect**.
+serverio įrašas atsiras automatiškai. Paspauskite **Connect**.
 
 ---
 
@@ -192,9 +192,9 @@ Serverio įrašas atsiras automatiškai. Paspauskite **Connect**.
 2. Paspauskite ant `.xml` failo, kad atsisiųstumėte
 3. ATAK/WinTAK → hamburger → **Import Manager** → pasirinkite failą
 
-Superadministratoriai papildomai turi skiltį **Basemaps**: joje galima rinktis ESRI orų kompozicijas, GOES palydovinius vaizdus, NASA IMERG, NOAA/RainViewer radarą, atskirus bazlapius, įkeltus ATAK XML šaltinius arba serveryje sugeneruotas neprisijungusio režimo MBTiles sritis ir siųsti jas pasirinktiems, šiuo metu prie TAK serverio prijungtiems klientams. Serveris tokiu atveju sukuria kvietimu pagrįstą misiją su pasirinktais žemėlapio sluoksniais — ją reikia priimti pačiame EUD įrenginyje.
+Superadministratoriai papildomai turi skiltį **Basemaps**: joje galima rinktis ESRI orų kompozicijas, GOES palydovinius vaizdus, NASA IMERG, NOAA/RainViewer radarą, atskirus bazlapius, įkeltus ATAK XML šaltinius arba serveryje sugeneruotas neprisijungusio režimo MBTiles sritis ir siųsti jas pasirinktiems, šiuo metu prie TAK serverio prijungtiems klientams. serveris tokiu atveju sukuria kvietimu pagrįstą misiją su pasirinktais žemėlapio sluoksniais — ją reikia priimti pačiame EUD įrenginyje.
 
-Įmontuoti beveik gyvo laiko šaltiniai gaunami per pasirašytą TAK sluoksnių (tile) šliuzą adresu `https://<SERVERIO_IP>:1414`, saugomi serverio talpykloje ir ATAK pateikiami kaip standartiniai `MapTile` sluoksniai. Todėl EUD reikia tik tinklo prieigos iki paties TAK serverio — tiesioginė interneto prieiga prie kiekvieno orų ar vaizdų tiekėjo nereikalinga. `TAK_SERVER_ADDRESS` reikšmė turi būti tas IP arba domenas, kurį realiai naudoja EUD; jei šliuzas per klaidą sukonfigūruotas kaip `localhost`, Basemaps puslapis apie tai įspėja.
+Įmontuoti beveik gyvo laiko šaltiniai gaunami per pasirašytą TAK sluoksnių (tile) gateway'ą adresu `https://<SERVERIO_IP>:1414`, saugomi serverio talpykloje ir ATAK pateikiami kaip standartiniai `MapTile` sluoksniai. Todėl EUD reikia tik tinklo prieigos iki paties TAK serverio — tiesioginė interneto prieiga prie kiekvieno orų ar vaizdų tiekėjo nereikalinga. `TAK_SERVER_ADDRESS` reikšmė turi būti tas IP arba domenas, kurį realiai naudoja EUD; jei gateway'as per klaidą sukonfigūruotas kaip `localhost`, Basemaps puslapis apie tai įspėja.
 
 Basemaps puslapyje taip pat yra šaltinių prieinamumo patikros, sluoksnių permatomumo ir eiliškumo valdymas, prijungtų klientų grupių pasirinkimas, išsaugoma pristatymo istorija, priėmimo skaičiai, pakartotinio siuntimo/trynimo valdikliai, senų misijų valymas, pasirinktinių šaltinių šalinimas bei ribotas AOI srities pavertimas į MBTiles. Už tiekėjų prieinamumą ir licencijavimą atsako operatorius — jei tiekėjas reikalauja prisijungimo duomenų ar sutartinio atributavimo, naudokite tik organizacijos patvirtintus XML šaltinius.
 
@@ -236,7 +236,7 @@ Android įrenginyje: atidarykite naršyklę → `https://<SERVERIO_IP>:1414/plug
 
 Sinchronizuoja misijas, žemėlapių sluoksnius, duomenų paketus ir failus tarp visų prijungtų ATAK įrenginių per TAK serverį.
 
-> **Serverio reikalavimai:** Jokie. Mission API jau veikia TAK serveryje adresu `https://<serveris>:8443/Marti/api/missions`. Papildomos konfigūracijos nereikia.
+> **serverio reikalavimai:** Jokie. Mission API jau veikia TAK serveryje adresu `https://<serveris>:8443/Marti/api/missions`. Papildomos konfigūracijos nereikia.
 
 **Diegimas įrenginyje:**
 1. Atsisiųskite DataSync APK administravimo skydelio skiltyje **Plugins**, adresu `https://<SERVERIO_IP>:1414/plugins`
@@ -312,7 +312,7 @@ Jei administravimo skydelis kada nors taptų nepasiekiamas, du skriptai repozito
 > **Nepavyksta atsisiųsti paketo įrenginyje**
 > Patikrinkite, ar įrenginys pasiekia serverio IP per prievadą 1414 (administravimo skydelis). A variantas: įsitikinkite, kad įrenginys yra tame pačiame Wi-Fi/LAN tinkle. B variantas: patikrinkite, ar NetBird programėlė rodo **Connected**.
 
-> **Serveris matomas, bet neprisijungia**
+> **serveris matomas, bet neprisijungia**
 > Paketas gali būti sugeneruotas su netinkamu serverio IP. Ištrinkite serverio įrašą, sugeneruokite paketą iš naujo su `./scripts/users.sh create JusuŠaukinys-iTAK` (arba `-ATAK`/`-WinTAK`) ir importuokite pakartotinai.
 
 > **iTAK neparodo serverio importavus paketą**

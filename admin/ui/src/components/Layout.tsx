@@ -62,6 +62,7 @@ const fieldItems = [
 const superAdminItems = [
   { to: '/basemaps', label: 'Basemaps', icon: 'rainy-line' },
   { to: '/users', label: 'Users', icon: 'group-line' },
+  { to: '/groups', label: 'Groups', icon: 'team-line' },
   { to: '/admin-users', label: 'Admin Users', icon: 'shield-user-line' },
   { to: '/certificates', label: 'Certificates', icon: 'shield-check-line' },
   { to: '/replay', label: 'Replay', icon: 'rss-line' },

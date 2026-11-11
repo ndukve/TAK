@@ -23,7 +23,7 @@ Admin panelė rašo audito įrašus (prisijungimai, naudotojų valdymas, konfig�
 
 ## Pranešimai
 
-In-app toast pranešimai admin panelėje sėkmingoms/nepavykusioms operacijoms. **Nėra** išorinio pranešimų kanalo (Slack, el. paštas, webhook) — jei reikia, tai reikėtų kurti atskirai, šiuo metu neįdiegta.
+In-app toast pranešimai admin panelėje sėkmingoms/nepavykusioms operacijoms. **Nėra** išorinio pranešimų kanalo (Slack, el. paštas, webhook'as) — jei reikia, tai reikėtų kurti atskirai, šiuo metu neįdiegta.
 
 ## Logai
 

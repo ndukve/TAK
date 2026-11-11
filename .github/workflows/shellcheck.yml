@@ -16,5 +16,4 @@ jobs:
         # intentional here, not bugs. docker/wait-for-it.sh is vendored
         # third-party code (vishnubob/wait-for-it) — not ours to "fix".
         run: |
-          shellcheck -x -S warning \
-            $(find . -name "*.sh" -not -path "./.git/*" -not -path "./docker/wait-for-it.sh")
+          find . -name "*.sh" -not -path "./.git/*" -not -path "./docker/wait-for-it.sh" -print0 | xargs -0 shellcheck -x -S warning

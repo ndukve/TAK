@@ -16,11 +16,11 @@ Greitos nuorodos konkrečioms reikšmėms. Aiškinimams žr. atitinkamus numeruo
 
 | Kintamasis | Reikšmė |
 |---|---|
-| `TAK_SERVER_ADDRESS` | Serverio adresas paketuose (IP/hostname) |
+| `TAK_SERVER_ADDRESS` | serverio adresas paketuose (IP/hostname) |
 | `TAK_SERVER_NAME` | Rodomas vardas klientų pakete |
 | `POSTGRES_PASSWORD` / `POSTGRES_USER` / `POSTGRES_DB` / `POSTGRES_ADDRESS` | DB prieiga |
 | `CA_NAME` / `CA_PASS` | Sertifikatų autoritetas |
-| `TAKSERVER_CERT_PASS` | Serverio sertifikato slaptažodis |
+| `TAKSERVER_CERT_PASS` | serverio sertifikato slaptažodis |
 | `ADMIN_CERT_NAME` / `ADMIN_CERT_PASS` | TAK administratoriaus sertifikatas |
 | `COUNTRY` / `STATE` / `CITY` / `ORGANIZATION` / `ORGANIZATIONAL_UNIT` | CA sertifikato metaduomenys |
 | `DOCKER_SOCKET_GID` | Docker socket grupės ID (nustato diegėjas) |
@@ -43,7 +43,7 @@ Pilnas komentuotas šablonas: `takserver.env.example`.
 | `make gen-device-cert` / `make-package` / `gen-cert` / `enable-user` | Granuliuoti naudotojo kūrimo žingsniai |
 | `make list-packages` / `serve-packages` | Paketų sąrašas / serverio info |
 | `make add-plugin APK=...` / `list-plugins` | Kliento papildiniai |
-| `make install-plugin JAR=...` | Serverio papildinys |
+| `make install-plugin JAR=...` | serverio papildinys |
 | `make add-service NAME=x` | Sertifikatas mašininei integracijai |
 | `make logs` / `logs-db` / `status` | Stebėjimas |
 | `make shell` | Bash į `takserver_config` |

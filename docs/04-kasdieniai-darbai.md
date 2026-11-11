@@ -40,7 +40,7 @@ make add-plugin APK=/path/to/plugin.apk
 make list-plugins
 ```
 
-**Serverio papildinys** (JAR, keičia `takserver_pluginmanager` elgesį):
+**serverio papildinys** (JAR, keičia `takserver_pluginmanager` elgesį):
 
 ```bash
 make install-plugin JAR=/path/to/plugin.jar
@@ -90,4 +90,8 @@ Admin panelėje: Dashboard (bendra būsena), Logs (superadmin).
 
 ## CoT saugojimas (retention) ir duomenų vieta
 
-Serveris duomenis laiko pagrindiniame kompiuteryje, kataloge `TAK_DATA_DIR` (numatyta `/srv/tak-data`), o ne Docker tomuose (žr. 08 dokumentą). CoT istoriją valo saugojimo (retention) paslauga pagal du raktus `takserver.env`: `TAK_RETENTION_COT_DAYS` (kiek dienų laikyti arba `null` – amžinai) ir `TAK_RETENTION_CRON` (Spring cron valymui). Numatytas tvarkaraštis `-` palieka paslaugą neveikiančią, todėl serveris, kuriame abu raktai nenustatyti, niekada nieko netrina, o duomenų bazė auga be ribų, kai šliuzas siunčia CoT (matyta 20 GB per 12 valandų). Pakeitę raktus iš naujo sukurkite konteinerį: `docker compose --env-file takserver.env up -d --force-recreate takserver_retention`. Dydį tikrinkite `df -h /` ir `select pg_size_pretty(pg_database_size('cot'))` konteineryje `takdb`. Ištrintos eilutės panaudojamos iš naujo, bet failai susitraukia tik po `VACUUM FULL`.
+serveris duomenis laiko pagrindiniame kompiuteryje, kataloge `TAK_DATA_DIR` (numatyta `/srv/tak-data`), o ne Docker tomuose (žr. 08 dokumentą). CoT istoriją valo saugojimo (retention) paslauga pagal du raktus `takserver.env`: `TAK_RETENTION_COT_DAYS` (kiek dienų laikyti arba `null` – amžinai) ir `TAK_RETENTION_CRON` (Spring cron valymui). Numatytas tvarkaraštis `-` palieka paslaugą neveikiančią, todėl serveris, kuriame abu raktai nenustatyti, niekada nieko netrina, o duomenų bazė auga be ribų, kai gateway'as siunčia CoT (matyta 20 GB per 12 valandų). Pakeitę raktus iš naujo sukurkite konteinerį: `docker compose --env-file takserver.env up -d --force-recreate takserver_retention`. Dydį tikrinkite `df -h /` ir `select pg_size_pretty(pg_database_size('cot'))` konteineryje `takdb`. Ištrintos eilutės panaudojamos iš naujo, bet failai susitraukia tik po `VACUUM FULL`.
+
+## Grupės (kanalai)
+
+ATAK rodo TAK Server grupes kaip kanalus. **Admin skydelis → Groups** (superadmin) parodo kiekvieną grupę su nariais ir keičia naudotojo grupes: *pridėti* grupių prie turimų, *pašalinti* kai kurias arba *pakeisti* visas, kiekvieną kaip siųsti ir gauti, tik siųsti arba tik gauti. Tai paleidžia paties TAK Server įrankį `UserManager.jar certmod` (tą patį, kurį naudoja `enable_user.sh`), todėl `UserAuthenticationFile.xml` ranka nekeičiamas. Grupė atsiranda, kai į ją įtraukiamas naudotojas; atskiro „sukurti grupę“ žingsnio nėra. Nauji paketai vis tiek dedami į `TAK_USER_GROUP` (numatyta `TAK-USERS`) su siuntimu ir gavimu, o `users.sh repair-groups` vis dar priskiria tik tą grupę, todėl po kitų grupių sukūrimo naudokite atsargiai (jis pakeičia naudotojo grupes į bendrą). Paslaugų paskyroms (vardai baigiasi `-Service`, taip pat EFDI srautas) skydelyje galima tik pridėti grupių, bet ne jų prarasti ar pakeisti. Kad EFDI takai pasiektų kanalą, įtraukite `efdi-gateway-Service` į tą grupę. Pakeitimas pritaikomas kliento kitą kartą prisijungus; jau prisijungusį klientą prijunkite iš naujo. Grupė `revoked` yra vieta, kur TAK laiko atšauktus sertifikatus, ir jos čia priskirti negalima: vietoj to išjunkite naudotoją. Dar neišbandyta su veikiančiu serveriu: poveikis jau prisijungusiam klientui.

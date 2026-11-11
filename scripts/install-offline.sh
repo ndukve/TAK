@@ -31,9 +31,9 @@ if [ "${1:-}" = "bundle" ]; then
     mkdir -p "$BUNDLE_DIR/images" "$BUNDLE_DIR/docker-bin"
 
     echo "Fetching Docker ${DOCKER_VERSION} static binaries + Compose ${COMPOSE_VERSION} plugin..."
-    curl -fsSL "https://download.docker.com/linux/static/stable/x86_64/docker-${DOCKER_VERSION}.tgz" \
+    curl -fsSL --retry 3 --retry-delay 2 "https://download.docker.com/linux/static/stable/x86_64/docker-${DOCKER_VERSION}.tgz" \
         -o "$BUNDLE_DIR/docker-bin/docker.tgz"
-    curl -fsSL "https://github.com/docker/compose/releases/download/${COMPOSE_VERSION}/docker-compose-linux-x86_64" \
+    curl -fsSL --retry 3 --retry-delay 2 "https://github.com/docker/compose/releases/download/${COMPOSE_VERSION}/docker-compose-linux-x86_64" \
         -o "$BUNDLE_DIR/docker-bin/docker-compose"
     echo "$DOCKER_SHA256  $BUNDLE_DIR/docker-bin/docker.tgz" | sha256sum -c - >/dev/null \
         || { echo "Docker binary checksum verification failed" >&2; exit 1; }

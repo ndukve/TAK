@@ -69,3 +69,21 @@ COMMIT_MSG.txt
 
 # Local repowise index (generated, large, per-machine)
 .repowise/
+
+# update.sh --rollback record and optional allowed signers file
+.previous-version
+.allowed_signers
+
+# Agent files and folders (local only, never committed)
+CLAUDE.md
+AGENTS.md
+CODEX.md
+GEMINI.md
+.claude/
+.codex/
+.remember/
+.cursor/
+.gemini/
+.agents/
+.ai/
+.mcp.json

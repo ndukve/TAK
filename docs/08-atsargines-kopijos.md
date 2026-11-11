@@ -43,6 +43,6 @@ Viskas, kas turi išlikti po perdiegimo, laikoma serveryje, o ne Docker tomuose,
 | `tak_plugins`, `tak_plugin_conf` | klientams teikiami papildiniai ir jų konfigūracija |
 | `takdb_data` | PostgreSQL duomenys (CoT ir admin duomenų bazės) |
 
-Atvaizdus, konteinerius ir `/var/lib/docker` galima ištrinti, perkurti ar prarasti neliečiant šių katalogų, o `install.sh` (Reinstall) ir `update.sh` jų niekada netrina. Serveris, kuris dar turi senus vardinius tomus, juos vieną kartą nukopijuoja į `TAK_DATA_DIR` per `update.sh` ar `install.sh`; seni tomai paliekami, kol patys juos pašalinsite, o failas `.migrated-<dalis>` neleidžia kopijavimo pakartoti. `TAK_DATA_DIR` negali būti `/var/lib/docker` viduje.
+Atvaizdus, konteinerius ir `/var/lib/docker` galima ištrinti, perkurti ar prarasti neliečiant šių katalogų, o `install.sh` (Reinstall) ir `update.sh` jų niekada netrina. serveris, kuris dar turi senus vardinius tomus, juos vieną kartą nukopijuoja į `TAK_DATA_DIR` per `update.sh` ar `install.sh`; seni tomai paliekami, kol patys juos pašalinsite, o failas `.migrated-<dalis>` neleidžia kopijavimo pakartoti. `TAK_DATA_DIR` negali būti `/var/lib/docker` viduje.
 
 `TAK_DATA_DIR` laikykite atskirame diske arba tame, kurį apima VM atsarginė kopija. `backup.sh` šiuos katalogus archyvuoja kaip root, nes CA raktą gali skaityti tik TAK naudotojas.

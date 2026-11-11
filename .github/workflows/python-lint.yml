@@ -28,5 +28,6 @@ jobs:
       - name: Type-check (advisory — reports only, does not fail the build)
         # See pyproject.toml's [tool.mypy] comment for why this isn't a gate
         # yet: no prior type-check history, 22-error baseline at introduction.
-        run: pip install mypy && python -m mypy api || true
+        continue-on-error: true
+        run: pip install mypy && python -m mypy api
         working-directory: admin

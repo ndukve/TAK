@@ -1,12 +1,32 @@
 #!/usr/bin/env bash
 # Pull latest changes from git and rebuild containers.
 # Run from the repo directory: ./update.sh
+#
+#   update.sh                 move to the tip of this branch on origin (shows the changes and asks first when run from a terminal)
+#   update.sh --to <tag>      move to a release tag (for example v0.9.0, or stable); checked with git verify-tag when a signers file
+#                             exists (EFDI_ALLOWED_SIGNERS, or .allowed_signers in this directory)
+#   update.sh --rollback      go back to the version this checkout was on before the last update
+#   --yes (or EFDI_UPDATE_YES=1) skips the question
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "$0")/.." && pwd)"
 ENV_FILE="$SCRIPT_DIR/takserver.env"
+
+ORIG_ARGS=("$@")          # kept for the restart below, when update.sh itself changed
+TARGET_TAG="" ROLLBACK=0 ASSUME_YES="${EFDI_UPDATE_YES:-0}"
+while [ $# -gt 0 ]; do
+    case "$1" in
+        --to) [ $# -ge 2 ] || { echo "update.sh: --to needs a tag" >&2; exit 2; }; TARGET_TAG="$2"; shift 2 ;;
+        --rollback) ROLLBACK=1; shift ;;
+        --yes|-y) ASSUME_YES=1; shift ;;
+        *) echo "usage: update.sh [--to <tag> | --rollback] [--yes]" >&2; exit 2 ;;
+    esac
+done
+[ -z "$TARGET_TAG" ] || [ "$ROLLBACK" = 0 ] || { echo "update.sh: use --to or --rollback, not both" >&2; exit 2; }
 # shellcheck source=scripts/_spinner.sh
 . "$SCRIPT_DIR/scripts/_spinner.sh"
+# shellcheck source=scripts/_release.sh
+. "$SCRIPT_DIR/scripts/_release.sh"
 # shellcheck source=scripts/_selftest.sh
 . "$SCRIPT_DIR/scripts/_selftest.sh"
 # shellcheck source=scripts/refresh_vendor.sh
@@ -128,18 +148,41 @@ fi
 
 spin_start "Fetching latest changes (branch: $BRANCH)"
 _PULL_LOG="$(mktemp)"
-if ! git "${_git_cred[@]}" fetch origin "$BRANCH" > "$_PULL_LOG" 2>&1; then
+if ! git "${_git_cred[@]}" fetch origin "$BRANCH" --tags --force > "$_PULL_LOG" 2>&1; then
     spin_stop ""
     cat "$_PULL_LOG"
     rm -f "$_PULL_LOG"
     fail "git fetch failed — an authentication or 'repository not found' message above means the username or token was refused (docs: Updating from a private repository); otherwise check network and the remote"
 fi
-if ! git merge --ff-only "origin/$BRANCH" >> "$_PULL_LOG" 2>&1; then
+_signers="${EFDI_ALLOWED_SIGNERS:-}"
+[ -n "$_signers" ] || { [ -r "$SCRIPT_DIR/.allowed_signers" ] && _signers="$SCRIPT_DIR/.allowed_signers"; } || true
+_previous_file="$SCRIPT_DIR/.previous-version"
+if ! target="$(release_target "origin/$BRANCH" "$TARGET_TAG" "$ROLLBACK" "$_previous_file" "$_signers" 2>>"$_PULL_LOG")"; then
     spin_stop ""
     cat "$_PULL_LOG"
     rm -f "$_PULL_LOG"
-    fail "fast-forward update failed; preserve or move local changes, then retry (output above)"
+    fail "Cannot choose the version to move to (see above)"
 fi
+if [ "$target" != "$_OLD_HEAD" ]; then
+    spin_stop "Now at $(release_describe); moving to $(git describe --tags --always "$target")"
+    git --no-pager log --oneline --max-count=25 "$_OLD_HEAD..$target" 2>/dev/null || true
+    if git merge-base --is-ancestor "$target" "$_OLD_HEAD"; then warn "This moves BACK to an older version"; fi
+    if [ "$ASSUME_YES" != 1 ] && [ -t 0 ] && [ -t 1 ]; then
+        read -rp "  Proceed? [Y/n]: " _go
+        if ! [[ "${_go:-Y}" =~ ^[Yy] ]]; then
+            rm -f "$_PULL_LOG"
+            fail "Cancelled; nothing was changed"
+        fi
+    fi
+    spin_start "Moving to $(git describe --tags --always "$target")"
+fi
+if ! release_apply "$target" >>"$_PULL_LOG" 2>&1; then
+    spin_stop ""
+    cat "$_PULL_LOG"
+    rm -f "$_PULL_LOG"
+    fail "Could not move to the chosen version (see above)"
+fi
+[ "$_OLD_HEAD" = "$(git rev-parse HEAD)" ] || release_remember "$_OLD_HEAD" "$_previous_file"
 rm -f "$_PULL_LOG"
 spin_stop "Up to date: $(git log -1 --format='%h %s')"
 
@@ -155,7 +198,7 @@ if [ "$_OLD_HEAD" != "$(git rev-parse HEAD)" ]; then
     # update that changes update.sh itself). Re-exec fresh from the new
     # file instead of limping along on stale buffered content.
     info "update.sh changed — restarting from the updated version..."
-    exec bash "$SCRIPT_DIR/scripts/update.sh" "$@"
+    exec bash "$SCRIPT_DIR/scripts/update.sh" "${ORIG_ARGS[@]}"
 else
     dim "No changes — already up to date."
 fi
@@ -345,5 +388,6 @@ section_done
 echo -e "\n${G}${_SECTION_RULE}${NC}"
 echo -e "${G}\033[1m  TAK SERVER UPDATE COMPLETED SUCCESSFULLY${NC}"
 echo -e "${G}${_SECTION_RULE}${NC}\n"
+printf "  Version: %s   (go back: scripts/update.sh --rollback)\n" "$(release_describe)"
 printf "  ${DIM}Logs:${NC}  docker compose --env-file takserver.env logs -f\n"
 printf "\n"

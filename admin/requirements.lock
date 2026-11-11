@@ -70,9 +70,9 @@ asyncpg==0.29.0 \
     --hash=sha256:f9ea3f24eb4c49a615573724d88a48bd1b7821c890c2effe04f05382ed9e8810 \
     --hash=sha256:ff8e8109cd6a46ff852a5e6bab8b0a047d7ea42fcb7ca5ae6eaae97d8eacf397
     # via -r requirements.txt
-authlib==1.7.2 \
-    --hash=sha256:2cea25fefcd4e7173bdf1372c0afc265c8034b23a8cd5dcb6a9164b826c64231 \
-    --hash=sha256:3e1faedc9d87e7d56a164eca3ccb6ace0d61b94abe83e92242f8dc8bba9b4a9f
+authlib==1.9.3 \
+    --hash=sha256:2f834630f452d2e01d787b5477cf37341b73577073bfab38f10d988782da018b \
+    --hash=sha256:95e13a6ea7d6008615b1463a695a35c3acc846547a90e4f767b7d476098af30a
     # via -r requirements.txt
 bcrypt==4.1.3 \
     --hash=sha256:01746eb2c4299dd0ae1670234bf77704f581dd72cc180f444bfe74eb80495b64 \

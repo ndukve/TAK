@@ -18,6 +18,7 @@ import { Route as MapsRouteImport } from './routes/maps'
 import { Route as LogsRouteImport } from './routes/logs'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as LiveMapRouteImport } from './routes/live-map'
+import { Route as GroupsRouteImport } from './routes/groups'
 import { Route as CertificatesRouteImport } from './routes/certificates'
 import { Route as BrandingRouteImport } from './routes/branding'
 import { Route as BasemapsRouteImport } from './routes/basemaps'
@@ -70,6 +71,11 @@ const LiveMapRoute = LiveMapRouteImport.update({
   path: '/live-map',
   getParentRoute: () => rootRouteImport,
 } as any)
+const GroupsRoute = GroupsRouteImport.update({
+  id: '/groups',
+  path: '/groups',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const CertificatesRoute = CertificatesRouteImport.update({
   id: '/certificates',
   path: '/certificates',
@@ -108,6 +114,7 @@ export interface FileRoutesByFullPath {
   '/basemaps': typeof BasemapsRoute
   '/branding': typeof BrandingRoute
   '/certificates': typeof CertificatesRoute
+  '/groups': typeof GroupsRoute
   '/live-map': typeof LiveMapRoute
   '/login': typeof LoginRoute
   '/logs': typeof LogsRoute
@@ -125,6 +132,7 @@ export interface FileRoutesByTo {
   '/basemaps': typeof BasemapsRoute
   '/branding': typeof BrandingRoute
   '/certificates': typeof CertificatesRoute
+  '/groups': typeof GroupsRoute
   '/live-map': typeof LiveMapRoute
   '/login': typeof LoginRoute
   '/logs': typeof LogsRoute
@@ -143,6 +151,7 @@ export interface FileRoutesById {
   '/basemaps': typeof BasemapsRoute
   '/branding': typeof BrandingRoute
   '/certificates': typeof CertificatesRoute
+  '/groups': typeof GroupsRoute
   '/live-map': typeof LiveMapRoute
   '/login': typeof LoginRoute
   '/logs': typeof LogsRoute
@@ -162,6 +171,7 @@ export interface FileRouteTypes {
     | '/basemaps'
     | '/branding'
     | '/certificates'
+    | '/groups'
     | '/live-map'
     | '/login'
     | '/logs'
@@ -179,6 +189,7 @@ export interface FileRouteTypes {
     | '/basemaps'
     | '/branding'
     | '/certificates'
+    | '/groups'
     | '/live-map'
     | '/login'
     | '/logs'
@@ -196,6 +207,7 @@ export interface FileRouteTypes {
     | '/basemaps'
     | '/branding'
     | '/certificates'
+    | '/groups'
     | '/live-map'
     | '/login'
     | '/logs'
@@ -214,6 +226,7 @@ export interface RootRouteChildren {
   BasemapsRoute: typeof BasemapsRoute
   BrandingRoute: typeof BrandingRoute
   CertificatesRoute: typeof CertificatesRoute
+  GroupsRoute: typeof GroupsRoute
   LiveMapRoute: typeof LiveMapRoute
   LoginRoute: typeof LoginRoute
   LogsRoute: typeof LogsRoute
@@ -290,6 +303,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof LiveMapRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/groups': {
+      id: '/groups'
+      path: '/groups'
+      fullPath: '/groups'
+      preLoaderRoute: typeof GroupsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/certificates': {
       id: '/certificates'
       path: '/certificates'
@@ -342,6 +362,7 @@ const rootRouteChildren: RootRouteChildren = {
   BasemapsRoute: BasemapsRoute,
   BrandingRoute: BrandingRoute,
   CertificatesRoute: CertificatesRoute,
+  GroupsRoute: GroupsRoute,
   LiveMapRoute: LiveMapRoute,
   LoginRoute: LoginRoute,
   LogsRoute: LogsRoute,

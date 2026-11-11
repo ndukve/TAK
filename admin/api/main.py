@@ -25,6 +25,7 @@ from .packages import router as packages_router
 from .replay import router as replay_router
 from .shell import router as shell_router
 from .users import router as users_router
+from .groups import router as groups_router
 
 
 @asynccontextmanager
@@ -113,6 +114,7 @@ app.include_router(auth_router)
 app.include_router(oidc_router)
 app.include_router(admin_users_router)
 app.include_router(users_router)
+app.include_router(groups_router)
 app.include_router(health_router)
 app.include_router(packages_router)
 app.include_router(logs_router)

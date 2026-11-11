@@ -10,13 +10,13 @@ Atvaizdo (image) atnaujinimas **neatnaujina** sertifikatų — jie lieka tome. P
 
 ## TAK serverio sertifikato vardas
 
-Serverio sertifikate paliekamas vidinis bendrasis vardas (CN) `takserver`, o subject alternative name (SAN) įrašomi `TAK_SERVER_ADDRESS` ir, jei nustatytas, `TAK_SERVER_ADDRESS_LAN`. Naujų klientų paketų TAK serverio rodomą pavadinimą nustatykite **Settings → Branding**; jis nekeičia sertifikato tapatybės ar tinklo adresų. Paketų kūrimas komandine eilute ir toliau naudoja `TAK_SERVER_NAME` iš env failo.
+serverio sertifikate paliekamas vidinis bendrasis vardas (CN) `takserver`, o subject alternative name (SAN) įrašomi `TAK_SERVER_ADDRESS` ir, jei nustatytas, `TAK_SERVER_ADDRESS_LAN`. Naujų klientų paketų TAK serverio rodomą pavadinimą nustatykite **Settings → Branding**; jis nekeičia sertifikato tapatybės ar tinklo adresų. Paketų kūrimas komandine eilute ir toliau naudoja `TAK_SERVER_NAME` iš env failo.
 
 Esamame diegime pirmiausia sukurkite TAK duomenų atsarginę kopiją su `scripts/backup.sh`, tada vykdykite `scripts/renew_server_cert.sh`. Jis pakeičia tik serverio sertifikato failus, pasirašytus esamu CA, patikrina SAN reikšmes, patikrina, ar JKS yra naujai išduotas sertifikatas, ir tik tada iš naujo paleidžia TLS servisus. Esami klientų sertifikatai lieka pasirašyti tuo pačiu CA. Jei pasikeitė prisijungimo adresas, klientams reikia importuoti naujai sugeneruotą paketą.
 
 ## Admin panelės autentifikacija
 
-- Lokalus prisijungimas: slaptažodis (bcrypt), JWT access token (15 min), rotuojamas refresh token (7 dienos) su vagystės aptikimu — pakartotinis jau panaudoto refresh token panaudojimas atšaukia visą naudotojo sesiją.
+- Lokalus prisijungimas: slaptažodis (bcrypt), JWT access token'as (15 min), rotuojamas refresh token'as (7 dienos) su vagystės aptikimu — pakartotinis jau panaudoto refresh token'o panaudojimas atšaukia visą naudotojo sesiją.
 - Rolės: `superadmin` / `admin` / `readonly` / `field`.
 - Slaptažodžių rotacija: 90 dienų; per 5 nesėkmingus bandymus — 15 min užrakinimas.
 - Pasirenkamas OIDC SSO (Keycloak, Authentik ar bet kuris atitinkantis standartą IdP) — išjungtas pagal nutylėjimą, įjungiamas nustačius `OIDC_ISSUER`/`OIDC_CLIENT_ID`/`OIDC_CLIENT_SECRET`. IdP grupės susiejamos su panelės rolėmis per `OIDC_ROLE_MAP`. Žr. `takserver.env.example` komentarus.

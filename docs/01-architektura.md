@@ -11,7 +11,7 @@
 | `takserver_messaging` | CoT maršrutizavimas realiuoju laiku |
 | `takserver_api` | REST API misijų paketams, duomenų srautams |
 | `takserver_retention` | Senų duomenų valymas pagal saugojimo politiką |
-| `takserver_pluginmanager` | Serverio papildinių (plugin) gyvavimo ciklas |
+| `takserver_pluginmanager` | serverio papildinių (plugin) gyvavimo ciklas |
 | `docker_socket_proxy` | Ribotos prieigos Docker socket proxy — admin panelei leidžia tik logs/exec, ne konteinerių kūrimą/naikinimą |
 | `admin_permissions` | Trumpalaikis — admin/nginx tomo teisių migracija |
 | `admin` | Admin panelės backend (FastAPI) — pasiekiamas tik per `admin_proxy` |
@@ -41,12 +41,12 @@ flowchart TB
   C -->|paketų atsisiuntimas| AP
 ```
 
-`nginx` (admin_proxy) yra vienintelis viešas TLS galinis taškas admin panelei; `admin` API — vienintelis procesas, turintis prieigą prie Docker socket, ir tik per `docker_socket_proxy`, kuris apriboja API iki logs/exec (žr. [05-sertifikatai-ir-saugumas.md](05-sertifikatai-ir-saugumas.md)).
+`nginx` (admin_proxy) yra vienintelis viešas TLS galinis taškas admin panelei; `admin` API — vienintelis procesas, turintis prieigą prie Docker socket'o, ir tik per `docker_socket_proxy`, kuris apriboja API iki logs/exec (žr. [05-sertifikatai-ir-saugumas.md](05-sertifikatai-ir-saugumas.md)).
 
 ## Tinklai
 
 - `taknet` — visi TAK + admin konteineriai.
-- `docker_proxy_net` — izoliuotas tinklas tarp `admin` ir `docker_socket_proxy`, kad Docker socket nebūtų pasiekiamas iš kitų konteinerių.
+- `docker_proxy_net` — izoliuotas tinklas tarp `admin` ir `docker_socket_proxy`, kad Docker socket'as nebūtų pasiekiamas iš kitų konteinerių.
 
 ## Klientų prisijungimas
 

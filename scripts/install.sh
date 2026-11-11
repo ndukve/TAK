@@ -2,7 +2,7 @@
 # TAK Server — interactive installer (full-screen TUI)
 set -euo pipefail
 
-REPO_URL="https://github.com/ndukve/TAK.git"
+REPO_URL="${EFDI_REPO_URL:-https://gv3mkw.mokomasis.org/gabrielius.ndukve/TAK.git}"
 INSTALL_DIR="${INSTALL_DIR:-$HOME/tak-server}"
 
 # ── Bootstrap: clone repo if running via curl | bash ─────────────────────────
@@ -116,7 +116,7 @@ if [ -f "$ENV_FILE" ]; then
             # not checksum-pinned since it's a live, auto-updating script; the
             # trust boundary is the TLS connection to Docker's own domain.
             run_with_gauge "System Setup" "Installing Docker..." -- bash -c \
-                "curl -fsSL https://get.docker.com | sh && systemctl enable --now docker" \
+                "curl -fsSL --retry 3 --retry-delay 2 https://get.docker.com | sh && systemctl enable --now docker" \
                 || fail "Docker installation failed (see output above)."
         fi
 
@@ -227,7 +227,7 @@ else
             # Official vendor installer, same accepted trust model as the
             # Docker install above — see comment there.
             run_with_gauge "NetBird" "Installing NetBird..." -- bash -c \
-                "curl -fsSL https://pkgs.netbird.io/install.sh | sh" \
+                "curl -fsSL --retry 3 --retry-delay 2 https://pkgs.netbird.io/install.sh | sh" \
                 || fail "NetBird installation failed (see output above)."
             _NB_UP_ARGS=(up --setup-key="$VPN_KEY")
             [ -n "$NETBIRD_MGMT_URL" ] && _NB_UP_ARGS+=(--management-url="$NETBIRD_MGMT_URL")
@@ -243,7 +243,7 @@ else
             # Official vendor installer, same accepted trust model as the
             # Docker install above — see comment there.
             run_with_gauge "Tailscale" "Installing Tailscale..." -- bash -c \
-                "curl -fsSL https://tailscale.com/install.sh | sh" \
+                "curl -fsSL --retry 3 --retry-delay 2 https://tailscale.com/install.sh | sh" \
                 || fail "Tailscale installation failed (see output above)."
             run_with_gauge "Tailscale" "Connecting to Tailscale..." -- \
                 tailscale up --authkey="$VPN_KEY" \
@@ -305,7 +305,7 @@ if ! command -v docker &>/dev/null; then
     # not checksum-pinned since it's a live, auto-updating script; the
     # trust boundary is the TLS connection to Docker's own domain.
     run_with_gauge "System Setup [5/7]" "Installing Docker..." -- bash -c \
-        "curl -fsSL https://get.docker.com | sh && systemctl enable --now docker" \
+        "curl -fsSL --retry 3 --retry-delay 2 https://get.docker.com | sh && systemctl enable --now docker" \
         || fail "Docker installation failed (see output above)."
 fi
 
