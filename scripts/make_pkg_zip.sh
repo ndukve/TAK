@@ -61,6 +61,24 @@ modernize_p12() {
     rm -f "$pem"
 }
 
+# The truststore must be built by keytool, not re-exported through OpenSSL. TAK Server's own
+# truststore-root.p12 has a named CA entry (friendlyName), but an OpenSSL re-export drops the name and
+# the Java trusted-entry attribute, so ATAK's Android (Java) loader sees an EMPTY store ("Please
+# re-import your trust store certificate", iTAK "Invalid Truststore"). keytool writes both. Its default
+# AES-256/SHA-256 encoding was also refused on the test phones, so the same file uses 3DES + SHA-1
+# (still no -legacy / RC2-40). WinTAK reads either form.
+java_truststore() {
+    local dest=$1
+    rm -f "$dest"
+    keytool \
+        -J-Dkeystore.pkcs12.certProtectionAlgorithm=PBEWithSHA1AndDESede \
+        -J-Dkeystore.pkcs12.keyProtectionAlgorithm=PBEWithSHA1AndDESede \
+        -J-Dkeystore.pkcs12.macAlgorithm=HmacPBESHA1 \
+        -importcert -noprompt -alias "${CA_NAME:-takserver-ca}" -file "${CR}/files/ca.pem" \
+        -keystore "$dest" -storetype PKCS12 -storepass:env CA_PASS >/dev/null \
+        || fail "keytool could not build the truststore"
+}
+
 tmp_dir=$(mktemp -d "/tmp/newclient.XXXXXXXX")
 WORK_DIR="${tmp_dir}/${CLIENT_CERT_NAME}"
 mkdir -p ${WORK_DIR}
@@ -75,7 +93,7 @@ case "$CLIENT_CERT_NAME" in
         cat ${WORK_DIR}/MANIFEST/manifest.xml.tpl | gomplate > ${WORK_DIR}/MANIFEST/manifest.xml
         rm ${WORK_DIR}/blueteam.pref.tpl ${WORK_DIR}/TAK_defaults.pref.tpl ${WORK_DIR}/MANIFEST/manifest.xml.tpl
         modernize_p12 "${CR}/files/${CLIENT_CERT_NAME}.p12" "${WORK_DIR}/${CLIENT_CERT_NAME}.p12" "$CLIENT_CERT_PASSWORD" -nodes
-        modernize_p12 "${CR}/files/truststore-root.p12" "${WORK_DIR}/truststore-root.p12" "$CA_PASS" -nokeys
+        java_truststore "${WORK_DIR}/truststore-root.p12"
         ;;
     *-Service)
         # No TAK client app to import a mission package into — export a
@@ -98,7 +116,7 @@ case "$CLIENT_CERT_NAME" in
         cat ${WORK_DIR}/MANIFEST/manifest.xml.tpl  | gomplate > ${WORK_DIR}/MANIFEST/manifest.xml
         rm ${WORK_DIR}/certs/blueteam.pref.tpl ${WORK_DIR}/TAK_defaults.pref.tpl ${WORK_DIR}/MANIFEST/manifest.xml.tpl
         modernize_p12 "${CR}/files/${CLIENT_CERT_NAME}.p12" "${WORK_DIR}/certs/${CLIENT_CERT_NAME}.p12" "$CLIENT_CERT_PASSWORD" -nodes
-        modernize_p12 "${CR}/files/truststore-root.p12" "${WORK_DIR}/certs/truststore-root.p12" "$CA_PASS" -nokeys
+        java_truststore "${WORK_DIR}/certs/truststore-root.p12"
         ;;
 esac
 
