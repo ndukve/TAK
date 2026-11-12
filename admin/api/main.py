@@ -16,6 +16,7 @@ from .auth import router as auth_router
 from .basemaps import router as basemaps_router
 from .branding import router as branding_router
 from .db import Base, engine, ensure_database
+from .groups import router as groups_router
 from .health import router as health_router
 from .live_map import router as live_map_router
 from .logs import router as logs_router
@@ -25,7 +26,6 @@ from .packages import router as packages_router
 from .replay import router as replay_router
 from .shell import router as shell_router
 from .users import router as users_router
-from .groups import router as groups_router
 
 
 @asynccontextmanager
