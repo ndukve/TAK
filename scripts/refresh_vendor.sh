@@ -52,6 +52,7 @@ load_vendored_images() {
                 docker pull "$ref" >/dev/null
             fi
             docker save -o "$f" "$ref"
+            chmod 644 "$f"   # a save made under sudo is root-only (600) and the unprivileged update could not load it
         fi
         docker load -i "$f" >/dev/null
     done
@@ -72,6 +73,7 @@ load_vendored_images() {
             echo "Vendoring TAK Server ${version} (first time only)..."
             docker build -t "tak-server-dist:${version}" -f "$repo_root/docker/tak-dist.Dockerfile" "$dir" >/dev/null
             docker save -o "$tak_tar" "tak-server-dist:${version}"
+            chmod 644 "$tak_tar"   # a save made under sudo is root-only (600) and the unprivileged update could not load it
         fi
         docker load -i "$tak_tar" >/dev/null
     else
@@ -83,6 +85,7 @@ load_vendored_images() {
             echo "No local zip — restored tak-server-dist:${version} from ghcr.io/ndukve/tak-server-dist."
             docker tag "ghcr.io/ndukve/tak-server-dist:${version}" "tak-server-dist:${version}"
             docker save -o "$tak_tar" "tak-server-dist:${version}"
+            chmod 644 "$tak_tar"   # a save made under sudo is root-only (600) and the unprivileged update could not load it
         else
             echo "Warning: no local takserver-dist/*.zip and ghcr.io/ndukve/tak-server-dist:${version} not reachable (docker login ghcr.io first?). Build will fail if it needs tak-server-dist:${version}." >&2
         fi
@@ -105,6 +108,7 @@ if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
         echo "Building ${image}..."
         docker build -t "$image" -f "$SCRIPT_DIR/docker/tak-dist.Dockerfile" "$DIST_DIR"
         docker save -o "$DIST_DIR/tak-server-dist_${version}.tar" "$image"
+        chmod 644 "$DIST_DIR/tak-server-dist_${version}.tar"   # a save made under sudo is root-only (600) and the unprivileged update could not load it
 
         docker tag "$image" "ghcr.io/ndukve/tak-server-dist:${version}"
         docker push "ghcr.io/ndukve/tak-server-dist:${version}"
@@ -121,6 +125,7 @@ if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
         echo "Refreshing ${ref}..."
         docker pull "$ref"
         docker save -o "$DIST_DIR/$name" "$ref"
+        chmod 644 "$DIST_DIR/$name"   # a save made under sudo is root-only (600) and the unprivileged update could not load it
 
         docker tag "$ref" "$GHCR_VENDOR_REPO:$ghcr_tag"
         docker push "$GHCR_VENDOR_REPO:$ghcr_tag"
