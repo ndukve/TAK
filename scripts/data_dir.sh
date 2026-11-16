@@ -25,7 +25,9 @@ ensure_data_dir() {
         /var/lib/docker|/var/lib/docker/*) fail "TAK_DATA_DIR must not be inside /var/lib/docker" ;;
     esac
     mkdir -p "$dir"
-    chmod 755 "$dir"
+    # Only when the mode is wrong: an update run as the unprivileged tak user does not own a root-created directory, and chmod on it
+    # fails with "Operation not permitted" even though 755 is already what it should be.
+    [ "$(stat -c %a "$dir")" = 755 ] || chmod 755 "$dir"
     local part
     for part in "${DATA_PARTS[@]}"; do mkdir -p "$dir/$part"; done
     TAK_DATA_DIR="$dir"
